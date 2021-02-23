@@ -27,7 +27,7 @@
 #define TRACE_PRINTF printf  // task_printf
 
 void sd_spi_go_high_frequency(sd_card_t *this) {
-     uint actual = spi_set_baudrate(this->spi->pInst, 20 * 1000 * 1000);
+     uint actual = spi_set_baudrate(this->spi->pInst, 6 * 1000 * 1000);
      TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
 }
 void sd_spi_go_low_frequency(sd_card_t *this) {
@@ -35,11 +35,12 @@ void sd_spi_go_low_frequency(sd_card_t *this) {
     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
 }
 
-void sd_spi_lock(sd_card_t *this) {
+static void sd_spi_lock(sd_card_t *this) {
+    configASSERT(this->spi->mutex);
     xSemaphoreTakeRecursive(this->spi->mutex, portMAX_DELAY);
     this->spi->owner = xTaskGetCurrentTaskHandle();
 }
-void sd_spi_unlock(sd_card_t *this) {
+static void sd_spi_unlock(sd_card_t *this) {
     this->spi->owner = 0;
     xSemaphoreGiveRecursive(this->spi->mutex);
 }
@@ -64,6 +65,16 @@ void sd_spi_deselect(sd_card_t *this) {
     spi_write_blocking(this->spi->pInst, &fill, 1);
 }
 
+void sd_spi_acquire(sd_card_t *this) {
+    sd_spi_lock(this);
+    sd_spi_select(this);
+}
+
+void sd_spi_release(sd_card_t *this) {
+    sd_spi_deselect(this);
+    sd_spi_unlock(this);
+}
+
 // SPI Transfer: Read & Write (simultaneously) on SPI bus
 //   If the data that will be received is not important, pass NULL as rx.
 //   If the data that will be transmitted is not important,
@@ -77,8 +88,6 @@ bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
     configASSERT(512 == length);
     configASSERT(tx || rx);
 
-    sd_spi_lock(this);
-
     int num = 0;
     if (tx && rx) {
         num = spi_write_read_blocking(this->spi->pInst, tx, rx, length);
@@ -89,7 +98,6 @@ bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
     }
     configASSERT(num == length);
 
-    sd_spi_unlock(this);
     return true;
 }
 
@@ -97,12 +105,8 @@ uint8_t sd_spi_write(sd_card_t *this, const uint8_t value) {
     // TRACE_PRINTF("%s\n", __FUNCTION__);
     u_int8_t received = SPI_FILL_CHAR;
 
-    sd_spi_lock(this);
-
     int num = spi_write_read_blocking(this->spi->pInst, &value, &received, 1);
     configASSERT(1 == num);
-
-    sd_spi_unlock(this);
 
     return received;
 }

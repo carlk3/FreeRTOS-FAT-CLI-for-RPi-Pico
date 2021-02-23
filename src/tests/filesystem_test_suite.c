@@ -410,6 +410,7 @@ static const CLI_Command_Definition_t xStdioWithCWDTest = {
 		"swcwdt", /* The command string to type. */
 		"\nswcwdt <device name>:\n Stdio With CWD Test\n"
 		"Expects card to be already formatted but not mounted.\n"
+		"Note: run cdef first!"
 		"\te.g.: \"swcwdt SDCard\"\n", 
 		runStdioWithCWDTest, /* The function to run. */
 		1 /* No parameters are expected. */
@@ -533,12 +534,14 @@ static BaseType_t prvBigFileTest(char *pcWriteBuffer, size_t xWriteBufferLen, co
 	return pdFALSE;
 }
 /* Structure that defines the COPY command line command, which deletes a file. */
-static const CLI_Command_Definition_t xBFT =
-{
-	"big_file_test", /* The command string to type. */
-	"\r\nbig_file_test <pathname> <size in bytes> <seed>:\r\n Writes random data to file <pathname>\r\n",
-	prvBigFileTest, /* The function to run. */
-	3 /* Two parameters are expected. */
+static const CLI_Command_Definition_t xBFT = {
+    "big_file_test", /* The command string to type. */
+    "\r\nbig_file_test <pathname> <size in bytes> <seed>:\n"
+    " Writes random data to file <pathname>.\n"
+    " <size in bytes> must be multiple of 512.\n"
+    "\te.g.: big_file_test SDCard/bf 1048576 1\n",
+    prvBigFileTest, /* The function to run. */
+    3               /* Two parameters are expected. */
 };
 /*-----------------------------------------------------------*/
 
