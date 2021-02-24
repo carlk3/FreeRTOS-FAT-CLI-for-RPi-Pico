@@ -181,3 +181,6 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 ```
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
 Happy hacking!
+
+## Acknowledgement:
+I would like to thank PicoCPP for [RPI-pico-FreeRTOS](https://github.com/PicoCPP/RPI-pico-FreeRTOS), which was my starting point for this project.
