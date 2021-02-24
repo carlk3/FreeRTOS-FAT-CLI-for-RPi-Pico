@@ -65,8 +65,8 @@ I just referred to the table above, wiring point-to-point from the Pin column on
   
 ## Operation:
 * By default, this project has serial input (stdin) and output (stdout) directed to USB CDC (USB serial). 
-* Connect a terminal. Putty or tio work OK. For example:
-  * `tio /dev/ttyACM0`
+* Connect a terminal. [PuTTY](https://www.putty.org/) or `tio` work OK. For example:
+  * `tio -m ODELBS /dev/ttyACM0`
 * Press Enter to start the CLI. You should see a prompt like:
 ```
     Sunday 24 February 9:04:23 2021 
@@ -181,3 +181,6 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 ```
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
 Happy hacking!
+
+## Acknowledgement:
+I would like to thank PicoCPP for [RPI-pico-FreeRTOS](https://github.com/PicoCPP/RPI-pico-FreeRTOS), which was my starting point for this project.
