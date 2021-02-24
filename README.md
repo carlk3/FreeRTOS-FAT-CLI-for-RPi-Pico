@@ -50,12 +50,14 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ## Firmware:
+* Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
-  `git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git`
+  `git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI`
 * Customize:
-  * Tailor `hw_config.c` to match hardware
+  * Tailor `portable/RP2040/hw_config.c` to match hardware
   * Build:
 ```  
+   cd FreeRTOS+FAT+CLI
    mkdir build
    cd build
    cmake ..
