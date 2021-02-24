@@ -27,8 +27,8 @@
 #define TRACE_PRINTF printf  // task_printf
 
 void sd_spi_go_high_frequency(sd_card_t *this) {
-     uint actual = spi_set_baudrate(this->spi->pInst, 6 * 1000 * 1000);
-     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
+    uint actual = spi_set_baudrate(this->spi->pInst, 6 * 1000 * 1000);
+    TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
 }
 void sd_spi_go_low_frequency(sd_card_t *this) {
     uint actual = spi_set_baudrate(this->spi->pInst, 100 * 1000);
@@ -58,8 +58,9 @@ void sd_spi_deselect(sd_card_t *this) {
     /*
     MMC/SDC enables/disables the DO output in synchronising to the SCLK. This
     means there is a posibility of bus conflict with MMC/SDC and another SPI
-    slave that shares an SPI bus. Therefore to make MMC/SDC release the MISO line, 
-    the master device needs to send a byte after the CS signal is deasserted.
+    slave that shares an SPI bus. Therefore to make MMC/SDC release the MISO
+    line, the master device needs to send a byte after the CS signal is
+    deasserted.
     */
     uint8_t fill = SPI_FILL_CHAR;
     spi_write_blocking(this->spi->pInst, &fill, 1);
@@ -82,7 +83,7 @@ void sd_spi_release(sd_card_t *this) {
 //     element.
 bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
                      size_t length) {
-//  TRACE_PRINTF("%s\n", __FUNCTION__);
+    //  TRACE_PRINTF("%s\n", __FUNCTION__);
     BaseType_t rc;
 
     configASSERT(512 == length);

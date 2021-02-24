@@ -44,11 +44,11 @@ static spi_t spi[] = {  // One for each SPI.
 
 // Hardware Configuration of the SD Card "objects"
 static sd_card_t sd_cards[] = {  // One for each SD card
-    {.pcName = "SDCard",         // Name used to mount device
+    {.pcName = "sd0",            // Name used to mount device
      .spi = &spi[0],             // Pointer to the SPI driving this card
-     .ss_gpio = 17,              // The SPI slave select line for this SD card
+     .ss_gpio = 17,              // The SPI slave select GPIO for this SD card
      .card_detect_gpio = 22,     // Card detect
-     .card_detected_true = 0,    // What the GPIO read returns when a card is
+     .card_detected_true = 1,    // What the GPIO read returns when a card is
                                  // present. Use -1 if there is no card detect.
      // Following attributes are dynamically assigned
      .card_detect_task = 0,

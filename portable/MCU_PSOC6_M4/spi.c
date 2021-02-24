@@ -34,8 +34,8 @@ bool my_spi_init(spi_t *this) {
     gpio_set_function(this->mosi_gpio, GPIO_FUNC_SPI);
     gpio_set_function(this->sck_gpio, GPIO_FUNC_SPI);
 
-    // SD cards' DO MUST be pulled up.
-    gpio_pull_up(this->miso_gpio);
+    //// SD cards' DO MUST be pulled up.
+    //gpio_pull_up(this->miso_gpio);
 
     // The SPI may be shared (using multiple SSs); protect it
     this->mutex = xSemaphoreCreateRecursiveMutex();

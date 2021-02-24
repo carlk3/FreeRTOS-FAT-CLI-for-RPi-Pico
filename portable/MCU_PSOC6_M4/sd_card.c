@@ -528,7 +528,7 @@ static int sd_cmd8(sd_card_t *this) {
     return status;
 }
 
-static int sd_initialise_card_unlocked(sd_card_t *this) {
+static int sd_initialise_card_nolock(sd_card_t *this) {
     int32_t status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint32_t response, arg;
 
@@ -627,7 +627,7 @@ static int sd_initialise_card_unlocked(sd_card_t *this) {
 }
 static int sd_initialise_card(sd_card_t *this) {
     sd_lock(this);
-    int rc = sd_initialise_card_unlocked(this);
+    int rc = sd_initialise_card_nolock(this);
     sd_unlock(this);
     return rc;
 }
@@ -647,7 +647,7 @@ static uint32_t ext_bits(unsigned char *data, int msb, int lsb) {
 
 static int sd_read_bytes(sd_card_t *this, uint8_t *buffer, uint32_t length);
 
-static uint64_t sd_sectors_unlocked(sd_card_t *this) {
+static uint64_t sd_sectors_nolock(sd_card_t *this) {
     uint32_t c_size, c_size_mult, read_bl_len;
     uint32_t block_len, mult, blocknr;
     uint32_t hc_c_size;
@@ -704,7 +704,7 @@ static uint64_t sd_sectors_unlocked(sd_card_t *this) {
 }
 uint64_t sd_sectors(sd_card_t *this) {
     sd_lock(this);
-    uint64_t sectors = sd_sectors_unlocked(this);
+    uint64_t sectors = sd_sectors_nolock(this);
     sd_unlock(this);
     return sectors;
 }
@@ -726,7 +726,6 @@ int sd_init(sd_card_t *this) {
     gpio_init(this->ss_gpio);
     gpio_put(this->ss_gpio, 1);
     gpio_set_dir(this->ss_gpio, GPIO_OUT);
-
 
     // sd_card_detect_start(this);
 
@@ -758,8 +757,8 @@ int sd_init(sd_card_t *this) {
         xSemaphoreGiveRecursive(this->mutex);
         return this->m_Status;
     }
-    // Set block length to 512 (CMD16)
     sd_lock(this);
+    // Set block length to 512 (CMD16)
     if (sd_cmd(this, CMD16_SET_BLOCKLEN, _block_size, 0, 0) != 0) {
         DBG_PRINTF("Set %" PRIu32 "-byte block timed out\n", _block_size);
         sd_unlock(this);
@@ -786,7 +785,7 @@ int sd_deinit(sd_card_t *this) {
 
 // SPI function to wait till chip is ready and sends start token
 static bool sd_wait_token(sd_card_t *this, uint8_t token) {
-    const uint32_t timeout = 1000;  // Wait for start token
+    const uint32_t timeout = SD_COMMAND_TIMEOUT;  // Wait for start token
     TickType_t xStart = xTaskGetTickCount();
     do {
         if (token == sd_spi_write(this, SPI_FILL_CHAR)) {
@@ -805,7 +804,7 @@ static int sd_read_bytes(sd_card_t *this, uint8_t *buffer, uint32_t length) {
 
     // read until start byte (0xFE)
     if (false == sd_wait_token(this, SPI_START_BLOCK)) {
-        DBG_PRINTF("Read timeout\n");
+        DBG_PRINTF("%s:%d Read timeout\n", __FILE__, __LINE__);
         return SD_BLOCK_DEVICE_ERROR_NO_RESPONSE;
     }
     // read data
@@ -837,7 +836,7 @@ static int sd_read_block(sd_card_t *this, uint8_t *buffer, uint32_t length) {
 
     // read until start byte (0xFE)
     if (false == sd_wait_token(this, SPI_START_BLOCK)) {
-        DBG_PRINTF("Read timeout\n");
+        DBG_PRINTF("%s:%d Read timeout\n", __FILE__, __LINE__);
         return SD_BLOCK_DEVICE_ERROR_NO_RESPONSE;
     }
     // read data
@@ -866,9 +865,8 @@ static int sd_read_block(sd_card_t *this, uint8_t *buffer, uint32_t length) {
     return SD_BLOCK_DEVICE_ERROR_NONE;
 }
 
-static int sd_read_blocks_unlocked(sd_card_t *this, uint8_t *buffer,
-                                   uint64_t ulSectorNumber,
-                                   uint32_t ulSectorCount) {
+static int in_sd_read_blocks(sd_card_t *this, uint8_t *buffer,
+                             uint64_t ulSectorNumber, uint32_t ulSectorCount) {
     uint32_t blockCnt = ulSectorCount;
 
     if (ulSectorNumber + blockCnt > this->sectors)
@@ -914,8 +912,7 @@ static int sd_read_blocks_unlocked(sd_card_t *this, uint8_t *buffer,
 int sd_read_blocks(sd_card_t *this, uint8_t *buffer, uint64_t ulSectorNumber,
                    uint32_t ulSectorCount) {
     sd_lock(this);
-    int status =
-        sd_read_blocks_unlocked(this, buffer, ulSectorNumber, ulSectorCount);
+    int status = in_sd_read_blocks(this, buffer, ulSectorNumber, ulSectorCount);
     sd_unlock(this);
     return status;
 }
@@ -968,9 +965,8 @@ static uint8_t sd_write_block(sd_card_t *this, const uint8_t *buffer,
  *                  SD_BLOCK_DEVICE_ERROR_WRITE - SPI write error
  *                  SD_BLOCK_DEVICE_ERROR_ERASE - erase error
  */
-static int sd_write_blocks_unlocked(sd_card_t *this, const uint8_t *buffer,
-                                    uint64_t ulSectorNumber,
-                                    uint32_t blockCnt) {
+static int in_sd_write_blocks(sd_card_t *this, const uint8_t *buffer,
+                              uint64_t ulSectorNumber, uint32_t blockCnt) {
     if (ulSectorNumber + blockCnt > this->sectors)
         return SD_BLOCK_DEVICE_ERROR_PARAMETER;
     if (this->m_Status & (STA_NOINIT | STA_NODISK))
@@ -1022,7 +1018,6 @@ static int sd_write_blocks_unlocked(sd_card_t *this, const uint8_t *buffer,
             }
             buffer += _block_size;
         } while (--blockCnt);  // Send all blocks of data
-
         /* In a Multiple Block write operation, the stop transmission will be
          * done by sending 'Stop Tran' token instead of 'Start Block' token at
          * the beginning of the next block
@@ -1035,8 +1030,7 @@ static int sd_write_blocks_unlocked(sd_card_t *this, const uint8_t *buffer,
 int sd_write_blocks(sd_card_t *this, const uint8_t *buffer,
                     uint64_t ulSectorNumber, uint32_t blockCnt) {
     sd_lock(this);
-    int status =
-        sd_write_blocks_unlocked(this, buffer, ulSectorNumber, blockCnt);
+    int status = in_sd_write_blocks(this, buffer, ulSectorNumber, blockCnt);
     sd_unlock(this);
     return status;
 }

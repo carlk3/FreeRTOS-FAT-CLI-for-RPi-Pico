@@ -35,13 +35,6 @@
 #include "filesystem_test_suite.h"
 #include "stdio_cli.h"
 
-/*
- * Register commands that can be used with FreeRTOS+CLI.
- * The commands are defined in CLI-commands.c and
- * File-related-CLI-commands.c respectively.
- */
-// extern void vRegisterFileSystemCLICommands(void);
-
 // stdioTask - the function which handles input from the UART
 // Note:
 //   This initially used Task Notifications,
