@@ -88,7 +88,7 @@
 
 /* The number of tasks to create if the stdio tests will be executed in
 multiple tasks simultaneously. */
-#define fsTASKS_TO_CREATE 5
+#define fsTASKS_TO_CREATE 3
 //#define fsTASKS_TO_CREATE 2
 
 /*
@@ -1164,26 +1164,21 @@ char *pcRAMBuffer, *pcFileName;
 void vMultiTaskStdioWithCWDTest( const char *const pcMountPath, uint16_t usStackSizeWords )
 {
 size_t x;
-char cTaskName[ 5 ];
+char cTaskName[fsTASKS_TO_CREATE];
 
-    // Allocate on heap to allow more than one instance of this test to run
-    typedef char cDirName_t[ 20 ];
-	cDirName_t *cDirName  = pvPortMalloc(fsTASKS_TO_CREATE * sizeof(cDirName_t));
+// Allocate on heap to allow more than one instance of this test to run
+typedef char cDirName_t[20];
+cDirName_t *cDirName = pvPortMalloc(fsTASKS_TO_CREATE * sizeof(cDirName_t));
 
-	/* Create a set of tasks that also create, check and delete files.  These
-	are left running as an ad hoc test of multiple tasks accessing the file
-	system simultaneously. */
-	for( x = 0; x < fsTASKS_TO_CREATE; x++ )
-	{
-		snprintf( &( cDirName[ x ][ 0 ] ), sizeof( cDirName_t ), "%s/%d", pcMountPath, x );
-		snprintf( cTaskName, sizeof( cTaskName ), "FS%d", x );
-		xTaskCreate( prvFileSystemAccessTask,
-						cTaskName,
-						usStackSizeWords, /* Not used with the Windows port. */
-						( void * )  &( cDirName[ x ][ 0 ] ),
-//						tskIDLE_PRIORITY, 
-                        3,
-						NULL );
+/* Create a set of tasks that also create, check and delete files.  These
+are left running as an ad hoc test of multiple tasks accessing the file
+system simultaneously. */
+for (x = 0; x < fsTASKS_TO_CREATE; x++) {
+    snprintf(&(cDirName[x][0]), sizeof(cDirName_t), "%s/%d", pcMountPath, x);
+    snprintf(cTaskName, sizeof(cTaskName), "FS%d", x);
+    xTaskCreate(prvFileSystemAccessTask, cTaskName,
+                usStackSizeWords, /* Not used with the Windows port. */
+                (void *)&(cDirName[x][0]), tskIDLE_PRIORITY + 3, NULL);
 	}
 }
 /*-----------------------------------------------------------*/

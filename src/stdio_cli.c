@@ -177,7 +177,9 @@ void CLI_Start() {
     register_fs_tests();
     vRegisterFileSystemCLICommands();
 
-    stdio_init_all();
+    //stdio_init_all();
+    stdio_usb_init();
+
     FreeRTOS_time_init();
 
     static StackType_t xStack[1024];
