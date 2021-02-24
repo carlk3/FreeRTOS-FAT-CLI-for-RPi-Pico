@@ -1,7 +1,8 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include <assert.h>
+#include "hardware/timer.h"
+
 #include "my_debug.h"
 
 #ifndef portINLINE
@@ -48,7 +49,7 @@
 #define configUSE_DAEMON_TASK_STARTUP_HOOK      0
 
 /* Run time and task stats gathering related definitions. */
-#define configGENERATE_RUN_TIME_STATS           0
+#define configGENERATE_RUN_TIME_STATS           1
 #define configUSE_TRACE_FACILITY                1
 #define configUSE_STATS_FORMATTING_FUNCTIONS    1
 
@@ -101,6 +102,12 @@
 #define xPortPendSVHandler isr_pendsv
 #define xPortSysTickHandler isr_systick
 
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 
+//#define portGET_RUN_TIME_COUNTER_VALUE() time_us_32()
+//#define portGET_RUN_TIME_COUNTER_VALUE() (timer_hw->timerawl)
+#define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
+//#define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64())
+//#define portGET_RUN_TIME_COUNTER_VALUE() (timer_hw->timelr)
 
 /* A header file that defines trace macro can be included here. */
 

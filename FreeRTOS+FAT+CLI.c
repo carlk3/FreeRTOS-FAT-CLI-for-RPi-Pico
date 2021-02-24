@@ -5,12 +5,12 @@
 #include "task.h"
 
 //
-#include "hardware/clocks.h"
-#include "hardware/divider.h"
-#include "hardware/dma.h"
+//#include "hardware/clocks.h"
+//#include "hardware/divider.h"
+//#include "hardware/dma.h"
 //#include "hardware/gpio.h"
 //#include "hardware/spi.h"
-#include "hardware/uart.h"
+//#include "hardware/uart.h"
 #include "pico/stdlib.h"
 
 //

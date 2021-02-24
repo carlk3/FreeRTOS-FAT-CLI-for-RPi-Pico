@@ -553,7 +553,8 @@ static const CLI_Command_Definition_t xBFT = {
     "\r\nbig_file_test <pathname> <size in bytes> <seed>:\n"
     " Writes random data to file <pathname>.\n"
     " <size in bytes> must be multiple of 512.\n"
-    "\te.g.: big_file_test sd0/bf 1048576 1\n",
+    "\te.g.: big_file_test sd0/bf 1048576 1\n"
+    "\tor: big_file_test sd0/big3G-3 0xC0000000 3\n",
     prvBigFileTest, /* The function to run. */
     3               /* Two parameters are expected. */
 };

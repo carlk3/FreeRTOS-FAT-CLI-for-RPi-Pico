@@ -32,13 +32,13 @@ add_executable(FreeRTOS+FAT+CLI
         src/CLI-commands.c
         src/File-related-CLI-commands.c
         src/ff_utils.c
-        portable/MCU_PSOC6_M4/hw_config.c
-        portable/MCU_PSOC6_M4/spi.c
-        portable/MCU_PSOC6_M4/sd_spi.c       
-        portable/MCU_PSOC6_M4/sd_card.c       
-        portable/MCU_PSOC6_M4/ff_sddisk.c       
-        portable/MCU_PSOC6_M4/demo_logging.c
-        portable/MCU_PSOC6_M4/crc.c
+        portable/RP2040/hw_config.c
+        portable/RP2040/spi.c
+        portable/RP2040/sd_spi.c       
+        portable/RP2040/sd_card.c       
+        portable/RP2040/ff_sddisk.c       
+        portable/RP2040/demo_logging.c
+        portable/RP2040/crc.c
         src/stdio_cli.c
         src/tests/app4-IO_module_function_checker.c        
         src/tests/filesystem_test_suite.c
@@ -84,6 +84,9 @@ add_library(Lab-Project-FreeRTOS-FAT STATIC
         Lab-Project-FreeRTOS-FAT/ff_time.c        
 )
 
+target_link_libraries(FreeRTOS-Kernel pico_stdlib)
+target_link_libraries(Lab-Project-FreeRTOS-FAT pico_stdlib)
+
 target_include_directories(FreeRTOS-Kernel PUBLIC 
         include/ 
         FreeRTOS-Kernel/include 
@@ -101,7 +104,7 @@ target_include_directories(FreeRTOS+FAT+CLI PUBLIC
         FreeRTOS-Kernel/include 
         FreeRTOS-Kernel/portable/GCC/ARM_CM0
         Lab-Project-FreeRTOS-FAT/include/
-        portable/MCU_PSOC6_M4/
+        portable/RP2040/
 )
 #target_compile_options(FreeRTOS+FAT+CLI PRIVATE -save-temps)
 

@@ -15,6 +15,7 @@
 
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
+#include "hardware/timer.h"
 
 // For pcTaskGetName:
 #include "FreeRTOS.h"

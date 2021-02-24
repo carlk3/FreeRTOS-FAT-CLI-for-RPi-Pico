@@ -277,7 +277,7 @@ static BaseType_t prvRunTimeStatsCommand(char *pcWriteBuffer,
 
     /* Generate a table of task stats. */
     strcpy(pcWriteBuffer, pcHeader);
-    //    vTaskGetRunTimeStats(pcWriteBuffer + strlen(pcHeader));
+    vTaskGetRunTimeStats(pcWriteBuffer + strlen(pcHeader));
 
     /* There is no more data to return after this single string, so return
     pdFALSE. */
@@ -811,7 +811,7 @@ static BaseType_t date(char *pcWriteBuffer, size_t xWriteBufferLen,
 }
 static const CLI_Command_Definition_t xDate = {
     "date", /* The command string to type. */
-    "\ndate:\n Print current date and time\n", date, /* The function to run. */
+    "\ndate:\n Print current date and time\n\n", date, /* The function to run. */
     0 /* No parameters are expected. */
 };
 /*-----------------------------------------------------------*/
