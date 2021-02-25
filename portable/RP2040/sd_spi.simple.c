@@ -13,12 +13,11 @@
 /* Standard includes. */
 #include <stdint.h>
 #include <stdio.h>
-
+//
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 //#include "FreeRTOSFATConfig.h" // for DBG_PRINTF
 //
-#include "my_debug.h"
 #include "sd_card.h"
 #include "sd_spi.h"
 #include "spi.h"
@@ -28,7 +27,7 @@
 #define TRACE_PRINTF printf  // task_printf
 
 void sd_spi_go_high_frequency(sd_card_t *this) {
-    uint actual = spi_set_baudrate(this->spi->hw_inst, this->spi->baud_rate);
+    uint actual = spi_set_baudrate(this->spi->hw_inst, 6 * 1000 * 1000);
     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
 }
 void sd_spi_go_low_frequency(sd_card_t *this) {
@@ -77,21 +76,40 @@ void sd_spi_release(sd_card_t *this) {
     sd_spi_unlock(this);
 }
 
+// SPI Transfer: Read & Write (simultaneously) on SPI bus
+//   If the data that will be received is not important, pass NULL as rx.
+//   If the data that will be transmitted is not important,
+//     pass NULL as tx and then the SPI_FILL_CHAR is sent out as each data
+//     element.
+bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
+                     size_t length) {
+    //  TRACE_PRINTF("%s\n", __FUNCTION__);
+    BaseType_t rc;
+
+    configASSERT(512 == length);
+    configASSERT(tx || rx);
+
+    int num = 0;
+    if (tx && rx) {
+        num = spi_write_read_blocking(this->spi->hw_inst, tx, rx, length);
+    } else if (tx) {
+        num = spi_write_blocking(this->spi->hw_inst, tx, length);
+    } else if (rx) {
+        num = spi_read_blocking(this->spi->hw_inst, SPI_FILL_CHAR, rx, length);
+    }
+    configASSERT(num == length);
+
+    return true;
+}
+
 uint8_t sd_spi_write(sd_card_t *this, const uint8_t value) {
     // TRACE_PRINTF("%s\n", __FUNCTION__);
     u_int8_t received = SPI_FILL_CHAR;
-
-    configASSERT(xTaskGetCurrentTaskHandle() == this->spi->owner);
 
     int num = spi_write_read_blocking(this->spi->hw_inst, &value, &received, 1);
     configASSERT(1 == num);
 
     return received;
-}
-
-bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
-                     size_t length) {
-    return spi_transfer(this->spi, tx, rx, length);
 }
 
 /* [] END OF FILE */

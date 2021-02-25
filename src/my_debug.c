@@ -50,7 +50,7 @@ void task_printf( const char *pcFormat, ... )
 	vsnprintf( pcBuffer, sizeof(pcBuffer), pcFormat, xArgs );
 	va_end( xArgs );
 	printf("%s: %s", pcTaskGetName(NULL), pcBuffer);
-//	fflush(stdout);
+	fflush(stdout);
 }
 
 int stdio_fail(const char * const fn, const char * const str) {

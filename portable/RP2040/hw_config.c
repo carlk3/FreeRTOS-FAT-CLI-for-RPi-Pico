@@ -27,16 +27,23 @@ socket, which SPI it is driven by, and how it is wired.
 // Make it easier to spot errors:
 #include "hw_config.h"
 
+void spi0_dma_isr();
+
 // Hardware Configuration of SPI "objects"
 // Note: multiple SD cards can be driven by one SPI if they use different slave
 // selects.
 static spi_t spi[] = {  // One for each SPI.
     {
-        .pInst = spi0,  // SPI component
+        .hw_inst = spi0,  // SPI component
         .miso_gpio = 19,
         .mosi_gpio = 16,
         .sck_gpio = 18,
+        .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
+        //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
+        // worked for me.
+        
         // Following attributes are dynamically assigned
+        .dma_isr = spi0_dma_isr,
         .initialized = false,  // initialized flag
         .owner = 0,            // Owning task, assigned dynamically
         .mutex = 0             // Guard semaphore, assigned dynamically
@@ -58,6 +65,8 @@ static sd_card_t sd_cards[] = {  // One for each SD card
      .mutex = 0,
      .ff_disk_count = 0,
      .ff_disks = NULL}};
+
+void spi0_dma_isr() { spi_irq_handler(&spi[0]); }
 
 /* ********************************************************************** */
 sd_card_t *sd_get_by_name(const char *const name) {

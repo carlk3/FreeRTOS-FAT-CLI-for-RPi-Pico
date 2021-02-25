@@ -74,11 +74,14 @@ static void stdioTask(void *arg) {
                 } while (n != 0);
             }
 
-            // void datetime_to_str (char *buf, uint buf_size, const datetime_t
-            // *t
+            printf("RTC is ");
+            if (rtc_running())
+                printf("running.\n");
+            else
+                printf("not running.\n");
             datetime_t t = {0, 0, 0, 0, 0, 0, 0};
-            char datetime_buf[256] = {0};
             rtc_get_datetime(&t);
+            char datetime_buf[256] = {0};
             datetime_to_str(datetime_buf, sizeof(datetime_buf), &t);
             printf("\r%s ", datetime_buf);
             printf("\nFreeRTOS+CLI> ");

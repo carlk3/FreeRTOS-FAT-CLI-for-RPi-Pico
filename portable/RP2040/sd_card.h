@@ -18,7 +18,9 @@
 #include "FreeRTOS.h"
 /* FreeRTOS includes. */
 #include <semphr.h>
-
+//
+#include "hardware/gpio.h"
+//
 #include "ff_headers.h"
 #include "spi.h"
 

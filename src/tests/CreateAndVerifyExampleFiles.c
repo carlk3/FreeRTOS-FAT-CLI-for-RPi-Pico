@@ -79,6 +79,8 @@
 
 #include <stdio.h>
 
+#define FF_PRINTF task_printf 
+
 /* The number of bytes read/written to the example files at a time. */
 #define fsRAM_BUFFER_SIZE 				200
 

@@ -199,9 +199,7 @@ static bool crc_on = true;
 
 // Only HC block size is supported. Making this a static constant reduces code
 // size.
-#define BLOCK_SIZE_HC                                      \
-    512 /*!< Block size supported for SD card is 512 bytes \
-         */
+#define BLOCK_SIZE_HC  512 /*!< Block size supported for SD card is 512 bytes */
 static const uint32_t _block_size = BLOCK_SIZE_HC;
 
 /* R1 Response Format */
