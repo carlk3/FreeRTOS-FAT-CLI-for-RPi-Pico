@@ -178,8 +178,9 @@ bool my_spi_init(spi_t *this) {
     dma_channel_set_irq0_enabled(this->rx_dma, true);
     irq_set_enabled(DMA_IRQ_0, true);
 
-    xSemaphoreGiveRecursive(this->mutex);
+    LED_INIT();
 
+    xSemaphoreGiveRecursive(this->mutex);
     return true;
 }
 

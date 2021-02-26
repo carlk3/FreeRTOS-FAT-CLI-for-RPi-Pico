@@ -37,17 +37,17 @@ static void vTaskCode(void* pvParameters) {
 
 int main() {
 
-    BaseType_t xReturned;
-    TaskHandle_t xHandle = NULL;
-    /* Create the task, storing the handle. */
-    xReturned = xTaskCreate(
-        vTaskCode,            /* Function that implements the task. */
-        "Blinky task",        /* Text name for the task. */
-        512,                  /* Stack size in words, not bytes. */
-        (void*)1,             /* Parameter passed into the task. */
-        tskIDLE_PRIORITY + 1, /* Priority at which the task is created. */
-        &xHandle);
-    configASSERT(pdPASS == xReturned);
+    //BaseType_t xReturned;
+    //TaskHandle_t xHandle = NULL;
+    ///* Create the task, storing the handle. */
+    //xReturned = xTaskCreate(
+    //    vTaskCode,            /* Function that implements the task. */
+    //    "Blinky task",        /* Text name for the task. */
+    //    512,                  /* Stack size in words, not bytes. */
+    //    (void*)1,             /* Parameter passed into the task. */
+    //    tskIDLE_PRIORITY + 1, /* Priority at which the task is created. */
+    //    &xHandle);
+    //configASSERT(pdPASS == xReturned);
 
     crash_handler_init();
 

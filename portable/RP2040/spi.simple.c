@@ -40,6 +40,8 @@ bool my_spi_init(spi_t *this) {
     // The SPI may be shared (using multiple SSs); protect it
     this->mutex = xSemaphoreCreateRecursiveMutex();
 
+    LED_INIT();
+
     return true;
 }
 

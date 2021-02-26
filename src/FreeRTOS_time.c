@@ -7,7 +7,6 @@
 #include "hardware/rtc.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
-#include "pico/util/datetime.h"
 
 //
 #include "util.h"  // calculate_checksum
@@ -65,7 +64,7 @@ void FreeRTOS_time_init() {
     {
         datetime_t t = {0, 0, 0, 0, 0, 0, 0};
         rtc_get_datetime(&t);
-        if (!rtc_running() || (!t.year && rtc_save.datetime.year)) {
+        if (!t.year && rtc_save.datetime.year) {
             uint32_t xor_checksum = calculate_checksum(
                 (uint32_t *)&rtc_save, offsetof(rtc_save_t, checksum));
             if (rtc_save.signature == 0xBABEBABE &&
@@ -84,6 +83,13 @@ void FreeRTOS_time_init() {
         // Negative delay so means we will call repeating_timer_callback, and
         // call it again 500ms later regardless of how long the callback took to
         // execute
+        add_repeating_timer_ms(-1000, repeating_timer_callback, NULL, &timer);
+    }
+}
+
+void setrtc(datetime_t *t) { 
+    rtc_set_datetime(t);
+    if (rtc_running()) {
         add_repeating_timer_ms(-1000, repeating_timer_callback, NULL, &timer);
     }
 }

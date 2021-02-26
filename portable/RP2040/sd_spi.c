@@ -50,12 +50,14 @@ static void sd_spi_select(sd_card_t *this) {
     asm volatile("nop \n nop \n nop");  // FIXME
     gpio_put(this->ss_gpio, 0);
     asm volatile("nop \n nop \n nop");  // FIXME
+    LED_ON();
 }
 
 static void sd_spi_deselect(sd_card_t *this) {
     asm volatile("nop \n nop \n nop");  // FIXME
     gpio_put(this->ss_gpio, 1);
     asm volatile("nop \n nop \n nop");  // FIXME
+    LED_OFF();
     /*
     MMC/SDC enables/disables the DO output in synchronising to the SCLK. This
     means there is a posibility of bus conflict with MMC/SDC and another SPI

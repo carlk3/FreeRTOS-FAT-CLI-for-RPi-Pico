@@ -100,7 +100,6 @@ target_include_directories(Lab-Project-FreeRTOS-FAT PUBLIC
 )
 target_include_directories(FreeRTOS+FAT+CLI PUBLIC 
         include/ 
-        ../pico-sdk/src/rp2_common/hardware_rtc/include/
         FreeRTOS-Kernel/include 
         FreeRTOS-Kernel/portable/GCC/ARM_CM0
         Lab-Project-FreeRTOS-FAT/include/
@@ -110,6 +109,7 @@ target_include_directories(FreeRTOS+FAT+CLI PUBLIC
 
 # Add any user requested libraries
 target_link_libraries(FreeRTOS+FAT+CLI
+        pico_multicore
         hardware_spi
         hardware_dma
         hardware_clocks

@@ -103,11 +103,7 @@
 #define xPortSysTickHandler isr_systick
 
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 
-//#define portGET_RUN_TIME_COUNTER_VALUE() time_us_32()
-//#define portGET_RUN_TIME_COUNTER_VALUE() (timer_hw->timerawl)
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
-//#define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64())
-//#define portGET_RUN_TIME_COUNTER_VALUE() (timer_hw->timelr)
 
 /* A header file that defines trace macro can be included here. */
 

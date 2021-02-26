@@ -83,6 +83,7 @@
 #include "FreeRTOS.h"
 #include "ff_time.h"
 #include "task.h"
+#include "FreeRTOS_time.h"
 
 /* FreeRTOS+CLI includes. */
 #include "CLI-commands.h"
@@ -706,7 +707,7 @@ static const CLI_Command_Definition_t xReset = {
     0 /* No parameters are expected. */
 };
 /*-----------------------------------------------------------*/
-static BaseType_t setrtc(char *pcWriteBuffer, size_t xWriteBufferLen,
+static BaseType_t setrtc_cmd(char *pcWriteBuffer, size_t xWriteBufferLen,
                          const char *pcCommandString) {
     (void)pcWriteBuffer;
     (void)xWriteBufferLen;
@@ -769,8 +770,8 @@ static BaseType_t setrtc(char *pcWriteBuffer, size_t xWriteBufferLen,
                     .hour = hour,
                     .min = min,
                     .sec = sec};
-    bool r = rtc_set_datetime(&t);
-    configASSERT(r);
+    //bool r = rtc_set_datetime(&t);
+    setrtc(&t);
 
     return pdFALSE;
 }
@@ -780,7 +781,7 @@ static const CLI_Command_Definition_t xSetRTC = {
     " Set Real Time Clock\n"
     " Parameters: new date (DD MM YY) new time in 24-hour format (hh "
     "mm ss)\n",
-    setrtc, /* The function to run. */
+    setrtc_cmd, /* The function to run. */
     6       /* parameters are expected. */
 };
 /*-----------------------------------------------------------*/

@@ -18,15 +18,17 @@
 #include "FreeRTOS.h"
 //
 #include "FreeRTOS_time.h"
+#include "queue.h"
 #include "task.h"
-
 // Pico
+#include "pico/stdlib.h"
+//
+#include "hardware/irq.h"
 #include "hardware/rtc.h"
 #include "pico/error.h"
+#include "pico/multicore.h"
 #include "pico/stdio.h"
-#include "pico/stdlib.h"
 #include "pico/util/datetime.h"
-
 //
 #include "CLI-commands.h"
 #include "File-related-CLI-commands.h"
@@ -35,11 +37,51 @@
 #include "filesystem_test_suite.h"
 #include "stdio_cli.h"
 
-// stdioTask - the function which handles input from the UART
-// Note:
-//   This initially used Task Notifications,
-//   but that caused a conflict with filesystem calls that also use
-//   Task Notifications.
+//#define TRACE_PRINTF(fmt, args...)
+#define TRACE_PRINTF printf  // task_printf
+
+static QueueHandle_t xQueue;
+
+/* Offload USB polling to the other processor so it doesn't steal all our
+ * cycles. */
+
+void core1_entry() {
+    for (;;) {
+        int cRxedChar = getchar_timeout_us(1000 * 1000);
+        /* Get the character from terminal */
+        if (PICO_ERROR_TIMEOUT == cRxedChar) {
+            continue;
+        }
+        printf("%c", cRxedChar);  // echo
+        stdio_flush();
+
+        multicore_fifo_push_blocking(cRxedChar);
+    }
+}
+
+void core0_sio_irq() {
+    multicore_fifo_clear_irq();
+    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
+     it will get set to pdTRUE inside the interrupt safe API function if a
+     context switch is required. */
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    configASSERT(xQueue);
+
+    while (multicore_fifo_rvalid()) {
+        int cRxedChar = multicore_fifo_pop_blocking();
+        xQueueSendFromISR(xQueue, &cRxedChar, &xHigherPriorityTaskWoken);
+    }
+
+    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR(). If
+     xHigherPriorityTaskWoken was set to pdTRUE inside vTaskNotifyGiveFromISR()
+     then calling portYIELD_FROM_ISR() will request a context switch. If
+     xHigherPriorityTaskWoken is still pdFALSE then calling
+     portYIELD_FROM_ISR() will have no effect. */
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// stdioTask - the function which handles input
 static void stdioTask(void *arg) {
     (void)arg;
 
@@ -49,14 +91,21 @@ static void stdioTask(void *arg) {
     BaseType_t xMoreDataToFollow = 0;
     bool in_overflow = false;
 
+    multicore_launch_core1(core1_entry);
+    irq_set_exclusive_handler(SIO_IRQ_PROC0, core0_sio_irq);
+    irq_set_enabled(SIO_IRQ_PROC0, true);
+
     for (;;) {
-        int cRxedChar = getchar_timeout_us(1000 * 1000);
-        /* Get the character from terminal */
-        if (PICO_ERROR_TIMEOUT == cRxedChar) {
-            continue;
-        }
-        printf("%c", cRxedChar);  // echo
-        stdio_flush();
+        // int cRxedChar = getchar_timeout_us(1000 * 1000);
+        ///* Get the character from terminal */
+        // if (PICO_ERROR_TIMEOUT == cRxedChar) {
+        //    continue;
+        //}
+        // printf("%c", cRxedChar);  // echo
+        // stdio_flush();
+
+        int cRxedChar;
+        xQueueReceive(xQueue, &cRxedChar, portMAX_DELAY);
 
         static bool first = true;
         if (first) {
@@ -73,18 +122,13 @@ static void stdioTask(void *arg) {
                     if (buf[0]) printf("\t%s", buf);
                 } while (n != 0);
             }
-
-            printf("RTC is ");
-            if (rtc_running())
-                printf("running.\n");
-            else
-                printf("not running.\n");
+            if (!rtc_running()) printf("RTC is not running.\n");
             datetime_t t = {0, 0, 0, 0, 0, 0, 0};
             rtc_get_datetime(&t);
             char datetime_buf[256] = {0};
             datetime_to_str(datetime_buf, sizeof(datetime_buf), &t);
-            printf("\r%s ", datetime_buf);
-            printf("\nFreeRTOS+CLI> ");
+            printf("%s\n", datetime_buf);
+            printf("FreeRTOS+CLI> ");
             stdio_flush();
 
             first = false;
@@ -173,6 +217,7 @@ static void stdioTask(void *arg) {
         }
     }
 }
+
 /* Start UART operation. */
 void CLI_Start() {
     vRegisterCLICommands();
@@ -180,10 +225,15 @@ void CLI_Start() {
     register_fs_tests();
     vRegisterFileSystemCLICommands();
 
-    //stdio_init_all();
+    // stdio_init_all();
     stdio_usb_init();
 
     FreeRTOS_time_init();
+
+    static StaticQueue_t xStaticQueue;
+    static uint32_t ucQueueStorageArea[8];
+    xQueue = xQueueCreateStatic(8, sizeof(uint32_t),
+                                (uint8_t *)ucQueueStorageArea, &xStaticQueue);
 
     static StackType_t xStack[1024];
     static StaticTask_t xTaskBuffer;

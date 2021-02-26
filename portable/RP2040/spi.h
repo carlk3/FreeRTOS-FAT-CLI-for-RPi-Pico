@@ -27,7 +27,7 @@
 #include "pico/types.h"
 
 #define SPI_FILL_CHAR (0xFF)
-#define XFER_BLOCK_SIZE 512 // Block size supported for SD card is 512 bytes 
+#define XFER_BLOCK_SIZE 512  // Block size supported for SD card is 512 bytes
 
 // "Class" representing SPIs
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
     dma_channel_config tx_dma_cfg;
     dma_channel_config rx_dma_cfg;
     irq_handler_t dma_isr;
-    bool initialized;  // Assigned dynamically
+    bool initialized;         // Assigned dynamically
     TaskHandle_t owner;       // Assigned dynamically
     SemaphoreHandle_t mutex;  // Assigned dynamically
 } spi_t;
@@ -53,6 +53,23 @@ void spi_irq_handler(spi_t *this);
 
 bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length);
 bool my_spi_init(spi_t *this);
+
+#define USE_LED 1
+#if USE_LED
+#   define LED_PIN 25
+#   include "hardware/gpio.h"
+#   define LED_INIT()                       \
+    {                                    \
+        gpio_init(LED_PIN);              \
+        gpio_set_dir(LED_PIN, GPIO_OUT); \
+    }
+#   define LED_ON() gpio_put(LED_PIN, 1)
+#   define LED_OFF() gpio_put(LED_PIN, 0)
+#else
+#   define LED_ON()
+#   define LED_OFF()
+#   define LED_INIT()
+#endif
 
 #endif
 /* [] END OF FILE */
