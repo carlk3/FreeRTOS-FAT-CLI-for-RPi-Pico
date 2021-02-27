@@ -452,7 +452,7 @@ static BaseType_t runMultiTaskStdioWithCWDTest(char *pcWriteBuffer,
         ff_deltree(buf);
     }
     snprintf(buf, cmdMAX_INPUT_SIZE, "/%s", pcParameter);  // Add '/' for path
-    vMultiTaskStdioWithCWDTest(buf, 1024);
+    vMultiTaskStdioWithCWDTest(buf, 768);
 
     return pdFALSE;
 }

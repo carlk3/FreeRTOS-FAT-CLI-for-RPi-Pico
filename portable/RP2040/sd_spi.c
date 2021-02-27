@@ -46,17 +46,18 @@ static void sd_spi_unlock(sd_card_t *this) {
     xSemaphoreGiveRecursive(this->spi->mutex);
 }
 
+// Would do nothing if this->ss_gpio were set to GPIO_FUNC_SPI.
 static void sd_spi_select(sd_card_t *this) {
-    asm volatile("nop \n nop \n nop");  // FIXME
+    //asm volatile("nop \n nop \n nop");  // FIXME
     gpio_put(this->ss_gpio, 0);
-    asm volatile("nop \n nop \n nop");  // FIXME
+    //asm volatile("nop \n nop \n nop");  // FIXME
     LED_ON();
 }
 
 static void sd_spi_deselect(sd_card_t *this) {
-    asm volatile("nop \n nop \n nop");  // FIXME
+    //asm volatile("nop \n nop \n nop");  // FIXME
     gpio_put(this->ss_gpio, 1);
-    asm volatile("nop \n nop \n nop");  // FIXME
+    //asm volatile("nop \n nop \n nop");  // FIXME
     LED_OFF();
     /*
     MMC/SDC enables/disables the DO output in synchronising to the SCLK. This
@@ -94,6 +95,20 @@ uint8_t sd_spi_write(sd_card_t *this, const uint8_t value) {
 bool sd_spi_transfer(sd_card_t *this, const uint8_t *tx, uint8_t *rx,
                      size_t length) {
     return spi_transfer(this->spi, tx, rx, length);
+}
+
+//void sd_spi_init_manual() {
+void sd_spi_init(sd_card_t *this) {
+    // Chip select is active-low, so we'll initialise it to a driven-high
+    // state.
+    gpio_init(this->ss_gpio);
+    gpio_put(this->ss_gpio, 1);
+    gpio_set_dir(this->ss_gpio, GPIO_OUT);
+}
+void sd_spi_init_pl022(sd_card_t *this) {
+    // Let the PL022 SPI handle it.
+    // the CS line is brought high between each byte during transmission.
+    gpio_set_function(this->ss_gpio, GPIO_FUNC_SPI);
 }
 
 /* [] END OF FILE */

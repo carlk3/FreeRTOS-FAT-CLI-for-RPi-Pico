@@ -13,6 +13,8 @@
 //
 #include "pico/stdlib.h"
 //
+#include "FreeRTOS.h"
+//
 #include "spi.h"
 
 void spi_irq_handler(spi_t *this) {
@@ -51,6 +53,7 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     configASSERT(512 == length);
     configASSERT(tx || rx);
     // configASSERT(!(tx && rx));
+
 
     // Would have to be static if this function could return before DMA
     // completes:
@@ -94,7 +97,6 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
 
     /* Timeout 1 sec */
     uint32_t timeOut = 1000;
-
     /* Wait until master completes transfer or time out has occured. */
     /* Wait 2x, for RX and SPI to complete. */
     // uint32_t ulTaskNotifyTake( BaseType_t xClearCountOnExit, TickType_t
@@ -138,6 +140,7 @@ bool my_spi_init(spi_t *this) {
     gpio_set_function(this->miso_gpio, GPIO_FUNC_SPI);
     gpio_set_function(this->mosi_gpio, GPIO_FUNC_SPI);
     gpio_set_function(this->sck_gpio, GPIO_FUNC_SPI);
+    // ss_gpio is initialized in sd_spi_init()
 
     // SD cards' DO MUST be pulled up.
     gpio_pull_up(this->miso_gpio);
@@ -145,6 +148,7 @@ bool my_spi_init(spi_t *this) {
     // Grab some unused dma channels
     this->tx_dma = dma_claim_unused_channel(true);
     this->rx_dma = dma_claim_unused_channel(true);
+
     this->tx_dma_cfg = dma_channel_get_default_config(this->tx_dma);
     this->rx_dma_cfg = dma_channel_get_default_config(this->rx_dma);
     channel_config_set_transfer_data_size(&this->tx_dma_cfg, DMA_SIZE_8);
@@ -174,6 +178,7 @@ bool my_spi_init(spi_t *this) {
     // Configure the processor to run dma_handler() when DMA IRQ 0 is
     // asserted
     irq_set_exclusive_handler(DMA_IRQ_0, this->dma_isr);
+
     // Tell the DMA to raise IRQ line 0 when the channel finishes a block
     dma_channel_set_irq0_enabled(this->rx_dma, true);
     irq_set_enabled(DMA_IRQ_0, true);

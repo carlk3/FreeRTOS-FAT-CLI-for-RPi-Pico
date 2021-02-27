@@ -38,10 +38,11 @@ static spi_t spi[] = {  // One for each SPI.
         .miso_gpio = 19,
         .mosi_gpio = 16,
         .sck_gpio = 18,
+        //.baud_rate = 1000 * 1000,  // The limitation here is SPI slew rate.
         .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
         //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
         // worked for me.
-        
+
         // Following attributes are dynamically assigned
         .dma_isr = spi0_dma_isr,
         .initialized = false,  // initialized flag
@@ -58,7 +59,6 @@ static sd_card_t sd_cards[] = {  // One for each SD card
      .card_detected_true = 1,    // What the GPIO read returns when a card is
                                  // present. Use -1 if there is no card detect.
      // Following attributes are dynamically assigned
-     .card_detect_task = 0,
      .m_Status = STA_NOINIT,
      .sectors = 0,
      .card_type = 0,

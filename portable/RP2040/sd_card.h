@@ -33,7 +33,7 @@ typedef struct {
     const uint card_detect_gpio;    // Card detect
     const uint card_detected_true;  // Varies with card socket
     const gpio_irq_callback_t card_detect_callback;  // Port Interrupt callback
-    TaskHandle_t card_detect_task;                   // handles card detect ISRs
+    //TaskHandle_t card_detect_task;                   // handles card detect ISRs
     int m_Status;                                    // Card status
     uint64_t sectors;                                // Assigned dynamically
     int card_type;                                   // Assigned dynamically

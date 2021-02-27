@@ -353,6 +353,8 @@ static int sd_cmd(sd_card_t *this, cmdSupported cmd, uint32_t arg, bool isAcmd,
     int32_t status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint32_t response;
 
+    configASSERT(xTaskGetCurrentTaskHandle() == this->spi->owner);
+
     // No need to wait for card to be ready when sending the stop command
     if (CMD12_STOP_TRANSMISSION != cmd) {
         if (false == sd_wait_ready(this, SD_COMMAND_TIMEOUT)) {
@@ -719,11 +721,7 @@ int sd_init(sd_card_t *this) {
     if (!my_spi_init(this->spi)) {
         return this->m_Status;
     }
-    // Chip select is active-low, so we'll initialise it to a driven-high
-    // state
-    gpio_init(this->ss_gpio);
-    gpio_put(this->ss_gpio, 1);
-    gpio_set_dir(this->ss_gpio, GPIO_OUT);
+    sd_spi_init(this);
 
     // sd_card_detect_start(this);
 
