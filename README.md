@@ -19,6 +19,25 @@ It is wrapped up in a complete runnable project, with a command line interface p
 * Supports Real Time Clock for maintaining file and directory time stamps
 * Supports Cyclic Redundancy Check (CRC)
 
+## Performance
+Writing and reading a file of 0x10000000 (268,435,456) bytes (1/4 GiB) on a SanDisk 32GB card with SPI baud rate 12,500,000:
+* Writing
+  * Elapsed seconds 376
+  * Transfer rate 697 KiB/s
+* Reading
+  * Elapsed seconds 315
+  * Transfer rate 832 KiB/s
+
+Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,833,333:
+* Writing
+  * Elapsed seconds 226
+  * Transfer rate 1159 KiB/s
+* Reading
+  * Elapsed seconds 232
+  * Transfer rate 1129 KiB/s
+
+ [but SDIO would be faster!]
+
 ## Prerequisites:
 * Raspberry Pi Pico
 * Something like the [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
