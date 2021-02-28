@@ -78,6 +78,6 @@ void vLoggingPrintf( const char *pcFormat, ... )
 	vsnprintf( pcBuffer, sizeof(pcBuffer), pcFormat, xArgs );
 	va_end( xArgs );
     printf("%s", pcBuffer);
-//    fflush(stdout);
+    fflush(stdout);
 }
 /*-----------------------------------------------------------*/

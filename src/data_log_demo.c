@@ -1,0 +1,186 @@
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <time.h>
+//
+#include "hardware/adc.h"
+#include "pico/stdlib.h"
+//
+#include "FreeRTOS.h"
+//
+#include "FreeRTOS_CLI.h"
+#include "ff_headers.h"
+#include "ff_stdio.h"
+#include "task.h"
+//
+//#include "sd_card.h"
+#include "ff_utils.h"
+
+#define DEVICENAME "sd0"
+#define MOUNTPOINT "/sd0"
+
+#define TRACE_PRINTF(fmt, args...)
+//#define TRACE_PRINTF printf
+
+extern bool die_now;
+
+static TaskHandle_t th;
+
+static FF_FILE *open_file() {
+    const time_t timer = FreeRTOS_time(NULL);
+    struct tm tmbuf;
+    struct tm *ptm = localtime_r(&timer, &tmbuf);
+    char filename[64];
+    //  tm_year	int	years since 1900
+    //  tm_mon	int	months since January	0-11
+    //  tm_mday	int	day of the month	1-31
+    size_t n = snprintf(filename, sizeof filename, "%s/data/%04d-%02d-%02d",
+                        MOUNTPOINT, tmbuf.tm_year + 1900, tmbuf.tm_mon + 1,
+                        tmbuf.tm_mday);
+    configASSERT(n < sizeof filename);
+    if (-1 == mkdirhier(filename) &&
+        stdioGET_ERRNO() != pdFREERTOS_ERRNO_EEXIST) {
+        FF_FAIL("mkdirhier", filename);
+        return NULL;
+    }
+    n = strftime(filename + n, sizeof filename - n, "/%H.csv", &tmbuf);
+    configASSERT(n);
+    FF_FILE *pFile = ff_fopen(filename, "a");
+    if (!pFile) {
+        FF_FAIL("ff_fopen", filename);
+        return NULL;
+    }
+    return pFile;
+}
+
+static void DemoTask(void *arg) {
+    (void)arg;
+
+    printf("%s started\n", pcTaskGetName(NULL));
+
+    FF_Disk_t *pxDisk = NULL;
+
+    if (!mount(&pxDisk, DEVICENAME, MOUNTPOINT)) goto quit;
+
+    FF_FILE *pxFile = open_file();
+    if (!pxFile) goto quit;
+
+    ff_fseek(pxFile, 0, FF_SEEK_END);
+    if (0 == ff_ftell(pxFile)) {
+        // Print header
+        int lResult = ff_fprintf(pxFile, "Date,Time,Temperature (°C)\n");
+        if (lResult < 0) {
+            FAIL("ff_fprintf");
+            goto quit;
+        }
+    }
+    int lResult = ff_fclose(pxFile);
+    if (-1 == lResult) {
+        FAIL("ff_fclose");
+        goto quit;
+    }
+
+    adc_init();
+
+    /* The xLastWakeTime variable needs to be initialized with the current
+     tick count. Note that this is the only time the variable is written to
+     explicitly. After this xLastWakeTime is automatically updated within
+     vTaskDelayUntil(). */
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+
+    while (!die_now) {
+        // Form date-time string
+        char buf[128];
+        const time_t timer = FreeRTOS_time(NULL);
+        struct tm tmbuf;
+        struct tm *ptm = localtime_r(&timer, &tmbuf);
+        size_t n = strftime(buf, sizeof buf, "%F,%T,", ptm);
+        configASSERT(n);
+        // The temperature sensor is on input 4:
+        adc_select_input(4);
+
+        uint16_t result = adc_read();
+        // 12-bit conversion, assume max value == ADC_VREF == 3.3 V
+        const float conversion_factor = 3.3f / (1 << 12);
+        float voltage = conversion_factor * result;
+        TRACE_PRINTF("Raw value: 0x%03x, voltage: %f V\n", result, (double)voltage);
+
+        // Temperature sensor values can be approximated in centigrade as:
+        //    T = 27 - (ADC_Voltage - 0.706)/0.001721
+        float Tc = 27.0f - (voltage - 0.706f) / 0.001721f;
+        TRACE_PRINTF("Temperature: %.1f °C\n", (double)Tc);
+        int nw = snprintf(buf + n, sizeof buf - n, "%g\n", (double)Tc);
+        configASSERT(0 < nw && nw < sizeof buf);
+
+        /* It's very inefficient to open and close the file for every record,
+        but you're less likely to lose data that way. */
+
+        pxFile = open_file();
+        if (!pxFile) break;
+
+        lResult = ff_fprintf(pxFile, "%s", buf);
+        if (lResult < 0) {
+            FAIL("ff_fprintf");
+            break;
+        }
+
+        ff_fclose(pxFile);
+        if (-1 == lResult) {
+            FAIL("ff_fclose");
+            break;
+        }
+
+        /* This task should execute every 1000 milliseconds exactly (once
+         per second). As per the vTaskDelay() function, time is measured in
+         ticks, and the pdMS_TO_TICKS() macro is used to convert
+         milliseconds into ticks. xLastWakeTime is automatically updated
+         within
+         vTaskDelayUntil(), so is not explicitly updated by the task. */
+        // vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
+
+        // BaseType_t xTaskDelayUntil( TickType_t *pxPreviousWakeTime, const
+        // TickType_t xTimeIncrement );
+        /* Delay a task until a specified time.  This function can be used
+        by periodic  tasks to ensure a constant execution frequency. Whereas
+        vTaskDelay () specifies a wake time relative to the time at which
+        the function is called, xTaskDelayUntil () specifies the absolute
+        (exact) time at which it wishes to unblock.  */
+        BaseType_t xWasDelayed =
+            xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+        if (!xWasDelayed)
+            task_printf("%s is behind schedule\n", pcTaskGetName(NULL));
+    }
+quit:
+    printf("%s ending\n", pcTaskGetName(NULL));
+    th = NULL;
+    vTaskDelete(NULL);
+}
+
+static void data_log_demo() {
+    static StackType_t xStack[1024];
+    static StaticTask_t xTaskBuffer;
+    th = xTaskCreateStatic(
+        DemoTask, "DemoTask", sizeof xStack / sizeof xStack[0], 0,
+        tskIDLE_PRIORITY + 2, /* Priority at which the task is created. */
+        xStack, &xTaskBuffer);
+    configASSERT(th);
+}
+
+/*-----------------------------------------------------------*/
+static BaseType_t data_log_demo_cmd(char *pcWriteBuffer, size_t xWriteBufferLen,
+                                    const char *pcCommandString) {
+    (void)pcCommandString;
+    (void)pcWriteBuffer;
+    (void)xWriteBufferLen;
+
+    data_log_demo();
+
+    return pdFALSE;
+}
+const CLI_Command_Definition_t xDataLogDemo = {
+    "data_log_demo", /* The command string to type. */
+    "\ndata_log_demo:\n Launch data logging task\n",
+    data_log_demo_cmd, /* The function to run. */
+    0                  /* No parameters are expected. */
+};
+/*-----------------------------------------------------------*/

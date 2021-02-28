@@ -98,9 +98,6 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     /* Timeout 1 sec */
     uint32_t timeOut = 1000;
     /* Wait until master completes transfer or time out has occured. */
-    /* Wait 2x, for RX and SPI to complete. */
-    // uint32_t ulTaskNotifyTake( BaseType_t xClearCountOnExit, TickType_t
-    // xTicksToWait );
     rc = ulTaskNotifyTake(
         pdFALSE, pdMS_TO_TICKS(timeOut));  // Wait for notification from ISR
     if (!rc) {

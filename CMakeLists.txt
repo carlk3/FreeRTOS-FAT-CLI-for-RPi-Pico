@@ -46,6 +46,7 @@ add_executable(FreeRTOS+FAT+CLI
         src/tests/big_file_test.c
         src/tests/ff_stdio_tests_with_cwd.c
         src/tests/my_test.c
+        src/data_log_demo.c
 )
 
 pico_set_program_name(FreeRTOS+FAT+CLI "FreeRTOS+FAT+CLI")
@@ -85,7 +86,15 @@ add_library(Lab-Project-FreeRTOS-FAT STATIC
 )
 
 target_link_libraries(FreeRTOS-Kernel pico_stdlib)
-target_link_libraries(Lab-Project-FreeRTOS-FAT pico_stdlib)
+target_link_libraries(Lab-Project-FreeRTOS-FAT 
+        pico_multicore
+        hardware_adc
+        hardware_spi
+        hardware_dma
+        hardware_clocks
+        hardware_rtc
+        pico_stdlib
+)
 
 target_include_directories(FreeRTOS-Kernel PUBLIC 
         include/ 
@@ -106,14 +115,10 @@ target_include_directories(FreeRTOS+FAT+CLI PUBLIC
         portable/RP2040/
 )
 #target_compile_options(FreeRTOS+FAT+CLI PRIVATE -save-temps)
+#target_compile_options(FreeRTOS+FAT+CLI PRIVATE -Wundef -Wshadow -Wdouble-promotion)
 
 # Add any user requested libraries
 target_link_libraries(FreeRTOS+FAT+CLI
-        pico_multicore
-        hardware_spi
-        hardware_dma
-        hardware_clocks
-        hardware_rtc
         Lab-Project-FreeRTOS-FAT
         FreeRTOS-Kernel
         )

@@ -225,6 +225,9 @@ void CLI_Start() {
     register_fs_tests();
     vRegisterFileSystemCLICommands();
 
+    extern const CLI_Command_Definition_t xDataLogDemo;
+    FreeRTOS_CLIRegisterCommand(&xDataLogDemo);
+
     // stdio_init_all();
     stdio_usb_init();
 
