@@ -97,11 +97,6 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 ```    
 * The `help` command describes the available commands:
 ```    
-    help:
-     Lists all the registered commands.
-    
-    Prefix command with "time " to time execution.
-    
     task-stats:
      Displays a table showing the state of each FreeRTOS task
     
@@ -121,14 +116,12 @@ I just referred to the table above, wiring point-to-point from the Pin column on
     
     date:
      Print current date and time
+     
     die:
      Kill background tasks
     
     undie:
      Allow background tasks to live again
-    
-    test <number>:
-     Development test
     
     reset:
      Soft system reset
@@ -197,9 +190,19 @@ I just referred to the table above, wiring point-to-point from the Pin column on
     
     pwd:
      Print Working Directory
-    
-    > 
+     
+    data_log_demo:
+     Launch data logging task
+     
 ```
+## Next Steps
+There is a demonstration data logging application in `FreeRTOS-FAT-CLI-for-RPi-Pico/src/data_log_demo.c`. 
+It runs as a separate task, and can be launched from the CLI with the `data_log_demo` command.
+(Stop it with the `die` command.)
+It records the temperature as reported by the RP2040 internal Temperature Sensor once per second 
+in files named something like `/sd0/data/2021-02-27/21.csv`.
+Use this as a starting point for your own data logging application!
+
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
 Happy hacking!
 
