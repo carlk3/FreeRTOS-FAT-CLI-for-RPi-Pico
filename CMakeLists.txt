@@ -18,6 +18,10 @@ project(FreeRTOS+FAT+CLI C CXX ASM)
 
 #set(PICO_CXX_ENABLE_RTTI 1)
 
+set(PARAM_ASSERTIONS_ENABLE_ALL 1)
+
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
+
 # Initialise the Pico SDK
 pico_sdk_init()
 
@@ -46,14 +50,15 @@ add_executable(FreeRTOS+FAT+CLI
         src/tests/big_file_test.c
         src/tests/ff_stdio_tests_with_cwd.c
         src/tests/my_test.c
+        src/tests/mt_lliot.c
         src/data_log_demo.c
 )
 
 pico_set_program_name(FreeRTOS+FAT+CLI "FreeRTOS+FAT+CLI")
 pico_set_program_version(FreeRTOS+FAT+CLI "0.1")
 
-pico_enable_stdio_uart(FreeRTOS+FAT+CLI 0)
-pico_enable_stdio_usb(FreeRTOS+FAT+CLI 1)
+pico_enable_stdio_uart(FreeRTOS+FAT+CLI 1)
+pico_enable_stdio_usb(FreeRTOS+FAT+CLI 0)
 
 # Add the standard library to the build
 target_link_libraries(FreeRTOS+FAT+CLI pico_stdlib)
@@ -93,6 +98,7 @@ target_link_libraries(Lab-Project-FreeRTOS-FAT
         hardware_dma
         hardware_clocks
         hardware_rtc
+        hardware_timer
         pico_stdlib
 )
 
@@ -115,7 +121,8 @@ target_include_directories(FreeRTOS+FAT+CLI PUBLIC
         portable/RP2040/
 )
 #target_compile_options(FreeRTOS+FAT+CLI PRIVATE -save-temps)
-#target_compile_options(FreeRTOS+FAT+CLI PRIVATE -Wundef -Wshadow -Wdouble-promotion)
+#target_compile_options(FreeRTOS+FAT+CLI PRIVATE -Wall, -Wextra -Wshadow -Wdouble-promotion)
+target_compile_options(FreeRTOS+FAT+CLI PRIVATE -Wall -Wno-unused-function -Wno-unused-parameter)
 
 # Add any user requested libraries
 target_link_libraries(FreeRTOS+FAT+CLI

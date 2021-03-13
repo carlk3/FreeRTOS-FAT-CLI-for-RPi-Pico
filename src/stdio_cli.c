@@ -49,9 +49,7 @@ void core1_entry() {
     for (;;) {
         int cRxedChar = getchar_timeout_us(1000 * 1000);
         /* Get the character from terminal */
-        if (PICO_ERROR_TIMEOUT == cRxedChar) {
-            continue;
-        }
+        if (PICO_ERROR_TIMEOUT == cRxedChar) continue;
         printf("%c", cRxedChar);  // echo
         stdio_flush();
 
@@ -93,6 +91,10 @@ static void stdioTask(void *arg) {
 
     multicore_launch_core1(core1_entry);
     irq_set_exclusive_handler(SIO_IRQ_PROC0, core0_sio_irq);
+
+    /* Any interrupt that uses interrupt-safe FreeRTOS API functions ust also
+     * execute at the priority defined by configKERNEL_INTERRUPT_PRIORITY. */
+    irq_set_priority(SIO_IRQ_PROC0, 0xFF);  // Lowest urgency.
     irq_set_enabled(SIO_IRQ_PROC0, true);
 
     for (;;) {
@@ -229,7 +231,7 @@ void CLI_Start() {
     FreeRTOS_CLIRegisterCommand(&xDataLogDemo);
 
     // stdio_init_all();
-    stdio_usb_init();
+    stdio_init_all();
 
     FreeRTOS_time_init();
 

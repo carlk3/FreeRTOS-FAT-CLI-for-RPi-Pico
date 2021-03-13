@@ -12,12 +12,11 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-
+//
 #include "hardware/timer.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
-
-// For pcTaskGetName:
+//
 #include "FreeRTOS.h"
 #include "ff_stdio.h"
 #include "task.h"
@@ -28,6 +27,7 @@
 
 //
 #include "crash.h"
+#include "my_debug.h"
 
 static time_t start_time;
 
@@ -36,13 +36,30 @@ time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
 
 bool DBG_Connected() { return false; }
 
+static SemaphoreHandle_t xSemaphore;
+static BaseType_t printf_locked;
+static void lock_printf() {
+    static StaticSemaphore_t xMutexBuffer;
+    static bool initialized;
+    if (!__atomic_test_and_set(&initialized, __ATOMIC_SEQ_CST)) {
+        xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
+    }
+    configASSERT(xSemaphore);
+    printf_locked = xSemaphoreTake(xSemaphore, pdMS_TO_TICKS(1000));
+}
+static void unlock_printf() {
+    if (pdTRUE == printf_locked) xSemaphoreGive(xSemaphore);
+}
+
 void task_printf(const char *pcFormat, ...) {
     char pcBuffer[256] = {0};
     va_list xArgs;
     va_start(xArgs, pcFormat);
     vsnprintf(pcBuffer, sizeof(pcBuffer), pcFormat, xArgs);
     va_end(xArgs);
+    lock_printf();
     printf("%s: %s", pcTaskGetName(NULL), pcBuffer);
+    unlock_printf();
     fflush(stdout);
 }
 
@@ -75,7 +92,7 @@ int ff_stdio_fail(const char *const func, char const *const str,
 }
 #endif
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 // Note: All pvPortMallocs should be checked individually,
 // but we don't expect any to fail,
 // so this can help flag problems in Debug builds.
@@ -86,7 +103,7 @@ void vApplicationMallocFailedHook(void) {
     vTaskSuspendAll();
     __BKPT(5);
 }
-#endif
+//#endif
 
 /*******************************************************************************
  * Function Name: configure_fault_register
@@ -126,10 +143,10 @@ void configure_fault_register(void) {
 
 void my_assert_func(const char *file, int line, const char *func,
                     const char *pred) {
-//    gpio_put(15, 1);  // DEBUG
-
-    printf("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
-           pred, file, line, func);
+    TRIG();  // DEBUG
+    task_printf("%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
+           pcTaskGetName(NULL), pred, file, line, func);
+    fflush(stdout);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
     if (DBG_Connected()) {
@@ -142,6 +159,7 @@ void my_assert_func(const char *file, int line, const char *func,
 
 void assert_always_func(const char *file, int line, const char *func,
                         const char *pred) {
+    TRIG();  // DEBUG
     printf("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
            pred, file, line, func);
     vTaskSuspendAll();
@@ -155,9 +173,85 @@ void assert_always_func(const char *file, int line, const char *func,
 }
 
 void assert_case_not_func(const char *file, int line, const char *func, int v) {
+    TRIG();  // DEBUG
     char pred[128];
     snprintf(pred, sizeof pred, "case not %d", v);
     assert_always_func(file, line, func, pred);
+}
+
+void assert_case_is(const char *file, int line, const char *func, int v,
+                   int expected) {
+    TRIG();  // DEBUG
+    char pred[128];
+    snprintf(pred, sizeof pred, "%d is %d", v, expected);
+    assert_always_func(file, line, func, pred);
+}
+
+void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
+    int n = 0;
+    for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
+        for (size_t col = 0; col < 32 && byte_ix < nbytes; ++col, ++byte_ix) {
+            n += snprintf(buf + n, buf_sz - n, "%02hhx ", pbytes[byte_ix]);
+            configASSERT(0 < n && n < buf_sz);
+       }
+        n += snprintf(buf + n, buf_sz - n, "\n");
+        configASSERT(0 < n && n < buf_sz);
+    }
+}
+void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
+    lock_printf();
+    printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
+           pbytes, nbytes);
+    fflush(stdout);
+    size_t col = 0; 
+    for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {        
+        printf("%02hhx ", pbytes[byte_ix]);
+        if (++col > 31) {
+            printf("\n");
+            col = 0;
+        }
+        fflush(stdout);
+    }
+    unlock_printf();
+}
+// nwords is size in WORDS!
+void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
+    lock_printf();
+    printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
+           pwords, nwords);
+    fflush(stdout);
+    size_t col = 0; 
+    for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {
+        printf("%08lx ", pwords[word_ix]);
+        if (++col > 7) {
+            printf("\n");
+            col = 0;
+        }
+        fflush(stdout);
+    }
+    unlock_printf();
+}
+// nwords is size in bytes
+bool compare_buffers_8(const char *s0, const uint8_t *pbytes0, const char *s1,
+                       const uint8_t *pbytes1, const size_t nbytes) {
+    /* Verify the data. */
+    if (0 != memcmp(pbytes0, pbytes1, nbytes)) {
+        hexdump_8(s0, pbytes0, nbytes);
+        hexdump_8(s1, pbytes1, nbytes);
+        return false;
+    }
+    return true;
+}
+// nwords is size in WORDS!
+bool compare_buffers_32(const char *s0, const uint32_t *pwords0, const char *s1,
+                        const uint32_t *pwords1, const size_t nwords) {
+    /* Verify the data. */
+    if (0 != memcmp(pwords0, pwords1, nwords * sizeof(uint32_t))) {
+        hexdump_32(s0, pwords0, nwords);
+        hexdump_32(s1, pwords1, nwords);
+        return false;
+    }
+    return true;
 }
 
 /* configSUPPORT_STATIC_ALLOCATION is set to 1, so the application must provide

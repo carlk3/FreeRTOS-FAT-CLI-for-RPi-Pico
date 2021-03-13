@@ -34,11 +34,11 @@ void spi_irq_handler(spi_t *this) {
                                          // notification is being sent.
                            &xHigherPriorityTaskWoken);
 
-    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR(). If
-     xHigherPriorityTaskWoken was set to pdTRUE inside vTaskNotifyGiveFromISR()
-     then calling portYIELD_FROM_ISR() will request a context switch. If
-     xHigherPriorityTaskWoken is still pdFALSE then calling
-     portYIELD_FROM_ISR() will have no effect. */
+    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
+    If xHigherPriorityTaskWoken was set to pdTRUE inside
+     vTaskNotifyGiveFromISR() then calling portYIELD_FROM_ISR() will
+     request a context switch. If xHigherPriorityTaskWoken is still
+     pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -50,18 +50,13 @@ void spi_irq_handler(spi_t *this) {
 
 bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     configASSERT(xTaskGetCurrentTaskHandle() == this->owner);
-    configASSERT(512 == length);
     configASSERT(tx || rx);
-    // configASSERT(!(tx && rx));
 
-
-    // Would have to be static if this function could return before DMA
-    // completes:
-    uint8_t dummy = SPI_FILL_CHAR;
     // tx write increment is already false
     if (tx) {
         channel_config_set_read_increment(&this->tx_dma_cfg, true);
     } else {
+        const static uint8_t dummy = SPI_FILL_CHAR;
         tx = &dummy;
         channel_config_set_read_increment(&this->tx_dma_cfg, false);
     }
@@ -69,6 +64,7 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     if (rx) {
         channel_config_set_write_increment(&this->rx_dma_cfg, true);
     } else {
+        static uint8_t dummy = 0xA5;
         rx = &dummy;
         channel_config_set_write_increment(&this->rx_dma_cfg, false);
     }
@@ -81,15 +77,15 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     dma_channel_configure(this->tx_dma, &this->tx_dma_cfg,
                           &spi_get_hw(this->hw_inst)->dr,  // write address
                           tx,                              // read address
-                          XFER_BLOCK_SIZE,  // element count (each element is of
-                                            // size transfer_data_size)
-                          false);           // start
+                          length,  // element count (each element is of
+                                   // size transfer_data_size)
+                          false);  // start
     dma_channel_configure(this->rx_dma, &this->rx_dma_cfg,
                           rx,                              // write address
                           &spi_get_hw(this->hw_inst)->dr,  // read address
-                          XFER_BLOCK_SIZE,  // element count (each element is of
-                                            // size transfer_data_size)
-                          false);           // start
+                          length,  // element count (each element is of
+                                   // size transfer_data_size)
+                          false);  // start
 
     // start them exactly simultaneously to avoid races (in extreme cases
     // the FIFO could overflow)
@@ -110,6 +106,10 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
                    pcTaskGetName(xTaskGetCurrentTaskHandle()), __FUNCTION__);
         return false;
     }
+    // Shouldn't be necessary:
+    dma_channel_wait_for_finish_blocking(this->tx_dma);
+    dma_channel_wait_for_finish_blocking(this->rx_dma);
+
     configASSERT(!dma_channel_is_busy(this->tx_dma));
     configASSERT(!dma_channel_is_busy(this->rx_dma));
 
@@ -175,6 +175,10 @@ bool my_spi_init(spi_t *this) {
     // Configure the processor to run dma_handler() when DMA IRQ 0 is
     // asserted
     irq_set_exclusive_handler(DMA_IRQ_0, this->dma_isr);
+
+    /* Any interrupt that uses interrupt-safe FreeRTOS API functions must also
+     * execute at the priority defined by configKERNEL_INTERRUPT_PRIORITY. */
+    irq_set_priority(DMA_IRQ_0, 0xFF);  // Lowest urgency.
 
     // Tell the DMA to raise IRQ line 0 when the channel finishes a block
     dma_channel_set_irq0_enabled(this->rx_dma, true);

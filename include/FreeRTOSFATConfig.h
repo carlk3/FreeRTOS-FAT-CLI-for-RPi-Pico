@@ -319,7 +319,8 @@ console before the network is connected then a UDP port after the network has
 connected. */
 extern void vLoggingPrintf( const char *pcFormatString, ... ) __attribute__ ((format (printf, 1, 2)));
 //#define FF_PRINTF vLoggingPrintf
-#define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
+//#define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
+#define FF_PRINTF   task_printf
 
 /* Visual studio does not have an implementation of strcasecmp().
 _RB_ Cannot use FF_NOSTRCASECMP setting as the internal implementation of

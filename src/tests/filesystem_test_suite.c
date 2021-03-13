@@ -452,7 +452,7 @@ static BaseType_t runMultiTaskStdioWithCWDTest(char *pcWriteBuffer,
         ff_deltree(buf);
     }
     snprintf(buf, cmdMAX_INPUT_SIZE, "/%s", pcParameter);  // Add '/' for path
-    vMultiTaskStdioWithCWDTest(buf, 768);
+    vMultiTaskStdioWithCWDTest(buf, 1024);
 
     return pdFALSE;
 }
@@ -562,10 +562,13 @@ static const CLI_Command_Definition_t xBFT = {
 
 void register_fs_tests() {
     /* Register all the command line commands defined immediately above. */
+    extern const CLI_Command_Definition_t xMTLowLevIOTests;
+
     FreeRTOS_CLIRegisterCommand(&xFormat);
     FreeRTOS_CLIRegisterCommand(&xMount);
     FreeRTOS_CLIRegisterCommand(&xEject);
     FreeRTOS_CLIRegisterCommand(&xLowLevIOTests);
+    FreeRTOS_CLIRegisterCommand(&xMTLowLevIOTests);
     FreeRTOS_CLIRegisterCommand(&xSimpleFSTest);
     FreeRTOS_CLIRegisterCommand(&xExampFiles);
     FreeRTOS_CLIRegisterCommand(&xStdioWithCWDTest);

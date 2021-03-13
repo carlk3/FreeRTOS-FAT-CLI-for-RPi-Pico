@@ -79,6 +79,9 @@
 
 #include <stdio.h>
 
+//#define TRACE_PRINTF(fmt, args...)
+#define TRACE_PRINTF task_printf
+
 #define FF_PRINTF task_printf 
 
 /* The number of bytes read/written to the example files at a time. */
@@ -130,6 +133,8 @@ static const char *pcDirectory1 = "SUB1", *pcDirectory2 = "SUB2", *pcFullPath = 
 
 void vCreateAndVerifyExampleFiles( const char *pcMountPath )
 {
+TRACE_PRINTF("%s(pcMountPath=%s)\n", __FUNCTION__, pcMountPath);
+
 	/* Create and verify a few example files using both line based and character
 	based reads and writes. */
 	prvCreateDemoFilesUsing_ff_fwrite( pcMountPath );
@@ -151,6 +156,7 @@ void vCreateAndVerifyExampleFiles( const char *pcMountPath )
 
 static void prvCreateDemoFilesUsing_ff_fwrite( const char *pcMountPath )
 {
+TRACE_PRINTF("%s(pcMountPath=%s)\n", __FUNCTION__, pcMountPath);
 BaseType_t xFileNumber, xWriteNumber;
 const BaseType_t xMaxFiles = 5;
 int32_t lItemsWritten;
@@ -210,6 +216,7 @@ char *pcRAMBuffer, *pcFileName;
 
 static void prvVerifyDemoFileUsing_ff_fread( void )
 {
+TRACE_PRINTF("%s()\n", __FUNCTION__);
 BaseType_t xFileNumber, xReadNumber;
 const BaseType_t xMaxFiles = 5;
 size_t xItemsRead, xChar;
@@ -274,6 +281,7 @@ char *pcRAMBuffer, *pcFileName;
 
 static void prvCreateDemoFileUsing_ff_fputc( const char *pcMountPath )
 {
+TRACE_PRINTF("%s(pcMountPath=%s)\n", __FUNCTION__, pcMountPath);
 int32_t iReturn, iByte, iReturned;
 FF_FILE *pxFile;
 char *pcRAMBuffer, *pcFileName;
@@ -358,6 +366,7 @@ char *pcRAMBuffer, *pcFileName;
 
 static void prvVerifyDemoFileUsing_ff_fgetc( const char *pcMountPath )
 {
+TRACE_PRINTF("%s(pcMountPath=%s)\n", __FUNCTION__, pcMountPath);
 int iByte, iReturned;
 FF_FILE *pxFile;
 char *pcRAMBuffer, *pcFileName;

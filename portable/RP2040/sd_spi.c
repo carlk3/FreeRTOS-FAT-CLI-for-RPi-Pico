@@ -29,11 +29,11 @@
 
 void sd_spi_go_high_frequency(sd_card_t *this) {
     uint actual = spi_set_baudrate(this->spi->hw_inst, this->spi->baud_rate);
-    TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
+    TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);
 }
 void sd_spi_go_low_frequency(sd_card_t *this) {
     uint actual = spi_set_baudrate(this->spi->hw_inst, 100 * 1000);
-    TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, actual);
+    TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);
 }
 
 static void sd_spi_lock(sd_card_t *this) {

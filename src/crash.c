@@ -321,7 +321,7 @@ int dump_crash_info(crash_info_t const *const pCrashInfo, int next,
                     next = crash_info_assert;
                     break;
                 default:
-                    printf("Unknown CrashInfo magic: %d\n", pCrashInfo->magic);
+                    printf("Unknown CrashInfo magic: 0x%08lx\n", pCrashInfo->magic);
                     next = 0;
             }
             {

@@ -37,7 +37,7 @@ static void vTaskCode(void* pvParameters) {
 
 int main() {
 
-#if ANALYZER
+#ifdef ANALYZER
     gpio_init(15);                  //DEBUG
     gpio_set_dir(15, GPIO_OUT);
     gpio_init(14);  // DEBUG

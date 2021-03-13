@@ -37,6 +37,26 @@ void hang() {
 // uint32_t foo __attribute__((section(".noinit")));
 uint32_t foo __attribute__((section(".uninitialized_data")));
 
+void test_hex_dump() {
+    size_t n = 1024;
+    void *p = pvPortMalloc(n * sizeof(uint32_t));
+    //void hexdump_32(const char *s, void *p, size_t n);
+    hexdump_32("test hex dump", p, n);
+    vPortFree(p);
+    p = pvPortMallocStack(n * sizeof(uint32_t));
+    hexdump_32("test hex dump", p, n);
+}
+
+void test_compare_buffers_32() {
+    // bool compare_buffers_32(const char *s0, const void *p0, const char *s1,
+                        //const void *p1, const size_t n);
+    uint32_t a0[24] = {0};
+    //memset(a0, 0, sizeof(a0));
+    uint32_t a1[24] = {0xFFFFFFFF};
+    //memset(a1, 1, sizeof(a1));
+    compare_buffers_32("a0", a0, "a1", a1, sizeof a0);
+}
+
 void my_test(int v) {
     switch (v) {
         case 1:
@@ -61,6 +81,12 @@ void my_test(int v) {
             break;
         case 8:
             printf("foo: %lx\n", foo++);
+            break;
+        case 9:
+            test_hex_dump();
+            break;
+        case 10:
+            test_compare_buffers_32();
             break;
         default:
             printf("Bad test number: %d\n", v);

@@ -169,6 +169,7 @@ static const CLI_Command_Definition_t xTaskStats = {
     0                    /* No parameters are expected. */
 };
 
+#ifdef ParameterEcho
 /* Structure that defines the "echo_3_parameters" command line command.  This
 takes exactly three parameters that the command simply echos back one at a
 time. */
@@ -190,6 +191,7 @@ static const CLI_Command_Definition_t xParameterEcho = {
     prvParameterEchoCommand, /* The function to run. */
     -1                       /* The user can enter any number of commands. */
 };
+#endif
 
 static const CLI_Command_Definition_t xCLS = {"cls", "cls:\n Clear screen\n",
                                               prvCLSCommand, 0};

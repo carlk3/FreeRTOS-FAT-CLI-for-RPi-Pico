@@ -110,7 +110,7 @@ static void create_big_file(const char *const pathname, size_t size,
     vPortFree(buff);
     /* Close the file. */
     fclose(pxFile);
-    unsigned elapsed =
+    long unsigned elapsed =
         (unsigned long)(xTaskGetTickCount() - xStart) / configTICK_RATE_HZ;
     printf("Elapsed seconds %lu\n", elapsed);
     printf("Transfer rate %lu KiB/s\n", size / elapsed / 1024);
@@ -161,7 +161,7 @@ static void check_big_file(const char *const pathname, size_t size,
     vPortFree(buff);
     /* Close the file. */
     fclose(pxFile);
-    unsigned elapsed =
+    long unsigned elapsed =
         (unsigned long)(xTaskGetTickCount() - xStart) / configTICK_RATE_HZ;
     printf("Elapsed seconds %lu\n", elapsed);
     printf("Transfer rate %lu KiB/s\n", size / elapsed / 1024);

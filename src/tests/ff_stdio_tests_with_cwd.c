@@ -92,6 +92,8 @@ multiple tasks simultaneously. */
 #define fsTASKS_TO_CREATE 2
 
 //#include "hardware/gpio.h" //DEBUG
+//#define TRACE_PRINTF(fmt, args...)
+#define TRACE_PRINTF task_printf
 
 /*
  * Examples and basic tests of the ff_truncate() function.
@@ -150,6 +152,8 @@ static void prvFileSystemAccessTask( void *pvParameters );
 
 void vStdioWithCWDTest( const char *pcMountPath )
 {
+TRACE_PRINTF("%s(pcMountPath=%s)\n", __FUNCTION__, pcMountPath);
+
 	/* Non-systematic sanity checks for the API defined in ff_stdio.c. */
 
 	/* Must come after the prvCreateDemoFilesUsing_fwrite() and
@@ -1165,6 +1169,7 @@ char *pcRAMBuffer, *pcFileName;
 
 void vMultiTaskStdioWithCWDTest( const char *const pcMountPath, uint16_t usStackSizeWords )
 {
+TRACE_PRINTF("%s(pcMountPath=%s, usStackSizeWords=%hu)\n", __FUNCTION__, pcMountPath, usStackSizeWords);
 
 // Allocate on heap to allow more than one instance of this test to run
 typedef char cDirName_t[20];
@@ -1188,6 +1193,8 @@ extern bool die_now;
 
 static void prvFileSystemAccessTask( void *pvParameters )
 {
+TRACE_PRINTF("%s()\n", __FUNCTION__);
+
 extern void vCreateAndVerifyExampleFiles( const char *pcMountPath );
 const char * const pcBasePath = ( char * ) pvParameters;
 

@@ -169,31 +169,29 @@ BaseType_t FF_SDDiskReinit( FF_Disk_t *pxDisk ) {
 
 /* Unmount the volume */
 // FF_SDDiskUnmount() calls FF_Unmount().
-BaseType_t FF_SDDiskUnmount( FF_Disk_t *pDisk ) {
-    if (!pDisk->xStatus.bIsMounted)
-        return FF_ERR_NONE;
-	FF_Error_t e = FF_Unmount(pDisk);
-	if (FF_ERR_NONE != e) {
-		FF_PRINTF("FF_Unmount error: %s\n", FF_GetErrMessage(e));
-	} else {
-		pDisk->xStatus.bIsMounted = pdFALSE;
-	}
-	return e;
+BaseType_t FF_SDDiskUnmount(FF_Disk_t *pDisk) {
+    if (!pDisk->xStatus.bIsMounted) return FF_ERR_NONE;
+    FF_Error_t e = FF_Unmount(pDisk);
+    if (FF_ERR_NONE != e) {
+        FF_PRINTF("FF_Unmount error: %s\n", FF_GetErrMessage(e));
+    } else {
+        pDisk->xStatus.bIsMounted = pdFALSE;
+    }
+    return e;
 }
 
 /* Mount the volume */
 // FF_SDDiskMount() calls FF_Mount().
-BaseType_t FF_SDDiskMount( FF_Disk_t *pDisk ) {
-    if (pDisk->xStatus.bIsMounted)
-        return FF_ERR_NONE;
-	// FF_Error_t FF_Mount( FF_Disk_t *pxDisk, BaseType_t xPartitionNumber );
-	FF_Error_t e = FF_Mount(pDisk, PARTITION_NUMBER);
-	if (FF_ERR_NONE != e) {
-		FF_PRINTF("FF_Mount error: %s\n", FF_GetErrMessage(e));
-	} else {
-		pDisk->xStatus.bIsMounted = pdTRUE;
-	}
-	return e;    
+BaseType_t FF_SDDiskMount(FF_Disk_t *pDisk) {
+    if (pDisk->xStatus.bIsMounted) return FF_ERR_NONE;
+    // FF_Error_t FF_Mount( FF_Disk_t *pxDisk, BaseType_t xPartitionNumber );
+    FF_Error_t e = FF_Mount(pDisk, PARTITION_NUMBER);
+    if (FF_ERR_NONE != e) {
+        FF_PRINTF("FF_Mount error: %s\n", FF_GetErrMessage(e));
+    } else {
+        pDisk->xStatus.bIsMounted = pdTRUE;
+    }
+    return e;
 }
 
 BaseType_t FF_SDDiskDelete(FF_Disk_t *pxDisk) {
