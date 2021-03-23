@@ -45,7 +45,7 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 * Raspberry Pi Pico C/C++ SDK
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
 * [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
-* 
+
 ![image](https://www.raspberrypi.org/documentation/rp2040/getting-started/static/64b50c4316a7aefef66290dcdecda8be/Pico-R3-SDK11-Pinout.svg "Pinout")
 
 |	    | SPI0 | GPIO | Pin   | SPI	     | MicroSD 0 |
@@ -63,7 +63,7 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 * The wiring is so simple that I didn't bother with a schematic. 
 I just referred to the table above, wiring point-to-point from the Pin column on the Pico to the MicroSD 0 column on the Transflash.
 * You can choose to use either or both of the Pico's SPIs.
-* To add a second SD card on the same SPI, connect it in parallel, except that it will need a unique GPIO for the Card Select/Slave Select (CSn).
+* To add a second SD card on the same SPI, connect it in parallel, except that it will need a unique GPIO for the Card Select/Slave Select (CSn) and another for Card Detect (CD).
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ## Firmware:
