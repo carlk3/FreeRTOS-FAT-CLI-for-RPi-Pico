@@ -28,7 +28,7 @@
 #define configUSE_ALTERNATIVE_API               0 /* Deprecated! */
 #define configQUEUE_REGISTRY_SIZE               10
 #define configUSE_QUEUE_SETS                    0
-#define configUSE_TIME_SLICING                  0   // danger
+#define configUSE_TIME_SLICING                  1   // danger
 #define configUSE_NEWLIB_REENTRANT              1   // Necessary if any floating point printfs are used!
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 5

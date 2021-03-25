@@ -50,7 +50,7 @@ static FF_FILE *open_file() {
     int n = snprintf(filename, sizeof filename, "%s/data/%04d-%02d-%02d",
                         MOUNTPOINT, tmbuf.tm_year + 1900, tmbuf.tm_mon + 1,
                         tmbuf.tm_mday);
-    configASSERT(0 < n && n < sizeof filename);
+    configASSERT(0 < n && n < (int)sizeof filename);
     if (-1 == mkdirhier(filename) &&
         stdioGET_ERRNO() != pdFREERTOS_ERRNO_EEXIST) {
         FF_FAIL("mkdirhier", filename);
@@ -114,7 +114,7 @@ static void DemoTask(void *arg) {
         float Tc = 27.0f - (voltage - 0.706f) / 0.001721f;
         TRACE_PRINTF("Temperature: %.1f °C\n", (double)Tc);
         int nw = snprintf(buf + n, sizeof buf - n, "%.3g\n", (double)Tc);
-        configASSERT(0 < nw && nw < sizeof buf);
+        configASSERT(0 < nw && nw < (int)sizeof buf);
 
         if (ff_fprintf(pxFile, "%s", buf) < 0) {
             FAIL("ff_fprintf");

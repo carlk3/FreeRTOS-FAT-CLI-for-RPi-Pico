@@ -13,7 +13,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <ctype.h>
 // FreeRTOS
 #include "FreeRTOS.h"
 //
@@ -50,7 +50,6 @@ void core1_entry() {
         int cRxedChar = getchar_timeout_us(1000 * 1000);
         /* Get the character from terminal */
         if (PICO_ERROR_TIMEOUT == cRxedChar) continue;
-        printf("%c", cRxedChar);  // echo
         stdio_flush();
 
         multicore_fifo_push_blocking(cRxedChar);
@@ -97,6 +96,8 @@ static void stdioTask(void *arg) {
     irq_set_priority(SIO_IRQ_PROC0, 0xFF);  // Lowest urgency.
     irq_set_enabled(SIO_IRQ_PROC0, true);
 
+    printf("\033[2J\033[H");  // Clear Screen
+
     for (;;) {
         // int cRxedChar = getchar_timeout_us(1000 * 1000);
         ///* Get the character from terminal */
@@ -108,11 +109,12 @@ static void stdioTask(void *arg) {
 
         int cRxedChar;
         xQueueReceive(xQueue, &cRxedChar, portMAX_DELAY);
-
+        if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
+            '\b' != cRxedChar && cRxedChar != (char)127)
+            continue;
+        printf("%c", cRxedChar);  // echo
         static bool first = true;
         if (first) {
-            printf("\033[2J\033[H");  // Clear Screen
-
             // Check fault capture from RAM:
             crash_info_t const *const pCrashInfo = crash_handler_get_info();
             if (pCrashInfo) {

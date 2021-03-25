@@ -123,7 +123,7 @@ static BaseType_t prvThreeParameterEchoCommand(char *pcWriteBuffer,
  * Implements the echo-parameters command.
  */
 static BaseType_t prvParameterEchoCommand(char *pcWriteBuffer,
-                                          size_t xWriteBufferLen,
+                                          BaseType_t xWriteBufferLen,
                                           const char *pcCommandString);
 
 static BaseType_t prvCLSCommand(char *pcWriteBuffer, size_t xWriteBufferLen,
@@ -350,7 +350,7 @@ static BaseType_t prvThreeParameterEchoCommand(char *pcWriteBuffer,
 /*-----------------------------------------------------------*/
 
 static BaseType_t prvParameterEchoCommand(char *pcWriteBuffer,
-                                          size_t xWriteBufferLen,
+                                          BaseType_t xWriteBufferLen,
                                           const char *pcCommandString) {
     const char *pcParameter;
     BaseType_t xParameterStringLength, xReturn;
@@ -388,8 +388,8 @@ static BaseType_t prvParameterEchoCommand(char *pcWriteBuffer,
             snprintf(pcWriteBuffer, xWriteBufferLen,
                      "%d: ", (int)lParameterNumber);
             // Truncate, if necessary
-            size_t m = strlen(pcWriteBuffer);
-            size_t x = xParameterStringLength + 2;  // for CRLF
+            BaseType_t m = strlen(pcWriteBuffer);
+            BaseType_t x = xParameterStringLength + 2;  // for CRLF
             int n = m + x > xWriteBufferLen ? xWriteBufferLen - m - 2
                                             : xParameterStringLength;
             if (n > 0) {

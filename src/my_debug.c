@@ -192,10 +192,10 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
         for (size_t col = 0; col < 32 && byte_ix < nbytes; ++col, ++byte_ix) {
             n += snprintf(buf + n, buf_sz - n, "%02hhx ", pbytes[byte_ix]);
-            configASSERT(0 < n && n < buf_sz);
+            configASSERT(0 < n && n < (int)buf_sz);
        }
         n += snprintf(buf + n, buf_sz - n, "\n");
-        configASSERT(0 < n && n < buf_sz);
+        configASSERT(0 < n && n < (int)buf_sz);
     }
 }
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {

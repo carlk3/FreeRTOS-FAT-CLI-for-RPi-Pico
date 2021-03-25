@@ -74,6 +74,7 @@ I just referred to the table above, wiring point-to-point from the Pin column on
   `git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI`
 * Customize:
   * Tailor `portable/RP2040/hw_config.c` to match hardware
+  * Customize `CMakeLists.txt` to `pico_enable_stdio_uart` or `pico_enable_stdio_usb`
   * Build:
 ```  
    cd FreeRTOS+FAT+CLI

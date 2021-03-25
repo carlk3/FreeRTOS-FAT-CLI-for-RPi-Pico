@@ -73,7 +73,7 @@
  //__CM0PLUS_CMSIS_VERSION_SUB  (__CM_CMSIS_VERSION_SUB)                   /*!<
  //\deprecated [15:0]  CMSIS HAL sub version */
  //#define __CM0PLUS_CMSIS_VERSION      ((__CM0PLUS_CMSIS_VERSION_MAIN << 16U) |
- //\
+ //
 //                                       __CM0PLUS_CMSIS_VERSION_SUB )  /*!<
  //                                       \deprecated CMSIS HAL version number
  //                                       */

@@ -56,7 +56,7 @@ bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length) {
     if (tx) {
         channel_config_set_read_increment(&this->tx_dma_cfg, true);
     } else {
-        const static uint8_t dummy = SPI_FILL_CHAR;
+        static const uint8_t dummy = SPI_FILL_CHAR;
         tx = &dummy;
         channel_config_set_read_increment(&this->tx_dma_cfg, false);
     }
