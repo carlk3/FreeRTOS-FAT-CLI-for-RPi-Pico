@@ -1,7 +1,7 @@
 [submodule "Lab-Project-FreeRTOS-FAT"]
-	path = Lab-Project-FreeRTOS-FAT
+	path = FreeRTOS+FAT+CLI/Lab-Project-FreeRTOS-FAT
 	url = https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT
 [submodule "FreeRTOS-Kernel"]
-	path = FreeRTOS-Kernel
+	path = FreeRTOS+FAT+CLI/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel
 	branch = main
