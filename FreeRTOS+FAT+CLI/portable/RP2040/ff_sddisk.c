@@ -85,7 +85,7 @@ static bool disk_init(sd_card_t *pSD) {
 	configASSERT((xIOManagerCacheSize >= (2 * SECTOR_SIZE)));    
 	
 	// Initialize the media driver
-	if (0 != sd_init(pSD)) {
+	if (0 != sd_card_init(pSD)) {
 		// Couldn't init
 		return false;
 	}    
@@ -197,7 +197,7 @@ BaseType_t FF_SDDiskMount(FF_Disk_t *pDisk) {
 BaseType_t FF_SDDiskDelete(FF_Disk_t *pxDisk) {
 	if (pxDisk) {
 		if (pxDisk->pvTag) {
-			sd_deinit(pxDisk->pvTag);                    
+			sd_card_deinit(pxDisk->pvTag);                    
 		}
 		if (pxDisk->xStatus.bIsInitialised) {
 			if (pxDisk->pxIOManager) {

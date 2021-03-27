@@ -50,8 +50,8 @@ target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
 )
 target_include_directories(FreeRTOS+FAT+CLI INTERFACE 
         include/ 
-        FreeRTOS-Kernel/include 
-        FreeRTOS-Kernel/portable/GCC/ARM_CM0 #_RP2040
         Lab-Project-FreeRTOS-FAT/include/
         portable/RP2040/
+        FreeRTOS-Kernel/include 
+        FreeRTOS-Kernel/portable/GCC/ARM_CM0 #_RP2040
 )

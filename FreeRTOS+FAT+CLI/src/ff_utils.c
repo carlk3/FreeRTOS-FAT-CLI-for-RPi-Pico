@@ -15,6 +15,8 @@
 #include "ff_headers.h"
 #include "ff_sddisk.h"
 #include "ff_stdio.h"
+//
+#include "sd_card.h"
 #include "hw_config.h"
 
 #define TRACE_PRINTF(fmt, args...)
@@ -133,7 +135,7 @@ void eject(const char *const name) {
             FF_SDDiskDelete(pxDisk);
         }
     }
-    sd_deinit(pSD);
+    sd_card_deinit(pSD);
 }
 
 void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct) {

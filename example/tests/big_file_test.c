@@ -25,6 +25,8 @@
 #define fread ff_fread
 #define fclose ff_fclose
 #define errno stdioGET_ERRNO()
+#define free vPortFree
+#define malloc pvPortMalloc
 
 typedef uint32_t DWORD;
 typedef unsigned int UINT;
@@ -50,7 +52,7 @@ static DWORD pn(/* Pseudo random number generator */
 }
 
 // Create a file of size "size" bytes filled with random data seeded with "seed"
-static void create_big_file(const char *const pathname, size_t size,
+static bool create_big_file(const char *const pathname, size_t size,
                             unsigned seed) {
     int32_t lItems;
     FF_FILE *pxFile;
@@ -58,8 +60,8 @@ static void create_big_file(const char *const pathname, size_t size,
     //    DWORD buff[FF_MAX_SS];  /* Working buffer (4 sector in size) */
     size_t bufsz = size < BUFFSZ ? size : BUFFSZ;
     assert(0 == size % bufsz);
-    DWORD *buff = pvPortMalloc(bufsz);
-    configASSERT(buff);
+    DWORD *buff = malloc(bufsz);
+    assert(buff);
 
     pn(seed);  // See pseudo-random number generator
 
@@ -84,19 +86,11 @@ static void create_big_file(const char *const pathname, size_t size,
     //    //   If the file was shorter than lTruncateSize
     //    //   then new data added to the end of the file is set to 0.
     //    pxFile = ff_truncate(pathname, size);
-    //    printf("ff_truncate: elapsed seconds %lu\n", (unsigned
-    //    long)(xTaskGetTickCount() - xStart)/configTICK_RATE_HZ);
-    if (!pxFile)
-        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(errno), -errno);
+    if (!pxFile) {
+        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(errno), errno);
+        return false;
+    }
     assert(pxFile);
-    //    // ff_rewind(pxFile);
-    //    int ec = ff_fseek( pxFile, 0, FF_SEEK_SET );
-    //    if (ec)
-    //		printf("ff_fseek(%s): %s (%d)\n", pathname, strerror(errno),
-    //-errno);
-
-    //    int rc = FFReserve(pxFile, size/FF_MAX_SS);
-    //    configASSERT(!rc);
 
     size_t i;
     for (i = 0; i < size / bufsz; ++i) {
@@ -104,16 +98,17 @@ static void create_big_file(const char *const pathname, size_t size,
         for (n = 0; n < bufsz / sizeof(DWORD); n++) buff[n] = pn(0);
         lItems = fwrite(buff, bufsz, 1, pxFile);
         if (lItems < 1)
-            printf("fwrite(%s): %s (%d)\n", pathname, strerror(errno), -errno);
+            printf("fwrite(%s): %s (%d)\n", pathname, strerror(errno), errno);
         assert(lItems == 1);
     }
-    vPortFree(buff);
+    free(buff);
     /* Close the file. */
-    fclose(pxFile);
+    ff_fclose(pxFile);
     long unsigned elapsed =
         (unsigned long)(xTaskGetTickCount() - xStart) / configTICK_RATE_HZ;
     printf("Elapsed seconds %lu\n", elapsed);
     printf("Transfer rate %lu KiB/s\n", size / elapsed / 1024);
+    return true;
 }
 
 // Read a file of size "size" bytes filled with random data seeded with "seed"
@@ -127,8 +122,8 @@ static void check_big_file(const char *const pathname, size_t size,
     //	assert(0 == size % sizeof(buff));
     size_t bufsz = size < BUFFSZ ? size : BUFFSZ;
     assert(0 == size % bufsz);
-    DWORD *buff = pvPortMalloc(bufsz);
-    configASSERT(buff);
+    DWORD *buff = malloc(bufsz);
+    assert(buff);
 
     pn(seed);
 
@@ -158,9 +153,9 @@ static void check_big_file(const char *const pathname, size_t size,
                        (i * sizeof(buff)) + n, expected, val);
         }
     }
-    vPortFree(buff);
+    free(buff);
     /* Close the file. */
-    fclose(pxFile);
+    ff_fclose(pxFile);
     long unsigned elapsed =
         (unsigned long)(xTaskGetTickCount() - xStart) / configTICK_RATE_HZ;
     printf("Elapsed seconds %lu\n", elapsed);
@@ -175,16 +170,15 @@ void create_big_file_v1(const char *const pathname, size_t size,
     FF_FILE *pxFile;
     int val;
 
-    configASSERT(0 == size % sizeof(int));
+    assert(0 == size % sizeof(int));
 
     srand(seed);
 
     /* Open the file, creating the file if it does not already exist. */
     pxFile = ff_fopen(pathname, "w");
     if (!pxFile)
-        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(stdioGET_ERRNO()),
-               -stdioGET_ERRNO());
-    configASSERT(pxFile);
+        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(errno), errno);
+    assert(pxFile);
 
     printf("Writing...\n");
     TickType_t xStart = xTaskGetTickCount();
@@ -194,9 +188,9 @@ void create_big_file_v1(const char *const pathname, size_t size,
         val = rand();
         lItems = ff_fwrite(&val, sizeof(val), 1, pxFile);
         if (lItems < 1)
-            printf("ff_fwrite(%s): %s (%d)\n", pathname,
-                   strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());
-        configASSERT(lItems == 1);
+            printf("ff_fwrite(%s): %s (%d)\n", pathname, strerror(errno),
+                   errno);
+        assert(lItems == 1);
     }
     /* Close the file. */
     ff_fclose(pxFile);
@@ -211,16 +205,15 @@ void check_big_file_v1(const char *const pathname, size_t size, uint32_t seed) {
     int32_t lItems;
     FF_FILE *pxFile;
 
-    configASSERT(0 == size % sizeof(int));
+    assert(0 == size % sizeof(int));
 
     srand(seed);
 
     /* Open the file, creating the file if it does not already exist. */
     pxFile = ff_fopen(pathname, "r");
     if (!pxFile)
-        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(stdioGET_ERRNO()),
-               -stdioGET_ERRNO());
-    configASSERT(pxFile);
+        printf("ff_fopen(%s): %s (%d)\n", pathname, strerror(errno), errno);
+    assert(pxFile);
 
     printf("Reading...\n");
     TickType_t xStart = xTaskGetTickCount();
@@ -230,9 +223,8 @@ void check_big_file_v1(const char *const pathname, size_t size, uint32_t seed) {
     for (i = 0; i < size / sizeof(val); ++i) {
         lItems = ff_fread(&val, sizeof(val), 1, pxFile);
         if (lItems < 1)
-            printf("ff_fread(%s): %s (%d)\n", pathname,
-                   strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());
-        configASSERT(lItems == 1);
+            printf("ff_fread(%s): %s (%d)\n", pathname, strerror(errno), errno);
+        assert(lItems == 1);
 
         /* Check the buffer is filled with the expected data. */
         int expected = rand();
@@ -247,27 +239,8 @@ void check_big_file_v1(const char *const pathname, size_t size, uint32_t seed) {
 }
 
 void big_file_test(const char *const pathname, size_t size, uint32_t seed) {
-    create_big_file(pathname, size, seed);
-    check_big_file(pathname, size, seed);
-    /*
-        char pcBuffer[8];
-        FF_FILE *pxFile = ff_truncate(pathname, sizeof(pcBuffer));
-        configASSERT(pxFile);
-        ff_rewind(pxFile);
-        size_t i;
-        for (i = 0; i < sizeof(pcBuffer); ++i) {
-            pcBuffer[i] = i;
-        }
-        ff_fwrite( pcBuffer, sizeof(pcBuffer), 1, pxFile );
-        ff_fclose( pxFile );
-
-            pxFile = ff_fopen( pathname, "r" );
-        char val;
-        while (1 == ff_fread( &val, sizeof(val), 1, pxFile )) {
-            printf("%d ", val);
-        }
-        printf("\n");
-    */
+    if (create_big_file(pathname, size, seed)) 
+        check_big_file(pathname, size, seed);
 }
 
 /* [] END OF FILE */

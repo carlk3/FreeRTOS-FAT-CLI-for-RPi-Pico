@@ -39,8 +39,14 @@ add_executable(example
 )
 add_subdirectory(../FreeRTOS+FAT+CLI build)
 
+#target_compile_options(example PRIVATE -save-temps)
+#target_compile_options(example PRIVATE -Wall, -Wextra -Wshadow -Wdouble-promotion)
+target_compile_options(example PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
+target_compile_definitions(example PUBLIC DEBUG N_SD_CARDS=2)
+
 pico_set_program_name(example "example")
 pico_set_program_version(example "0.1")
+
 #Temporary work-around until FreeRTOS is fixed:
 pico_set_divider_implementation(example compiler)
 
@@ -49,18 +55,13 @@ pico_enable_stdio_usb(example 0)
 
 # Add the standard library to the build
 target_link_libraries(example pico_stdlib)
-target_include_directories(example PUBLIC 
-        include/ 
-)
 # Add any user requested libraries
 target_link_libraries(example
         FreeRTOS+FAT+CLI
 )
-
-#target_compile_options(example PRIVATE -save-temps)
-#target_compile_options(example PRIVATE -Wall, -Wextra -Wshadow -Wdouble-promotion)
-target_compile_options(example PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
-target_compile_definitions(example PUBLIC DEBUG)
+target_include_directories(example PUBLIC 
+        include/ 
+)
 
 pico_add_extra_outputs(example)
 

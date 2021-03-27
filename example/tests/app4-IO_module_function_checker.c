@@ -78,7 +78,7 @@ int test_diskio_initialize(const char *diskName) {
             return -1;
         }
         // Initialize the media driver
-        if (0 != sd_init(pdrv)) {
+        if (0 != sd_card_init(pdrv)) {
             // Couldn't init
             PRINTF(" - failed.\n");
             fflush(stdout);

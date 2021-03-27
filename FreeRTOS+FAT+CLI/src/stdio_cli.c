@@ -36,6 +36,7 @@
 #include "crash.h"
 #include "filesystem_test_suite.h"
 #include "stdio_cli.h"
+#include "sd_card.h"
 
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF printf  // task_printf
@@ -113,6 +114,7 @@ static void stdioTask(void *arg) {
             '\b' != cRxedChar && cRxedChar != (char)127)
             continue;
         printf("%c", cRxedChar);  // echo
+        stdio_flush();
         static bool first = true;
         if (first) {
             // Check fault capture from RAM:
@@ -140,7 +142,7 @@ static void stdioTask(void *arg) {
 
         /* Newline characters are taken as the end of the command
          string. */
-        if (cRxedChar == '\n' || cRxedChar == '\r') {
+        if (cRxedChar == '\r') {
             in_overflow = false;
 
             TickType_t xStart = 0;
@@ -236,6 +238,8 @@ void CLI_Start() {
     stdio_init_all();
 
     FreeRTOS_time_init();
+
+    sd_driver_init();
 
     static StaticQueue_t xStaticQueue;
     static uint32_t ucQueueStorageArea[8];

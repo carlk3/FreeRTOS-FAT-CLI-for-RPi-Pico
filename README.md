@@ -28,7 +28,7 @@ Writing and reading a file of 0x10000000 (268,435,456) bytes (1/4 GiB) on a SanD
   * Elapsed seconds 315
   * Transfer rate 832 KiB/s
 
-Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,833,333:
+Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,833,333 with a SanDisk Class 4 16 GB card:
 * Writing
   * Elapsed seconds 226
   * Transfer rate 1159 KiB/s
@@ -40,9 +40,15 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 
 ## Prerequisites:
 * Raspberry Pi Pico
-* Something like the [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
 * Breadboard and wires
 * Raspberry Pi Pico C/C++ SDK
+* Something like the [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
+
+Note: avoid modules like these: [DAOKI 5Pcs TF Micro SD Card Module Memory Shield Module Micro SD Storage Expansion Board Mini Micro SD TF Card with Pins for Arduino ARM AVR with Dupo](https://www.amazon.com/gp/product/B07XF4RJSL/). They appear to be designed for 5v signals and won't work with the 3.3v Pico.
+
+* (Optional) A couple of ~5-10kΩ resistors
+
+## Dependencies:
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
 * [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
 
@@ -58,7 +64,6 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 | GND	|      |      | 18,23	|	         | GND       |
 | 3v3	|      |      | 36		|	         | 3v3       |
 
-
 ## Construction:
 * The wiring is so simple that I didn't bother with a schematic. 
 I just referred to the table above, wiring point-to-point from the Pin column on the Pico to the MicroSD 0 column on the Transflash.
@@ -66,22 +71,35 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 * To add a second SD card on the same SPI, connect it in parallel, except that it will need a unique GPIO for the Card Select/Slave Select (CSn) and another for Card Detect (CD).
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
+### Pull Up Resistors
+* The SPI MISO (DO on SD card, SPIx RX on Pico) is open collector (or tristate). It should be pulled up. The Pico internal gpio_pull_up is weak: around 56uA or 60kΩ. You might to add an external pull up resistor of around ~5-10kΩ to 3.3v, depending on the SD card and the SPI baud rate.
+* The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized.
+
 ## Firmware:
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
   `git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI`
 * Customize:
-  * Tailor `portable/RP2040/hw_config.c` to match hardware
-  * Customize `CMakeLists.txt` to `pico_enable_stdio_uart` or `pico_enable_stdio_usb`
+  * Tailor `FreeRTOS+FAT+CLI/FreeRTOS+FAT+CLI/portable/RP2040/hw_config.c` to match hardware
+  * Customize `FreeRTOS+FAT+CLI/example/CMakeLists.txt` to `pico_enable_stdio_uart` or `pico_enable_stdio_usb`
   * Build:
 ```  
-   cd FreeRTOS+FAT+CLI
+   cd FreeRTOS+FAT+CLI/example
    mkdir build
    cd build
    cmake ..
    make
 ```   
   * Program the device
+
+  If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, use something like:
+  ```
+  git submodule add git@github.com:carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
+  ```
+  or
+  ```
+  git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
+  ```
   
 ## Operation:
 * By default, this project has serial input (stdin) and output (stdout) directed to USB CDC (USB serial). 

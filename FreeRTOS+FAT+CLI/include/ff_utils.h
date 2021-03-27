@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "FreeRTOS.h"
 #include "ff_headers.h"
 
 bool format(FF_Disk_t **ppxDisk, const char *const devName);
