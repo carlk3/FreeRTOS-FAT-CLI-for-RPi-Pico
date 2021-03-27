@@ -91,15 +91,6 @@ I just referred to the table above, wiring point-to-point from the Pin column on
    make
 ```   
   * Program the device
-
-  If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, use something like:
-  ```
-  git submodule add git@github.com:carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
-  ```
-  or
-  ```
-  git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
-  ```
   
 ## Operation:
 * By default, this project has serial input (stdin) and output (stdout) directed to USB CDC (USB serial). 
@@ -212,6 +203,18 @@ I just referred to the table above, wiring point-to-point from the Pin column on
      Launch data logging task
      
 ```
+![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
+
+## Troubleshooting
+* The first thing to try is lowering the SPI baud rate (see hw_config.c). This will also make it easier to use things like logic analyzers.
+* Tracing: Most of the source files have a couple of lines near the top of the file like:
+```
+#define TRACE_PRINTF(fmt, args...) // Disable tracing
+//#define TRACE_PRINTF printf // Trace with printf
+```
+You can swap the commenting to enable tracing of what's happening in that file.
+* Logic analyzer: for less than ten bucks, something like this [Comidox 1Set USB Logic Analyzer Device Set USB Cable 24MHz 8CH 24MHz 8 Channel UART IIC SPI Debug for Arduino ARM FPGA M100 Hot](https://smile.amazon.com/gp/product/B07KW445DJ/) and [PulseView - sigrok](https://sigrok.org/) make a nice combination for looking at SPI, as long as you don't run the baud rate too high. 
+* 
 ## Next Steps
 There is a demonstration data logging application in `FreeRTOS-FAT-CLI-for-RPi-Pico/src/data_log_demo.c`. 
 It runs as a separate task, and can be launched from the CLI with the `data_log_demo` command.
@@ -220,8 +223,43 @@ It records the temperature as reported by the RP2040 internal Temperature Sensor
 in files named something like `/sd0/data/2021-02-27/21.csv`.
 Use this as a starting point for your own data logging application!
 
-![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
+If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, use something like:
+  ```
+  git submodule add git@github.com:carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
+  ```
+  or
+  ```
+  git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
+  ```
+You will need to pick up the library in CMakeLists.txt:
+```
+add_subdirectory(FreeRTOS-FAT-CLI-for-RPi-Pico/FreeRTOS+FAT+CLI build)
+target_link_libraries(_my_app_ FreeRTOS+FAT+CLI)
+```  
+
 Happy hacking!
+![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_20210322_201928116.jpg "Prototype")
+
+## Appendix: Adding Additional Cards
+When you're dealing with information storage, it's always nice to have redundancy. There are many possible combinations of SPIs and SD cards. One of these is putting multiple SD cards on the same SPI bus, at a cost of one (or two) Pico I/O pins (depending on whether or you care about Card Detect). I will illustrate that example here. 
+
+Name|SPI0|GPIO|Pin |SPI|MicroSD 0|MicroSD 1
+----|----|----|----|---|---------|---------
+CD1||14|19|||CD
+CS1||15|20|SS or CS||CS
+MISO|RX|16|21|DO|DO|DO
+CS0||17|22|SS or CS|CS|CS
+SCK|SCK|18|24|SCLK|SCK|SCK
+MOSI|TX|19|25|DI|DI|DI
+CD0||22|29||CD|
+||||||
+GND|||18, 23||GND|GND
+3v3|||36||3v3|3v3
+
+### Wiring: 
+As you can see from the table above, the only new signals are CD1 and CS1. Otherwise, the new card is wired in parallel with the first card.
+### Firmware:
+* `sd_driver/hw_config.c` must be edited to add a new instance to `static sd_card_t sd_cards[]`
 
 ## Acknowledgement:
 I would like to thank PicoCPP for [RPI-pico-FreeRTOS](https://github.com/PicoCPP/RPI-pico-FreeRTOS), which was my starting point for this project.
