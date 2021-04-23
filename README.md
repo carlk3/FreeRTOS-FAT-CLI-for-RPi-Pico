@@ -54,26 +54,29 @@ Note: avoid modules like these: [DAOKI 5Pcs TF Micro SD Card Module Memory Shiel
 
 ![image](https://www.raspberrypi.org/documentation/rp2040/getting-started/static/64b50c4316a7aefef66290dcdecda8be/Pico-R3-SDK11-Pinout.svg "Pinout")
 
-|	    | SPI0 | GPIO | Pin   | SPI	     | MicroSD 0 |
-| --- | ---- | ---- | ---   | -------- | --------- |
-| MOSI|	TX	 | 16	  | 25	  | DI	     | DI        |
-| CS0	| CSn	 | 17	  |	22	  |	SS or CS | CS        |
-| SCK	| SCK	 | 18	  |	24	  | SCLK	   | CLK       |
-| MISO| RX   | 19	  |	21	  | DO	     | DO        |
-| CD	|      | 22	  | 29		|	         | CD 			 |
-| GND	|      |      | 18,23	|	         | GND       |
-| 3v3	|      |      | 36		|	         | 3v3       |
+|       | SPI0  | GPIO  | Pin   | SPI       | MicroSD 0 | Description            | 
+| ----- | ----  | ----- | ---   | --------  | --------- | ---------------------- |
+| MOSI  | TX    | 16    | 21    | DI        | DI        | Master Out, Slave In   |
+| CS0   | CSn   | 17    | 22    | SS or CS  | CS        | Slave (or Chip) Select |
+| SCK   | SCK   | 18    | 24    | SCLK      | CLK       | SPI clock              |
+| MISO  | RX    | 19    | 25    | DO        | DO        | Master In, Slave Out   |
+| CD    |       | 22    | 29    |           | CD        | Card Detect            |
+| GND   |       |       | 18,23 |           | GND       | Ground                 |
+| 3v3   |       |       | 36    |           | 3v3       | 3.3 volt power         |
 
 ## Construction:
 * The wiring is so simple that I didn't bother with a schematic. 
 I just referred to the table above, wiring point-to-point from the Pin column on the Pico to the MicroSD 0 column on the Transflash.
+* Card Detect is optional. Some SD card sockets have no provision for it. 
+Even if it is provided by the hardware, if you have no requirement for it you can skip it and save a Pico I/O pin.
 * You can choose to use either or both of the Pico's SPIs.
 * To add a second SD card on the same SPI, connect it in parallel, except that it will need a unique GPIO for the Card Select/Slave Select (CSn) and another for Card Detect (CD).
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ### Pull Up Resistors
-* The SPI MISO (DO on SD card, SPIx RX on Pico) is open collector (or tristate). It should be pulled up. The Pico internal gpio_pull_up is weak: around 56uA or 60kΩ. You might to add an external pull up resistor of around ~5-10kΩ to 3.3v, depending on the SD card and the SPI baud rate.
+* The SPI MISO (DO on SD card, SPIx RX on Pico) is open collector (or tristate). It should be pulled up. The Pico internal gpio_pull_up is weak: around 56uA or 60kΩ. You might need to add an external pull up resistor of around ~5-10kΩ to 3.3v, depending on the SD card and the SPI baud rate.
 * The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized.
+* If resistors are used, trim the leads to keep the connections short and direct.
 
 ## Firmware:
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
@@ -207,6 +210,7 @@ I just referred to the table above, wiring point-to-point from the Pin column on
 
 ## Troubleshooting
 * The first thing to try is lowering the SPI baud rate (see hw_config.c). This will also make it easier to use things like logic analyzers.
+* Try another brand of SD card. Some handle the SPI interface better than others. (Most consumer devices like cameras or PCs use the SDIO interface.) I have had good luck with SanDisk.
 * Tracing: Most of the source files have a couple of lines near the top of the file like:
 ```
 #define TRACE_PRINTF(fmt, args...) // Disable tracing
