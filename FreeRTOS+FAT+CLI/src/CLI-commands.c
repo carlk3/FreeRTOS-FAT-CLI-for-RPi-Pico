@@ -641,8 +641,8 @@ static BaseType_t diskInfo(char *pcWriteBuffer, size_t xWriteBufferLen,
     configASSERT(pcParameter);
 
     sd_card_t *sd = sd_get_by_name(pcParameter);
-    size_t i;
-    for (i = 0; i < sd->ff_disk_count; ++i) {
+    if (!sd) return pdFALSE;
+    for (size_t i = 0; i < sd->ff_disk_count; ++i) {
         FF_Disk_t *pxDisk = sd->ff_disks[i];
         if (pxDisk) {
             FF_SDDiskShowPartition(pxDisk);
@@ -654,7 +654,7 @@ static const CLI_Command_Definition_t xDiskInfo = {
     "diskinfo", /* The command string to type. */
     "\ndiskinfo <device name>:\n Print information about mounted "
     "partitions\n"
-    "\te.g.: \"diskinfo SDCard\"\n",
+    "\te.g.: \"diskinfo sd0\"\n",
     diskInfo, /* The function to run. */
     1         /* One parameter is expected. */
 };
