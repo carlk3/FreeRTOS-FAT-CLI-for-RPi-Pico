@@ -80,9 +80,11 @@
 #include <stdio.h>
 
 //#define TRACE_PRINTF(fmt, args...)
-#define TRACE_PRINTF task_printf
+//#define TRACE_PRINTF task_printf
+#define TRACE_PRINTF printf
 
-#define FF_PRINTF task_printf 
+//#define FF_PRINTF task_printf 
+//#define FF_PRINTF printf 
 
 /* The number of bytes read/written to the example files at a time. */
 #define fsRAM_BUFFER_SIZE 				200

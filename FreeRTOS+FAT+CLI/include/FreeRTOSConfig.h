@@ -1,8 +1,6 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include "hardware/timer.h"
-
 #include "my_debug.h"
 
 #ifndef portINLINE
@@ -93,7 +91,7 @@
 #define INCLUDE_xTaskGetIdleTaskHandle          0
 #define INCLUDE_eTaskGetState                   0
 #define INCLUDE_xEventGroupSetBitFromISR        1
-#define INCLUDE_xTimerPendFunctionCall          0
+#define INCLUDE_xTimerPendFunctionCall          1
 #define INCLUDE_xTaskAbortDelay                 0
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskResumeFromISR              1
@@ -103,6 +101,7 @@
 #define xPortSysTickHandler isr_systick
 
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 
+extern uint64_t time_us_64(void); // "hardware/timer.h"
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
 
 /* A header file that defines trace macro can be included here. */

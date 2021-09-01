@@ -10,6 +10,8 @@
  * ========================================
  */
 
+#include "FreeRTOS.h" /* Must come first. */
+//
 #include <stdint.h>
 #include <stdio.h>
 

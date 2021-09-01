@@ -320,7 +320,8 @@ connected. */
 extern void vLoggingPrintf( const char *pcFormatString, ... ) __attribute__ ((format (printf, 1, 2)));
 //#define FF_PRINTF vLoggingPrintf
 //#define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
-#define FF_PRINTF   task_printf
+//#define FF_PRINTF   task_printf
+#define FF_PRINTF   printf
 
 /* Visual studio does not have an implementation of strcasecmp().
 _RB_ Cannot use FF_NOSTRCASECMP setting as the internal implementation of

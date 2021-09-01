@@ -300,7 +300,10 @@ static BaseType_t runEject(char *pcWriteBuffer, size_t xWriteBufferLen,
     /* Sanity check something was returned. */
     configASSERT(pcParameter);
 
-    eject(pcParameter);
+    char buf[cmdMAX_INPUT_SIZE];
+    snprintf(buf, cmdMAX_INPUT_SIZE, "/%s", pcParameter);  // Add '/' for path
+
+    eject(pcParameter, buf);
 
     return pdFALSE;
 }
@@ -308,6 +311,12 @@ static const CLI_Command_Definition_t xEject = {
     "eject", /* The command string to type. */
     "\neject <device name>:\n Eject <device name>\n"
     "\te.g.: \"eject sd0\"\n",
+    runEject, /* The function to run. */
+    1         /* One parameter is expected. */
+};
+static const CLI_Command_Definition_t xUnmount = {
+    "unmount", /* The command string to type. */
+    "unmount: Alias for \"eject\"\n",
     runEject, /* The function to run. */
     1         /* One parameter is expected. */
 };
@@ -567,6 +576,7 @@ void register_fs_tests() {
     FreeRTOS_CLIRegisterCommand(&xFormat);
     FreeRTOS_CLIRegisterCommand(&xMount);
     FreeRTOS_CLIRegisterCommand(&xEject);
+    FreeRTOS_CLIRegisterCommand(&xUnmount);
     FreeRTOS_CLIRegisterCommand(&xLowLevIOTests);
     FreeRTOS_CLIRegisterCommand(&xMTLowLevIOTests);
     FreeRTOS_CLIRegisterCommand(&xSimpleFSTest);

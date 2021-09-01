@@ -18,10 +18,10 @@
 #include "FreeRTOS.h"
 //
 #include "FreeRTOS_time.h"
-#include "queue.h"
 #include "task.h"
 // Pico
 #include "pico/stdlib.h"
+#include "pico/util/queue.h"
 //
 #include "hardware/irq.h"
 #include "hardware/rtc.h"
@@ -41,7 +41,8 @@
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF printf  // task_printf
 
-static QueueHandle_t xQueue;
+static const int FIFO_LENGTH = 64;
+queue_t stdin_fifo;
 
 /* Offload USB polling to the other processor so it doesn't steal all our
  * cycles. */
@@ -51,32 +52,12 @@ void core1_entry() {
         int cRxedChar = getchar_timeout_us(1000 * 1000);
         /* Get the character from terminal */
         if (PICO_ERROR_TIMEOUT == cRxedChar) continue;
-        stdio_flush();
-
+        if (!queue_try_add(&stdin_fifo, &cRxedChar)) {
+            printf("stdin FIFO was full\n");
+            fflush(stdout);
+        }
         multicore_fifo_push_blocking(cRxedChar);
     }
-}
-
-void core0_sio_irq() {
-    multicore_fifo_clear_irq();
-    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
-     it will get set to pdTRUE inside the interrupt safe API function if a
-     context switch is required. */
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    configASSERT(xQueue);
-
-    while (multicore_fifo_rvalid()) {
-        int cRxedChar = multicore_fifo_pop_blocking();
-        xQueueSendFromISR(xQueue, &cRxedChar, &xHigherPriorityTaskWoken);
-    }
-
-    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR(). If
-     xHigherPriorityTaskWoken was set to pdTRUE inside vTaskNotifyGiveFromISR()
-     then calling portYIELD_FROM_ISR() will request a context switch. If
-     xHigherPriorityTaskWoken is still pdFALSE then calling
-     portYIELD_FROM_ISR() will have no effect. */
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 // stdioTask - the function which handles input
@@ -90,12 +71,6 @@ static void stdioTask(void *arg) {
     bool in_overflow = false;
 
     multicore_launch_core1(core1_entry);
-    irq_set_exclusive_handler(SIO_IRQ_PROC0, core0_sio_irq);
-
-    /* Any interrupt that uses interrupt-safe FreeRTOS API functions ust also
-     * execute at the priority defined by configKERNEL_INTERRUPT_PRIORITY. */
-    irq_set_priority(SIO_IRQ_PROC0, 0xFF);  // Lowest urgency.
-    irq_set_enabled(SIO_IRQ_PROC0, true);
 
     printf("\033[2J\033[H");  // Clear Screen
 
@@ -109,7 +84,7 @@ static void stdioTask(void *arg) {
         // stdio_flush();
 
         int cRxedChar;
-        xQueueReceive(xQueue, &cRxedChar, portMAX_DELAY);
+        queue_remove_blocking(&stdin_fifo, &cRxedChar);
         if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
             '\b' != cRxedChar && cRxedChar != (char)127)
             continue;
@@ -241,10 +216,7 @@ void CLI_Start() {
 
     sd_driver_init();
 
-    static StaticQueue_t xStaticQueue;
-    static uint32_t ucQueueStorageArea[8];
-    xQueue = xQueueCreateStatic(8, sizeof(uint32_t),
-                                (uint8_t *)ucQueueStorageArea, &xStaticQueue);
+    queue_init(&stdin_fifo, sizeof(int), FIFO_LENGTH);
 
     static StackType_t xStack[1024];
     static StaticTask_t xTaskBuffer;

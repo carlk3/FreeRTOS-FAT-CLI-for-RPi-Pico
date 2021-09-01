@@ -93,7 +93,8 @@ multiple tasks simultaneously. */
 
 //#include "hardware/gpio.h" //DEBUG
 //#define TRACE_PRINTF(fmt, args...)
-#define TRACE_PRINTF task_printf
+//#define TRACE_PRINTF task_printf
+#define TRACE_PRINTF printf
 
 /*
  * Examples and basic tests of the ff_truncate() function.
