@@ -214,7 +214,7 @@ void CLI_Start() {
 
     FreeRTOS_time_init();
 
-    sd_driver_init();
+    //sd_init_driver();
 
     queue_init(&stdin_fifo, sizeof(int), FIFO_LENGTH);
 

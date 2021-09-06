@@ -85,7 +85,7 @@ static bool disk_init(sd_card_t *pSD) {
 	configASSERT((xIOManagerCacheSize >= (2 * SECTOR_SIZE)));    
 	
 	// Initialize the media driver
-	if (0 != sd_card_init(pSD)) {
+	if (0 != sd_init_card(pSD)) {
 		// Couldn't init
 		return false;
 	}    

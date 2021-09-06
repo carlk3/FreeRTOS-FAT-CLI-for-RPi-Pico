@@ -40,9 +40,6 @@ add_executable(example
 pico_set_program_name(example "example")
 pico_set_program_version(example "0.1")
 
-##Temporary work-around until FreeRTOS is fixed:
-#pico_set_divider_implementation(example compiler)
-
 pico_enable_stdio_uart(example 1)
 pico_enable_stdio_usb(example 0)
 

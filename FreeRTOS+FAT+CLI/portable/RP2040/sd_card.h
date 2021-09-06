@@ -24,12 +24,16 @@
 #include "ff_headers.h"
 #include "spi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // "Class" representing SD Cards
 typedef struct {
     const char *pcName;
     spi_t *const spi;
     // Slave select is here in sd_card_t because multiple SDs can share an SPI
-    uint ss_gpio;                   // Slave select for this SD card
+    uint ss_gpio;                   // Slave select for pSD SD card
     const uint card_detect_gpio;    // Card detect
     const uint card_detected_true;  // Varies with card socket
     const gpio_irq_callback_t card_detect_callback;  // Port Interrupt callback
@@ -39,7 +43,7 @@ typedef struct {
     int card_type;                                   // Assigned dynamically
     SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
     size_t ff_disk_count;
-    FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using this device
+    FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using pSD device
 } sd_card_t;
 
 #define SD_BLOCK_DEVICE_ERROR_NONE 0
@@ -66,15 +70,19 @@ enum {
     STA_PROTECT = 0x04 /* Write protected */
 };
 
-bool sd_driver_init();
-int sd_card_init(sd_card_t *this);
-int sd_card_deinit(sd_card_t *this);
-int sd_write_blocks(sd_card_t *this, const uint8_t *buffer,
+bool sd_init_driver();
+int sd_init_card(sd_card_t *pSD);
+int sd_card_deinit(sd_card_t *pSD);
+int sd_write_blocks(sd_card_t *pSD, const uint8_t *buffer,
                     uint64_t ulSectorNumber, uint32_t blockCnt);
-int sd_read_blocks(sd_card_t *this, uint8_t *buffer, uint64_t ulSectorNumber,
+int sd_read_blocks(sd_card_t *pSD, uint8_t *buffer, uint64_t ulSectorNumber,
                    uint32_t ulSectorCount);
-bool sd_card_detect(sd_card_t *this);
-uint64_t sd_sectors(sd_card_t *this);
+bool sd_card_detect(sd_card_t *pSD);
+uint64_t sd_sectors(sd_card_t *pSD);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /* [] END OF FILE */
