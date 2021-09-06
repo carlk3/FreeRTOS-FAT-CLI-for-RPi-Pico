@@ -27,6 +27,7 @@ add_subdirectory(../FreeRTOS+FAT+CLI build)
 # Add executable. Default name is the project name, version 0.1
 add_executable(example
         example.c
+        hw_config.c
         tests/app4-IO_module_function_checker.c        
         tests/filesystem_test_suite.c
         tests/CreateAndVerifyExampleFiles.c        
