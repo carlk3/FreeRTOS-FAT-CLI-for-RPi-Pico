@@ -1185,7 +1185,7 @@ for (size_t x = 0; x < fsTASKS_TO_CREATE; x++) {
     snprintf(cTaskName, sizeof(cTaskName), "FS%zu", x);
     xTaskCreate(prvFileSystemAccessTask, cTaskName,
                 usStackSizeWords, /* Not used with the Windows port. */
-                (void *)&(cDirName[x][0]), tskIDLE_PRIORITY + 3, NULL);
+                (void *)&(cDirName[x][0]), configMAX_PRIORITIES - 3, NULL);
 	}
 }
 /*-----------------------------------------------------------*/
