@@ -17,7 +17,6 @@
 // FreeRTOS
 #include "FreeRTOS.h"
 //
-#include "FreeRTOS_time.h"
 #include "task.h"
 // Pico
 #include "pico/stdlib.h"
@@ -178,11 +177,6 @@ void CLI_Start() {
 
     extern const CLI_Command_Definition_t xDataLogDemo;
     FreeRTOS_CLIRegisterCommand(&xDataLogDemo);
-
-    // stdio_init_all();
-    stdio_init_all();
-
-    FreeRTOS_time_init();
 
     static StackType_t xStack[1024];
     static StaticTask_t xTaskBuffer;

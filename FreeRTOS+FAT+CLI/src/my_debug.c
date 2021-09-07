@@ -16,6 +16,7 @@
 #include "hardware/timer.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
+#include "pico/multicore.h" // get_core_num()
 //
 #include "FreeRTOS.h"
 #include "ff_stdio.h"
@@ -58,7 +59,7 @@ void task_printf(const char *pcFormat, ...) {
     vsnprintf(pcBuffer, sizeof(pcBuffer), pcFormat, xArgs);
     va_end(xArgs);
     lock_printf();
-    printf("%s: %s", pcTaskGetName(NULL), pcBuffer);
+    printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
     unlock_printf();
     fflush(stdout);
 }

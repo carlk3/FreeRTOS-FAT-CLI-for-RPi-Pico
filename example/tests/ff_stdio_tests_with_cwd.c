@@ -88,13 +88,13 @@
 
 /* The number of tasks to create if the stdio tests will be executed in
 multiple tasks simultaneously. */
-//#define fsTASKS_TO_CREATE 5
-#define fsTASKS_TO_CREATE 2
+#define fsTASKS_TO_CREATE 5
+//#define fsTASKS_TO_CREATE 2
 
 //#include "hardware/gpio.h" //DEBUG
 //#define TRACE_PRINTF(fmt, args...)
-//#define TRACE_PRINTF task_printf
-#define TRACE_PRINTF printf
+#define TRACE_PRINTF task_printf
+//#define TRACE_PRINTF printf
 
 /*
  * Examples and basic tests of the ff_truncate() function.
