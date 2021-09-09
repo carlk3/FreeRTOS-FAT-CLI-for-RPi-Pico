@@ -8,8 +8,6 @@
 #include "hardware/adc.h"
 #include "pico/stdlib.h"
 //
-#include "FreeRTOS.h"
-//
 #include "FreeRTOS_CLI.h"
 #include "ff_headers.h"
 #include "ff_stdio.h"

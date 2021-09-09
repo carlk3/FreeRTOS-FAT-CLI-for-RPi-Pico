@@ -48,6 +48,9 @@ static void sd_spi_unlock(sd_card_t *pSD) {
 // Would do nothing if pSD->ss_gpio were set to GPIO_FUNC_SPI.
 static void sd_spi_select(sd_card_t *pSD) {
     gpio_put(pSD->ss_gpio, 0);
+    // A fill byte seems to be necessary, sometimes:
+    uint8_t fill = SPI_FILL_CHAR;
+    spi_write_blocking(pSD->spi->hw_inst, &fill, 1);
     LED_ON();
 }
 

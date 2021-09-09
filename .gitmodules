@@ -4,3 +4,4 @@
 [submodule "FreeRTOS+FAT+CLI/FreeRTOS-Kernel"]
 	path = FreeRTOS+FAT+CLI/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel
+	branch = smp
