@@ -1,5 +1,5 @@
 [submodule "FreeRTOS+FAT+CLI/Lab-Project-FreeRTOS-FAT"]
-	path = FreeRTOS+FAT+CLI/Lab-Project-FreeRTOS-FAT
+	path = Lab-Project-FreeRTOS-FAT
 	url = https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT
 [submodule "FreeRTOS-Kernel"]
 	path = FreeRTOS-Kernel
