@@ -28,6 +28,7 @@ add_subdirectory(../FreeRTOS+FAT+CLI build)
 add_executable(example
         example.c
         hw_config.c
+        stdio_cli.c
         tests/app4-IO_module_function_checker.c        
         tests/filesystem_test_suite.c
         tests/CreateAndVerifyExampleFiles.c        

@@ -32,7 +32,7 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         portable/RP2040/crc.c
         src/my_debug.c
         src/FreeRTOS_time.c
-        src/stdio_cli.c
+        #src/stdio_cli.c
         src/crash.c
         src/CLI-commands.c
         src/ff_utils.c

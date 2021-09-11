@@ -537,7 +537,7 @@ bool sd_card_detect(sd_card_t *pSD) {
         // The socket is now empty
         pSD->m_Status |= (STA_NODISK | STA_NOINIT);
         pSD->card_type = SDCARD_NONE;
-        TRACE_PRINTF("No SD card detected!\n");
+        FF_PRINTF("No SD card detected!\n");
         return false;
     }
 }

@@ -90,11 +90,9 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
     __DSB();  // make sure all data is really written into the memory before
               // doing a reset
 
-    if (DBG_Connected()) {
-        __BKPT(1);
-    }
+    __BKPT(1);
     // sleep_ms(5 * 1000);
-    multicore_reset_core1();
+    
     system_reset();
 }
 
@@ -109,7 +107,7 @@ __attribute__((noreturn)) void system_reset_func(char const *const func) {
                            offsetof(crash_info_t, xor_checksum));
     __DSB();
 
-    multicore_reset_core1();
+    
     system_reset();
     __builtin_unreachable();
 }
@@ -140,7 +138,7 @@ void capture_assert(const char *file, int line, const char *func,
     __DSB();
 
     // sleep_ms(5 * 1000);
-    multicore_reset_core1();
+    
     system_reset();
 }
 
@@ -207,7 +205,7 @@ __attribute__((used)) extern void DebugMon_HandlerC(
         __BKPT(1);
     }
     // sleep_ms(5 * 1000);
-    multicore_reset_core1();
+    
     system_reset();
 }
 
@@ -248,11 +246,9 @@ void Hardfault_HandlerC(uint32_t const *faultStackAddr) {
     __DSB();  // make sure all data is really written into the memory before
               // doing a reset
 
-    if (DBG_Connected()) {
-        __BKPT(0);
-    }
+    __BKPT(0);
     // sleep_ms(5 * 1000);
-    multicore_reset_core1();
+    
     system_reset();
 }
 __attribute__((naked)) void isr_hardfault(void) {
@@ -321,7 +317,8 @@ int dump_crash_info(crash_info_t const *const pCrashInfo, int next,
                     next = crash_info_assert;
                     break;
                 default:
-                    printf("Unknown CrashInfo magic: 0x%08lx\n", pCrashInfo->magic);
+                    printf("Unknown CrashInfo magic: 0x%08lx\n",
+                           pCrashInfo->magic);
                     next = 0;
             }
             {
