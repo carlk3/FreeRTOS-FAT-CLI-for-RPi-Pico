@@ -36,8 +36,11 @@
 #include "stdio_cli.h"
 
 extern int low_level_io_tests();
-extern void vMultiTaskStdioWithCWDTest(const char *const pcMountPath,
+extern void vMultiTaskStdioWithCWDTest(const char *pcMountPath,
                                        uint16_t usStackSizeWords);
+extern void vMultiTaskStdioWithCWDTest2(const char *pcMountPath0,
+                                        const char *pcMountPath1,
+                                        uint16_t usStackSizeWords);
 
 /*
  * Functions used to create and then test files on a disk.
@@ -461,7 +464,7 @@ static BaseType_t runMultiTaskStdioWithCWDTest(char *pcWriteBuffer,
         ff_deltree(buf);
     }
     snprintf(buf, cmdMAX_INPUT_SIZE, "/%s", pcParameter);  // Add '/' for path
-    vMultiTaskStdioWithCWDTest(buf, 1024);
+    vMultiTaskStdioWithCWDTest(buf, 768);
 
     return pdFALSE;
 }
@@ -472,6 +475,72 @@ static const CLI_Command_Definition_t xMultiTaskStdioWithCWDTest = {
     "\te.g.: \"mtswcwdt sd0\"\n",
     runMultiTaskStdioWithCWDTest, /* The function to run. */
     1                             /* parameters are expected. */
+};
+/*-----------------------------------------------------------*/
+static BaseType_t runMultiTaskStdioWithCWDTest2(char *pcWriteBuffer,
+                                                size_t xWriteBufferLen,
+                                                const char *pcCommandString) {
+    (void)pcWriteBuffer;
+    (void)xWriteBufferLen;
+    const char *pcParameter;
+    BaseType_t xParameterStringLength;
+
+    char mntpnt0[cmdMAX_INPUT_SIZE];
+    char mntpnt1[cmdMAX_INPUT_SIZE];
+    char buf[cmdMAX_INPUT_SIZE];
+    FF_Disk_t *pxDisk = NULL;
+    bool rc;
+
+    /* Obtain the parameter string. */
+    pcParameter = FreeRTOS_CLIGetParameter(
+        pcCommandString,        /* The command string itself. */
+        2,                      /* Return the second parameter. */
+        &xParameterStringLength /* Store the parameter string length. */
+    );
+    /* Sanity check something was returned. */
+    configASSERT(pcParameter);
+
+    snprintf(mntpnt1, cmdMAX_INPUT_SIZE, "/%s",
+             pcParameter);  // Add '/' for path
+    rc = mount(&pxDisk, pcParameter, mntpnt1);
+    configASSERT(rc);
+
+    /* Obtain the parameter string. */
+    pcParameter = FreeRTOS_CLIGetParameter(
+        pcCommandString,        /* The command string itself. */
+        1,                      /* Return the first parameter. */
+        &xParameterStringLength /* Store the parameter string length. */
+    );
+    /* Sanity check something was returned. */
+    configASSERT(pcParameter);
+
+    snprintf(mntpnt0, cmdMAX_INPUT_SIZE, "/%s",
+             pcParameter);  // Add '/' for path
+    rc = mount(&pxDisk, pcParameter, mntpnt0);
+    configASSERT(rc);
+
+    // Clear out leftovers from earlier runs
+    for (size_t i = 0; i <= 4; ++i) {
+        snprintf(buf, cmdMAX_INPUT_SIZE, "%s/%u", mntpnt0, i);
+        ff_deltree(buf);
+    }
+    for (size_t i = 0; i <= 4; ++i) {
+        snprintf(buf, cmdMAX_INPUT_SIZE, "%s/%u", mntpnt1, i);
+        ff_deltree(buf);
+    }
+
+    vMultiTaskStdioWithCWDTest2(mntpnt0, mntpnt1, 896);
+
+    return pdFALSE;
+}
+static const CLI_Command_Definition_t xMultiTaskStdioWithCWDTest2 = {
+    "mtswcwdt2", /* The command string to type. */
+    "\nmtswcwdt2 <device name 0> <device name 1>:\n MultiTask Stdio With CWD "
+    "Test on two mountpoints\n"
+    "Expects cards to be already formatted but not mounted.\n"
+    "\te.g.: \"mtswcwdt2 sd0 sd1\"\n",
+    runMultiTaskStdioWithCWDTest2, /* The function to run. */
+    2                              /* parameters are expected. */
 };
 /*-----------------------------------------------------------*/
 static BaseType_t runSimpleFSTest(char *pcWriteBuffer, size_t xWriteBufferLen,
@@ -583,6 +652,7 @@ void register_fs_tests() {
     FreeRTOS_CLIRegisterCommand(&xExampFiles);
     FreeRTOS_CLIRegisterCommand(&xStdioWithCWDTest);
     FreeRTOS_CLIRegisterCommand(&xMultiTaskStdioWithCWDTest);
+    FreeRTOS_CLIRegisterCommand(&xMultiTaskStdioWithCWDTest2);
     FreeRTOS_CLIRegisterCommand(&xBFT);
 }
 

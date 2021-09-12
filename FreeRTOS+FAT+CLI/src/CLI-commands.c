@@ -75,6 +75,8 @@
 #include <string.h>
 #include <sys/param.h>  // min and max
 #include <time.h>
+
+#include <malloc.h> // mallinfo2
 //
 #include "hardware/rtc.h"
 #include "pico/util/datetime.h"
@@ -93,6 +95,7 @@
 #include "hw_config.h"
 #include "sd_card.h"
 #include "ff_sddisk.h"
+#include "stdio_cli.h"
 
 #ifndef configINCLUDE_TRACE_RELATED_CLI_COMMANDS
 #define configINCLUDE_TRACE_RELATED_CLI_COMMANDS 0
@@ -102,6 +105,10 @@
  * Implements the run-time-stats command.
  */
 static BaseType_t prvTaskStatsCommand(char *pcWriteBuffer,
+                                      size_t xWriteBufferLen,
+                                      const char *pcCommandString);
+
+static BaseType_t prvHeapStatsCommand(char *pcWriteBuffer,
                                       size_t xWriteBufferLen,
                                       const char *pcCommandString);
 
@@ -166,6 +173,14 @@ static const CLI_Command_Definition_t xTaskStats = {
     "task-stats:\n Displays a table showing the state of each FreeRTOS "
     "task\n\n",
     prvTaskStatsCommand, /* The function to run. */
+    0                    /* No parameters are expected. */
+};
+
+/* FreeRTOS Heap 4 and newlib heap stats */
+static const CLI_Command_Definition_t xHeapStats = {
+    "heap-stats", /* The command string to type. */
+    "heap-stats:\n Displays FreeRTOS Heap 4 and newlib heap stats\n\n",
+    prvHeapStatsCommand, /* The function to run. */
     0                    /* No parameters are expected. */
 };
 
@@ -286,6 +301,45 @@ static BaseType_t prvRunTimeStatsCommand(char *pcWriteBuffer,
     pdFALSE. */
     return pdFALSE;
 }
+
+static BaseType_t prvHeapStatsCommand(char *pcWriteBuffer,
+                                      size_t xWriteBufferLen,
+                                      const char *pcCommandString) {
+    (void)pcCommandString;
+    (void)xWriteBufferLen;
+    configASSERT(pcWriteBuffer);
+
+    int i = snprintf(pcWriteBuffer, cmdMAX_OUTPUT_SIZE,
+                     "heap4:\n\tTotal heap space remaining unallocated: %zu\n",
+                     xPortGetFreeHeapSize());
+    configASSERT(0 <= i && i < cmdMAX_OUTPUT_SIZE);
+
+    i += snprintf(pcWriteBuffer + i, cmdMAX_OUTPUT_SIZE - i,
+                  "\tMinimum ever free heap space: %zu\n",
+                  xPortGetMinimumEverFreeHeapSize());
+    configASSERT(0 <= i && i < cmdMAX_OUTPUT_SIZE);
+
+    struct mallinfo mi;
+    mi = mallinfo();
+
+    i += snprintf(pcWriteBuffer + i, cmdMAX_OUTPUT_SIZE - i,
+                  "glibc:\n\tTotal space allocated from system: %zu\n",
+                  mi.arena);
+    configASSERT(0 <= i && i < cmdMAX_OUTPUT_SIZE);
+
+    i += snprintf(pcWriteBuffer + i, cmdMAX_OUTPUT_SIZE - i,
+                  "\tTotal allocated space (bytes): %zu\n", mi.uordblks);
+    configASSERT(0 <= i && i < cmdMAX_OUTPUT_SIZE);
+
+    i += snprintf(pcWriteBuffer + i, cmdMAX_OUTPUT_SIZE - i,
+                  "\tTotal free space (bytes): %zu\n", mi.fordblks);
+    configASSERT(0 <= i && i < cmdMAX_OUTPUT_SIZE);
+
+    /* There is no more data to return after this single string, so return
+    pdFALSE. */
+    return pdFALSE;
+}
+
 /*-----------------------------------------------------------*/
 
 static BaseType_t prvThreeParameterEchoCommand(char *pcWriteBuffer,
@@ -857,6 +911,7 @@ void vRegisterCLICommands(void) {
         /* Register all the command line commands defined immediately above. */
         FreeRTOS_CLIRegisterCommand(&xTaskStats);
         FreeRTOS_CLIRegisterCommand(&xRunTimeStats);
+        FreeRTOS_CLIRegisterCommand(&xHeapStats);
         //		FreeRTOS_CLIRegisterCommand( &xThreeParameterEcho );
         //		FreeRTOS_CLIRegisterCommand( &xParameterEcho );
         FreeRTOS_CLIRegisterCommand(&xCLS);
