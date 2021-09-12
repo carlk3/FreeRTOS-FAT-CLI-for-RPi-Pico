@@ -39,8 +39,8 @@ static spi_t spis[] = {  // One for each SPI.
         .sck_gpio = 18,
         /* The choice of SD card matters! SanDisk runs at the highest speed. PNY
            can only mangage 5 MHz. Those are all I've tried. */
-        .baud_rate = 5000 * 1000,
-        //.baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
+        //.baud_rate = 5000 * 1000,
+        .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
         //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
         // worked for me with SanDisk.
 
@@ -72,7 +72,7 @@ static sd_card_t sd_cards[] = {  // One for each SD card
         .spi = &spis[0],          // Pointer to the SPI driving this card
         .ss_gpio = 15,            // The SPI slave select GPIO for this SD card
         .card_detect_gpio = 14,   // Card detect
-        .card_detected_true = 1,  // What the GPIO read returns when a card is
+        .card_detected_true = 0,  // What the GPIO read returns when a card is
                                   // present. Use -1 if there is no card detect.
         // Following attributes are dynamically assigned
         .m_Status = STA_NOINIT,

@@ -88,12 +88,13 @@
 
 /* The number of tasks to create if the stdio tests will be executed in
 multiple tasks simultaneously. */
-//#define fsTASKS_TO_CREATE 5
-#define fsTASKS_TO_CREATE 2
+#define fsTASKS_TO_CREATE 5
+//#define fsTASKS_TO_CREATE 2
 
 //#include "hardware/gpio.h" //DEBUG
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF task_printf
+//#define TRACE_PRINTF printf
 
 /*
  * Examples and basic tests of the ff_truncate() function.
@@ -1184,41 +1185,67 @@ for (size_t x = 0; x < fsTASKS_TO_CREATE; x++) {
     snprintf(cTaskName, sizeof(cTaskName), "FS%zu", x);
     xTaskCreate(prvFileSystemAccessTask, cTaskName,
                 usStackSizeWords, /* Not used with the Windows port. */
-                (void *)&(cDirName[x][0]), tskIDLE_PRIORITY + 3, NULL);
+                (void *)&(cDirName[x][0]), configMAX_PRIORITIES - 3, NULL);
 	}
+}
+/*-----------------------------------------------------------*/
+/* Multi tasks on two mount points */
+void vMultiTaskStdioWithCWDTest2(const char *pcMountPath0,
+                                 const char *pcMountPath1,
+                                 uint16_t usStackSizeWords) {
+    TRACE_PRINTF("%s(pcMountPath0=%s, pcMountPath1=%s, usStackSizeWords=%hu)\n",
+                 __FUNCTION__, pcMountPath0, pcMountPath1, usStackSizeWords);
+
+    // Allocate on heap to allow more than one instance of this test to run
+    typedef char cDirName_t[20];
+    cDirName_t *cDirName = pvPortMalloc(fsTASKS_TO_CREATE * sizeof(cDirName_t));
+
+    /* Create a set of tasks that also create, check and delete files.  These
+    are left running as an ad hoc test of multiple tasks accessing the file
+    system simultaneously. */
+    for (size_t x = 0; x < fsTASKS_TO_CREATE; x++) {
+        if (x % 2)
+            snprintf(&(cDirName[x][0]), sizeof(cDirName_t), "%s/%d",
+                     pcMountPath1, x);
+        else
+            snprintf(&(cDirName[x][0]), sizeof(cDirName_t), "%s/%d",
+                     pcMountPath0, x);
+        char cTaskName[configMAX_TASK_NAME_LEN];
+        snprintf(cTaskName, sizeof(cTaskName), "FS%zu", x);
+        xTaskCreate(prvFileSystemAccessTask, cTaskName,
+                    usStackSizeWords, /* Not used with the Windows port. */
+                    (void *)&(cDirName[x][0]), configMAX_PRIORITIES - 3, NULL);
+    }
 }
 /*-----------------------------------------------------------*/
 
 extern bool die_now;
 
-static void prvFileSystemAccessTask( void *pvParameters )
-{
-TRACE_PRINTF("%s()\n", __FUNCTION__);
+static void prvFileSystemAccessTask(void *pvParameters) {
+    TRACE_PRINTF("%s()\n", __FUNCTION__);
 
-extern void vCreateAndVerifyExampleFiles( const char *pcMountPath );
-const char * const pcBasePath = ( char * ) pvParameters;
+    extern void vCreateAndVerifyExampleFiles(const char *pcMountPath);
+    const char *const pcBasePath = (char *)pvParameters;
 
-	for( ;; )
-	{
+    for (;;) {
         FF_PRINTF("Task %p, %s, %s\n", xTaskGetCurrentTaskHandle(),
-            pcTaskGetName(xTaskGetCurrentTaskHandle()), pcBasePath);
+                  pcTaskGetName(xTaskGetCurrentTaskHandle()), pcBasePath);
         fflush(stdout);
-        
-		/* Create the directory used as a base by this instance of this task. */
-		ff_mkdir( pcBasePath );
 
-		/* Create a few example files on the disk. */
-		vCreateAndVerifyExampleFiles( pcBasePath );
+        /* Create the directory used as a base by this instance of this task. */
+        ff_mkdir(pcBasePath);
 
-		/* A few sanity checks only - can only be called after
-		vCreateAndVerifyExampleFiles(). */
-		vStdioWithCWDTest( pcBasePath );
+        /* Create a few example files on the disk. */
+        vCreateAndVerifyExampleFiles(pcBasePath);
 
-		/* Remove the base directory again, ready for another loop. */
-		ff_deltree( pcBasePath );
-        
-        if (die_now)
-            vTaskDelete(NULL);
-       	}
+        /* A few sanity checks only - can only be called after
+        vCreateAndVerifyExampleFiles(). */
+        vStdioWithCWDTest(pcBasePath);
+
+        /* Remove the base directory again, ready for another loop. */
+        ff_deltree(pcBasePath);
+
+        if (die_now) vTaskDelete(NULL);
+    }
 }
 /*-----------------------------------------------------------*/

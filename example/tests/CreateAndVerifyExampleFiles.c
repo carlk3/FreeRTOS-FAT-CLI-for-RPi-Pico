@@ -78,11 +78,14 @@
 #include "ff_stdio.h"
 
 #include <stdio.h>
+#include <string.h> // strerror
 
 //#define TRACE_PRINTF(fmt, args...)
-#define TRACE_PRINTF task_printf
+//#define TRACE_PRINTF task_printf
+#define TRACE_PRINTF printf
 
-#define FF_PRINTF task_printf 
+//#define FF_PRINTF task_printf 
+//#define FF_PRINTF printf 
 
 /* The number of bytes read/written to the example files at a time. */
 #define fsRAM_BUFFER_SIZE 				200
@@ -173,9 +176,12 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Ensure in the root of the mount being used. */
 	lResult = ff_chdir( pcMountPath );
-	configASSERT( lResult >= 0 );
+	if (-1 == lResult)
+		FF_PRINTF("ff_chdir(%s) failed: %s (%d)\n", pcMountPath,
+					strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+	configASSERT(lResult >= 0);
 
-	/* Create xMaxFiles files.  Each created file will be
+        /* Create xMaxFiles files.  Each created file will be
 	( xFileNumber * fsRAM_BUFFER_SIZE ) bytes in length, and filled
 	with a different repeating character. */
 	for( xFileNumber = 1; xFileNumber <= xMaxFiles; xFileNumber++ )
@@ -190,6 +196,9 @@ char *pcRAMBuffer, *pcFileName;
 
 		/* Open the file, creating the file if it does not already exist. */
 		pxFile = ff_fopen( pcFileName, "w" );
+		if (!pxFile)
+			FF_PRINTF("ff_fopen(%s) failed: %s (%d)\n", pcFileName,
+						strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 		configASSERT( pxFile );
 
 		/* Fill the RAM buffer with data that will be written to the file.  This

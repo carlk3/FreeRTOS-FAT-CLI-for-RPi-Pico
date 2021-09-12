@@ -114,14 +114,14 @@ void unmount(FF_Disk_t *pxDisk, const char *pcPath) {
     // FF_SDDiskDelete(pxDisk);
 }
 
-void eject(const char *const name) {
+void eject(const char *const name, const char *pcPath) {
     sd_card_t *pSD = sd_get_by_name(name);
     if (!pSD) {
         FF_PRINTF("Unknown device name %s\n", name);
         return;
     }
-    size_t i;
-    for (i = 0; i < pSD->ff_disk_count; ++i) {
+    FF_FS_Remove(pcPath);
+    for (size_t i = 0; i < pSD->ff_disk_count; ++i) {
         FF_Disk_t *pxDisk = pSD->ff_disks[i];
         if (pxDisk) {
             if (pxDisk->xStatus.bIsMounted) {

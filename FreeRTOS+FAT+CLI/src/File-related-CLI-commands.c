@@ -148,6 +148,11 @@ static const CLI_Command_Definition_t xDIR =
 "\r\ndir:\r\n Lists the files in the current directory\r\n", prvDIRCommand, /* The function to run. */
 	0 /* No parameters are expected. */
 };
+static const CLI_Command_Definition_t xLS =
+{ "ls", /* The command string to type. */
+"ls: Alias for \"dir\"\r\n", prvDIRCommand, /* The function to run. */
+	0 /* No parameters are expected. */
+};
 
 /* Structure that defines the CD command line command, which changes the
 working directory. */
@@ -205,6 +210,7 @@ static const CLI_Command_Definition_t xPWD =
 void vRegisterFileSystemCLICommands(void) {
 	/* Register all the command line commands defined immediately above. */
 	FreeRTOS_CLIRegisterCommand( &xDIR );
+	FreeRTOS_CLIRegisterCommand( &xLS );
 	FreeRTOS_CLIRegisterCommand( &xCD );
 	FreeRTOS_CLIRegisterCommand( &xTYPE );
 	FreeRTOS_CLIRegisterCommand( &xDEL );
@@ -522,7 +528,7 @@ BaseType_t xParameterStringLength;
 
     // int ff_rename( const char *pcOldName, const char *pcNewName );
     // If the file is moved successfully then zero is returned.
-    // If the file could not be moved then -1 is returned and the task’s errno is set to indicate the reason. 
+    // If the file could not be moved then -1 is returned and the taskï¿½s errno is set to indicate the reason. 
     // A task can obtain its errno value using the ff_errno() API function.    
     int ec = ff_rename(pcSourceFile, pcDestinationFile, false);
     if (ec) {

@@ -14,6 +14,7 @@
 #include <stdint.h>
 //
 #include "hardware/timer.h"
+#include "pico/multicore.h"  // get_core_num()
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 //
@@ -33,8 +34,6 @@ static time_t start_time;
 
 void mark_start_time() { start_time = FreeRTOS_time(NULL); }
 time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
-
-bool DBG_Connected() { return false; }
 
 static SemaphoreHandle_t xSemaphore;
 static BaseType_t printf_locked;
@@ -58,9 +57,9 @@ void task_printf(const char *pcFormat, ...) {
     vsnprintf(pcBuffer, sizeof(pcBuffer), pcFormat, xArgs);
     va_end(xArgs);
     lock_printf();
-    printf("%s: %s", pcTaskGetName(NULL), pcBuffer);
-    unlock_printf();
+    printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
     fflush(stdout);
+    unlock_printf();
 }
 
 int stdio_fail(const char *const fn, const char *const str) {
@@ -144,17 +143,14 @@ void configure_fault_register(void) {
 void my_assert_func(const char *file, int line, const char *func,
                     const char *pred) {
     TRIG();  // DEBUG
-    task_printf("%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
-           pcTaskGetName(NULL), pred, file, line, func);
+    task_printf(
+        "%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
+        pcTaskGetName(NULL), pred, file, line, func);
     fflush(stdout);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
-    if (DBG_Connected()) {
-        __BKPT(3);  // Stop in GUI as if at a breakpoint (if debugging,
-                    // otherwise loop forever)
-    } else {
-        capture_assert(file, line, func, pred);
-    }
+    __BKPT(3);       // Stop in GUI as if at a breakpoint (if debugging,
+                     // otherwise loop forever)
 }
 
 void assert_always_func(const char *file, int line, const char *func,
@@ -164,12 +160,8 @@ void assert_always_func(const char *file, int line, const char *func,
            pred, file, line, func);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
-    if (DBG_Connected()) {
-        __BKPT(3);  // Stop in GUI as if at a breakpoint (if debugging,
-                    // otherwise loop forever)
-    } else {
-        capture_assert(file, line, func, pred);
-    }
+    __BKPT(3);       // Stop in GUI as if at a breakpoint (if debugging,
+                     // otherwise loop forever)
 }
 
 void assert_case_not_func(const char *file, int line, const char *func, int v) {
@@ -180,7 +172,7 @@ void assert_case_not_func(const char *file, int line, const char *func, int v) {
 }
 
 void assert_case_is(const char *file, int line, const char *func, int v,
-                   int expected) {
+                    int expected) {
     TRIG();  // DEBUG
     char pred[128];
     snprintf(pred, sizeof pred, "%d is %d", v, expected);
@@ -193,7 +185,7 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
         for (size_t col = 0; col < 32 && byte_ix < nbytes; ++col, ++byte_ix) {
             n += snprintf(buf + n, buf_sz - n, "%02hhx ", pbytes[byte_ix]);
             configASSERT(0 < n && n < (int)buf_sz);
-       }
+        }
         n += snprintf(buf + n, buf_sz - n, "\n");
         configASSERT(0 < n && n < (int)buf_sz);
     }
@@ -203,8 +195,8 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
     printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
            pbytes, nbytes);
     fflush(stdout);
-    size_t col = 0; 
-    for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {        
+    size_t col = 0;
+    for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
         printf("%02hhx ", pbytes[byte_ix]);
         if (++col > 31) {
             printf("\n");
@@ -220,7 +212,7 @@ void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
            pwords, nwords);
     fflush(stdout);
-    size_t col = 0; 
+    size_t col = 0;
     for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {
         printf("%08lx ", pwords[word_ix]);
         if (++col > 7) {

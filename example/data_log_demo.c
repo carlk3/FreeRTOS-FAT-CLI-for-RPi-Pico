@@ -1,12 +1,12 @@
 
+#include "FreeRTOS.h" /* Must come first. */
+//
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 //
 #include "hardware/adc.h"
 #include "pico/stdlib.h"
-//
-#include "FreeRTOS.h"
 //
 #include "FreeRTOS_CLI.h"
 #include "ff_headers.h"

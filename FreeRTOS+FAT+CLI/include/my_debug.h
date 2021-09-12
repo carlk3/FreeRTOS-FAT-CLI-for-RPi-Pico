@@ -30,13 +30,9 @@ time_t GLOBAL_uptime_seconds();
 
 extern void vLoggingPrintf(const char *pcFormat, ...)
     __attribute__((format(__printf__, 1, 2)));
-//#if defined(DEBUG) && !defined(NDEBUG)
-#define DBG_PRINTF task_printf  // DEBUG
-//#  define DBG_PRINTF printf
-//#else
-//#   define DBG_PRINTF(fmt, args...)    /* Don't do anything in release
-// builds*/ #endif
 
+//#define DBG_PRINTF task_printf 
+#define DBG_PRINTF printf
 
 void task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 

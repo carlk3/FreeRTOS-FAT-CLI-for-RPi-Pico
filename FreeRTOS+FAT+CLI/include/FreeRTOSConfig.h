@@ -1,8 +1,6 @@
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include "hardware/timer.h"
-
 #include "my_debug.h"
 
 #ifndef portINLINE
@@ -24,11 +22,12 @@
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES   3
 #define configUSE_MUTEXES                       1
 #define configUSE_RECURSIVE_MUTEXES             1
+#define configUSE_APPLICATION_TASK_TAG          0
 #define configUSE_COUNTING_SEMAPHORES           0
 #define configUSE_ALTERNATIVE_API               0 /* Deprecated! */
 #define configQUEUE_REGISTRY_SIZE               10
-#define configUSE_QUEUE_SETS                    0
-#define configUSE_TIME_SLICING                  1   // danger
+#define configUSE_QUEUE_SETS                    1
+#define configUSE_TIME_SLICING                  1 
 #define configUSE_NEWLIB_REENTRANT              1   // Necessary if any floating point printfs are used!
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 5
@@ -59,7 +58,7 @@
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS                        1
-#define configTIMER_TASK_PRIORITY               3
+#define configTIMER_TASK_PRIORITY               ( configMAX_PRIORITIES - 1 )
 #define configTIMER_QUEUE_LENGTH                10
 #define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE
 
@@ -67,6 +66,15 @@
 #define configKERNEL_INTERRUPT_PRIORITY         [dependent of processor]
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    [dependent on processor and application]
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   [dependent on processor and application]
+
+/* SMP port only */
+#define configNUM_CORES                         2
+#define configTICK_CORE                         0
+#define configRUN_MULTIPLE_PRIORITIES           0
+
+/* RP2040 specific */
+#define configSUPPORT_PICO_SYNC_INTEROP         1
+#define configSUPPORT_PICO_TIME_INTEROP         1
 
 /* Define to trap errors during development. */
 //#define configASSERT( x )  assert( x )
@@ -93,16 +101,17 @@
 #define INCLUDE_xTaskGetIdleTaskHandle          0
 #define INCLUDE_eTaskGetState                   0
 #define INCLUDE_xEventGroupSetBitFromISR        1
-#define INCLUDE_xTimerPendFunctionCall          0
+#define INCLUDE_xTimerPendFunctionCall          1
 #define INCLUDE_xTaskAbortDelay                 0
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskResumeFromISR              1
 
-#define vPortSVCHandler isr_svcall
-#define xPortPendSVHandler isr_pendsv
-#define xPortSysTickHandler isr_systick
+//#define vPortSVCHandler isr_svcall
+//#define xPortPendSVHandler isr_pendsv
+//#define xPortSysTickHandler isr_systick
 
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 
+extern uint64_t time_us_64(void); // "hardware/timer.h"
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
 
 /* A header file that defines trace macro can be included here. */

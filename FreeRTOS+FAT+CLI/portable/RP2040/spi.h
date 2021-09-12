@@ -12,14 +12,12 @@
 #ifndef _SPI_H_
 #define _SPI_H_
 
-#include <stdbool.h>
-
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
 //
-#include <semphr.h>
-#include <task.h>
-
+#include <stdbool.h>
 // Pico includes
 #include "hardware/dma.h"
 #include "hardware/irq.h"
@@ -48,10 +46,10 @@ typedef struct {
 } spi_t;
 
 // SPI DMA interrupts
-void spi_irq_handler(spi_t *this);
+void spi_irq_handler(spi_t *pSPI);
 
-bool spi_transfer(spi_t *this, const uint8_t *tx, uint8_t *rx, size_t length);
-bool my_spi_init(spi_t *this);
+bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length);
+bool my_spi_init(spi_t *pSPI);
 
 #define USE_LED 1
 #if USE_LED

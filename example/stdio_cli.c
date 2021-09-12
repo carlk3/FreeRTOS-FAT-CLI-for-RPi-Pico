@@ -17,11 +17,10 @@
 // FreeRTOS
 #include "FreeRTOS.h"
 //
-#include "FreeRTOS_time.h"
-#include "queue.h"
 #include "task.h"
 // Pico
 #include "pico/stdlib.h"
+#include "pico/util/queue.h"
 //
 #include "hardware/irq.h"
 #include "hardware/rtc.h"
@@ -41,44 +40,6 @@
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF printf  // task_printf
 
-static QueueHandle_t xQueue;
-
-/* Offload USB polling to the other processor so it doesn't steal all our
- * cycles. */
-
-void core1_entry() {
-    for (;;) {
-        int cRxedChar = getchar_timeout_us(1000 * 1000);
-        /* Get the character from terminal */
-        if (PICO_ERROR_TIMEOUT == cRxedChar) continue;
-        stdio_flush();
-
-        multicore_fifo_push_blocking(cRxedChar);
-    }
-}
-
-void core0_sio_irq() {
-    multicore_fifo_clear_irq();
-    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
-     it will get set to pdTRUE inside the interrupt safe API function if a
-     context switch is required. */
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
-    configASSERT(xQueue);
-
-    while (multicore_fifo_rvalid()) {
-        int cRxedChar = multicore_fifo_pop_blocking();
-        xQueueSendFromISR(xQueue, &cRxedChar, &xHigherPriorityTaskWoken);
-    }
-
-    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR(). If
-     xHigherPriorityTaskWoken was set to pdTRUE inside vTaskNotifyGiveFromISR()
-     then calling portYIELD_FROM_ISR() will request a context switch. If
-     xHigherPriorityTaskWoken is still pdFALSE then calling
-     portYIELD_FROM_ISR() will have no effect. */
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-}
-
 // stdioTask - the function which handles input
 static void stdioTask(void *arg) {
     (void)arg;
@@ -89,56 +50,39 @@ static void stdioTask(void *arg) {
     BaseType_t xMoreDataToFollow = 0;
     bool in_overflow = false;
 
-    multicore_launch_core1(core1_entry);
-    irq_set_exclusive_handler(SIO_IRQ_PROC0, core0_sio_irq);
-
-    /* Any interrupt that uses interrupt-safe FreeRTOS API functions ust also
-     * execute at the priority defined by configKERNEL_INTERRUPT_PRIORITY. */
-    irq_set_priority(SIO_IRQ_PROC0, 0xFF);  // Lowest urgency.
-    irq_set_enabled(SIO_IRQ_PROC0, true);
-
     printf("\033[2J\033[H");  // Clear Screen
+    // Check fault capture from RAM:
+    crash_info_t const *const pCrashInfo = crash_handler_get_info();
+    if (pCrashInfo) {
+        printf("*** Fault Capture Analysis (RAM): ***\n");
+        int n = 0;
+        do {
+            char buf[256] = {0};
+            n = dump_crash_info(pCrashInfo, n, buf, sizeof(buf));
+            if (buf[0]) printf("\t%s", buf);
+        } while (n != 0);
+    }
+    if (!rtc_running()) printf("RTC is not running.\n");
+    datetime_t t = {0, 0, 0, 0, 0, 0, 0};
+    rtc_get_datetime(&t);
+    char datetime_buf[256] = {0};
+    datetime_to_str(datetime_buf, sizeof(datetime_buf), &t);
+    printf("%s\n", datetime_buf);
+    printf("FreeRTOS+CLI> ");
+    stdio_flush();
 
     for (;;) {
-        // int cRxedChar = getchar_timeout_us(1000 * 1000);
-        ///* Get the character from terminal */
-        // if (PICO_ERROR_TIMEOUT == cRxedChar) {
-        //    continue;
-        //}
-        // printf("%c", cRxedChar);  // echo
-        // stdio_flush();
-
-        int cRxedChar;
-        xQueueReceive(xQueue, &cRxedChar, portMAX_DELAY);
+        int cRxedChar = getchar_timeout_us(0);
+        /* Get the character from terminal */
+        if (PICO_ERROR_TIMEOUT == cRxedChar) {
+            vTaskDelay(pdMS_TO_TICKS(1));
+            continue;
+        }
         if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
             '\b' != cRxedChar && cRxedChar != (char)127)
             continue;
         printf("%c", cRxedChar);  // echo
         stdio_flush();
-        static bool first = true;
-        if (first) {
-            // Check fault capture from RAM:
-            crash_info_t const *const pCrashInfo = crash_handler_get_info();
-            if (pCrashInfo) {
-                printf("*** Fault Capture Analysis (RAM): ***\n");
-                int n = 0;
-                do {
-                    char buf[256] = {0};
-                    n = dump_crash_info(pCrashInfo, n, buf, sizeof(buf));
-                    if (buf[0]) printf("\t%s", buf);
-                } while (n != 0);
-            }
-            if (!rtc_running()) printf("RTC is not running.\n");
-            datetime_t t = {0, 0, 0, 0, 0, 0, 0};
-            rtc_get_datetime(&t);
-            char datetime_buf[256] = {0};
-            datetime_to_str(datetime_buf, sizeof(datetime_buf), &t);
-            printf("%s\n", datetime_buf);
-            printf("FreeRTOS+CLI> ");
-            stdio_flush();
-
-            first = false;
-        }
 
         /* Newline characters are taken as the end of the command
          string. */
@@ -234,23 +178,11 @@ void CLI_Start() {
     extern const CLI_Command_Definition_t xDataLogDemo;
     FreeRTOS_CLIRegisterCommand(&xDataLogDemo);
 
-    // stdio_init_all();
-    stdio_init_all();
-
-    FreeRTOS_time_init();
-
-    sd_driver_init();
-
-    static StaticQueue_t xStaticQueue;
-    static uint32_t ucQueueStorageArea[8];
-    xQueue = xQueueCreateStatic(8, sizeof(uint32_t),
-                                (uint8_t *)ucQueueStorageArea, &xStaticQueue);
-
     static StackType_t xStack[1024];
     static StaticTask_t xTaskBuffer;
     TaskHandle_t th = xTaskCreateStatic(
         stdioTask, "stdio Task", sizeof xStack / sizeof xStack[0], 0,
-        tskIDLE_PRIORITY + 2, /* Priority at which the task is created. */
+        configMAX_PRIORITIES - 2, /* Priority at which the task is created. */
         xStack, &xTaskBuffer);
     configASSERT(th);
 }
