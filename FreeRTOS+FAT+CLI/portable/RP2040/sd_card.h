@@ -1,14 +1,3 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
- */
 
 #ifndef _SD_CARD_H_
 #define _SD_CARD_H_
@@ -33,7 +22,7 @@ typedef struct {
     const char *pcName;
     spi_t *const spi;
     // Slave select is here in sd_card_t because multiple SDs can share an SPI
-    uint ss_gpio;                   // Slave select for pSD SD card
+    uint ss_gpio;                   // Slave select for this SD card
     const uint card_detect_gpio;    // Card detect
     const uint card_detected_true;  // Varies with card socket
     const gpio_irq_callback_t card_detect_callback;  // Port Interrupt callback
@@ -43,7 +32,7 @@ typedef struct {
     int card_type;                                   // Assigned dynamically
     SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
     size_t ff_disk_count;
-    FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using pSD device
+    FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using this device
 } sd_card_t;
 
 #define SD_BLOCK_DEVICE_ERROR_NONE 0
