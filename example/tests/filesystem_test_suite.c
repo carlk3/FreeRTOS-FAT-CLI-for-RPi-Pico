@@ -487,7 +487,7 @@ static BaseType_t runMultiTaskStdioWithCWDTest2(char *pcWriteBuffer,
 
     char mntpnt0[cmdMAX_INPUT_SIZE];
     char mntpnt1[cmdMAX_INPUT_SIZE];
-    char buf[cmdMAX_INPUT_SIZE];
+    char buf[cmdMAX_INPUT_SIZE + 2];
     FF_Disk_t *pxDisk = NULL;
     bool rc;
 
@@ -500,7 +500,7 @@ static BaseType_t runMultiTaskStdioWithCWDTest2(char *pcWriteBuffer,
     /* Sanity check something was returned. */
     configASSERT(pcParameter);
 
-    snprintf(mntpnt1, cmdMAX_INPUT_SIZE, "/%s",
+    snprintf(mntpnt1, xParameterStringLength + 2, "/%s",
              pcParameter);  // Add '/' for path
     rc = mount(&pxDisk, pcParameter, mntpnt1);
     configASSERT(rc);
@@ -514,22 +514,22 @@ static BaseType_t runMultiTaskStdioWithCWDTest2(char *pcWriteBuffer,
     /* Sanity check something was returned. */
     configASSERT(pcParameter);
 
-    snprintf(mntpnt0, cmdMAX_INPUT_SIZE, "/%s",
+    snprintf(mntpnt0, xParameterStringLength + 2, "/%s",
              pcParameter);  // Add '/' for path
     rc = mount(&pxDisk, pcParameter, mntpnt0);
     configASSERT(rc);
 
     // Clear out leftovers from earlier runs
     for (size_t i = 0; i <= 4; ++i) {
-        snprintf(buf, cmdMAX_INPUT_SIZE, "%s/%u", mntpnt0, i);
+        snprintf(buf, sizeof(buf), "%s/%u", mntpnt0, i);
         ff_deltree(buf);
     }
     for (size_t i = 0; i <= 4; ++i) {
-        snprintf(buf, cmdMAX_INPUT_SIZE, "%s/%u", mntpnt1, i);
+        snprintf(buf, sizeof(buf), "%s/%u", mntpnt1, i);
         ff_deltree(buf);
     }
 
-    vMultiTaskStdioWithCWDTest2(mntpnt0, mntpnt1, 896);
+    vMultiTaskStdioWithCWDTest2(mntpnt0, mntpnt1, 750);
 
     return pdFALSE;
 }
