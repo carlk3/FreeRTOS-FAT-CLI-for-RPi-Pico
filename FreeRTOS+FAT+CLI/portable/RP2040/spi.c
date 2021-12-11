@@ -1,14 +1,3 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
- */
 #include <stdbool.h>
 //
 #include "pico/stdlib.h"
@@ -68,7 +57,7 @@ bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length) {
         rx = &dummy;
         channel_config_set_write_increment(&pSPI->rx_dma_cfg, false);
     }
-    /* Ensure pSPI task does not already have a notification pending by calling
+    /* Ensure this task does not already have a notification pending by calling
      ulTaskNotifyTake() with the xClearCountOnExit parameter set to pdTRUE, and
      a block time of 0 (don't block). */
     BaseType_t rc = ulTaskNotifyTake(pdTRUE, 0);

@@ -1,17 +1,5 @@
 #ifndef _CRASH_H_
 #define _CRASH_H_
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
- */
-
 // Original from M0AGX (blog@m0agx.eu), "Preserving debugging breadcrumbs across
 // reboots in Cortex-M,"
 // https://m0agx.eu/2018/08/18/preserving-debugging-breadcrumbs-across-reboots-in-cortex-m/

@@ -13,7 +13,8 @@
 
 static void stop() {
     fflush(stdout);
-    vTaskSuspend(NULL);
+    //vTaskSuspend(NULL);
+    __breakpoint();
 }
 
 static void SimpleTask(void *arg) {

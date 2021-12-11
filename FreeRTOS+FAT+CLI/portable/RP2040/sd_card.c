@@ -1,3 +1,16 @@
+/* sd_card.c
+Copyright 2021 Carl John Kugler III
+
+Licensed under the Apache License, Version 2.0 (the License); you may not use 
+this file except in compliance with the License. You may obtain a copy of the 
+License at
+
+   http://www.apache.org/licenses/LICENSE-2.0 
+Unless required by applicable law or agreed to in writing, software distributed 
+under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR 
+CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+specific language governing permissions and limitations under the License.
+*/
 /*
  * This code borrows heavily from the Mbed SDBlockDevice:
  *       https://os.mbed.com/docs/mbed-os/v5.15/apis/sdblockdevice.html
@@ -542,8 +555,8 @@ bool sd_card_detect(sd_card_t *pSD) {
     }
 }
 
-#define SD_CMD0_GO_IDLE_STATE_RETRIES \
-    10 /*!< Number of retries for sending CMDO */
+/*!< Number of retries for sending CMDO */
+#define SD_CMD0_GO_IDLE_STATE_RETRIES 10 
 
 static uint32_t sd_go_idle_state(sd_card_t *pSD) {
     uint32_t response;
@@ -558,9 +571,9 @@ static uint32_t sd_go_idle_state(sd_card_t *pSD) {
         if (R1_IDLE_STATE == response) {
             break;
         }
-	    sd_unlock(pSD);
-        vTaskDelay(100);
-	    sd_lock(pSD);
+        sd_unlock(pSD);
+        vTaskDelay(pdMS_TO_TICKS(100));
+        sd_lock(pSD);
     }
     return response;
 }
@@ -590,11 +603,20 @@ static int sd_cmd8(sd_card_t *pSD) {
     return status;
 }
 
-static int sd_initialise_card_nolock(sd_card_t *pSD) {
+static int sd_init_card3(sd_card_t *pSD) {
     int32_t status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint32_t response, arg;
-
+    /*
+    Power ON or card insersion
+    After supply voltage reached above 2.2 volts,
+    wait for one millisecond at least.
+    Set SPI clock rate between 100 kHz and 400 kHz.
+    Set DI and CS high and apply 74 or more clock pulses to SCLK.
+    The card will enter its native operating mode and go ready to accept native
+    command.
+    */
     sd_spi_go_low_frequency(pSD);
+    sd_spi_send_initializing_sequence(pSD);    
 
     // The card is transitioned from SDCard mode to SPI mode by sending the CMD0
     // + CS Asserted("0")
@@ -687,9 +709,9 @@ static int sd_initialise_card_nolock(sd_card_t *pSD) {
 
     return status;
 }
-static int sd_initialise_card(sd_card_t *pSD) {
+static int sd_init_card2(sd_card_t *pSD) {
     sd_lock(pSD);
-    int rc = sd_initialise_card_nolock(pSD);
+    int rc = sd_init_card3(pSD);
     sd_unlock(pSD);
     return rc;
 }
@@ -774,7 +796,7 @@ uint64_t sd_sectors(sd_card_t *pSD) {
 int sd_init_card(sd_card_t *pSD) {
     TRACE_PRINTF("> %s\n", __FUNCTION__);
     if (!sd_init_driver()) {
-        pSD->m_Status &= STA_NOINIT;
+        pSD->m_Status |= STA_NOINIT;
         return pSD->m_Status;
     }
     //	STA_NOINIT = 0x01, /* Drive not initialized */
@@ -795,11 +817,10 @@ int sd_init_card(sd_card_t *pSD) {
         xSemaphoreGiveRecursive(pSD->mutex);
         return pSD->m_Status;
     }
-
     // Initialize the member variables
     pSD->card_type = SDCARD_NONE;
 
-    int err = sd_initialise_card(pSD);
+    int err = sd_init_card2(pSD);
     if (SD_BLOCK_DEVICE_ERROR_NONE != err) {
         DBG_PRINTF("Failed to initialize card\n");
         xSemaphoreGiveRecursive(pSD->mutex);
@@ -1114,8 +1135,8 @@ bool sd_init_driver() {
         gpio_set_dir(pSD->card_detect_gpio, GPIO_IN);
         // Chip select is active-low, so we'll initialise it to a driven-high
         // state.
-        gpio_init(pSD->ss_gpio);
         gpio_put(pSD->ss_gpio, 1); // Avoid any glitches when enabling output
+        gpio_init(pSD->ss_gpio);
         gpio_set_dir(pSD->ss_gpio, GPIO_OUT);
         gpio_put(pSD->ss_gpio, 1); // In case set_dir does anything
     }
