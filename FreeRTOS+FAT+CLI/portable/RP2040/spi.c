@@ -1,14 +1,16 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
- */
+/* spi.c
+Copyright 2021 Carl John Kugler III
+
+Licensed under the Apache License, Version 2.0 (the License); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+*/
 #include <stdbool.h>
 //
 #include "pico/stdlib.h"
@@ -68,7 +70,7 @@ bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length) {
         rx = &dummy;
         channel_config_set_write_increment(&pSPI->rx_dma_cfg, false);
     }
-    /* Ensure pSPI task does not already have a notification pending by calling
+    /* Ensure this task does not already have a notification pending by calling
      ulTaskNotifyTake() with the xClearCountOnExit parameter set to pdTRUE, and
      a block time of 0 (don't block). */
     BaseType_t rc = ulTaskNotifyTake(pdTRUE, 0);

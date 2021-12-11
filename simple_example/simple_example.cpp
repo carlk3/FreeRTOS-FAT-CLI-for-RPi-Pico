@@ -11,10 +11,10 @@
 //
 #include "hw_config.h"
 
-static void hang() {
+static void stop() {
     fflush(stdout);
-    for (;;)
-        ;
+    //vTaskSuspend(NULL);
+    __breakpoint();
 }
 
 static void SimpleTask(void *arg) {
@@ -28,7 +28,7 @@ static void SimpleTask(void *arg) {
     if (FF_isERR(xError) != pdFALSE) {
         FF_PRINTF("FF_SDDiskMount: %s\n",
                   (const char *)FF_GetErrMessage(xError));
-        hang();
+        stop();
     }
     FF_FS_Add("/sd0", pxDisk);
 
@@ -36,24 +36,24 @@ static void SimpleTask(void *arg) {
     if (!pxFile) {
         FF_PRINTF("ff_fopen failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
-        hang();
+        stop();
     }
     if (ff_fprintf(pxFile, "Hello, world!\n") < 0) {
         FF_PRINTF("ff_fprintf failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
-        hang();
+        stop();
     }
     if (-1 == ff_fclose(pxFile)) {
         FF_PRINTF("ff_fclose failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
-        hang();
+        stop();
     }
     FF_FS_Remove("/sd0");
     FF_Unmount(pxDisk);
     FF_SDDiskDelete(pxDisk);
     puts("Goodbye, world!");
 
-    hang();
+    vTaskDelete(NULL);
 }
 
 int main() {

@@ -1,14 +1,17 @@
-/* ========================================
- *
- * Copyright YOUR COMPANY, THE YEAR
- * All Rights Reserved
- * UNPUBLISHED, LICENSED SOFTWARE.
- *
- * CONFIDENTIAL AND PROPRIETARY INFORMATION
- * WHICH IS THE PROPERTY OF your company.
- *
- * ========================================
- */
+/* spi.h
+Copyright 2021 Carl John Kugler III
+
+Licensed under the Apache License, Version 2.0 (the License); you may not use 
+this file except in compliance with the License. You may obtain a copy of the 
+License at
+
+   http://www.apache.org/licenses/LICENSE-2.0 
+Unless required by applicable law or agreed to in writing, software distributed 
+under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR 
+CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+specific language governing permissions and limitations under the License.
+*/
+
 #ifndef _SPI_H_
 #define _SPI_H_
 
@@ -18,8 +21,10 @@
 #include "task.h"
 //
 #include <stdbool.h>
+//
 // Pico includes
 #include "hardware/dma.h"
+#include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "pico/types.h"
@@ -30,10 +35,10 @@
 typedef struct {
     // SPI HW
     spi_inst_t *hw_inst;
-    const uint miso_gpio;  // SPI MISO pin number for GPIO
-    const uint mosi_gpio;
-    const uint sck_gpio;
-    const uint baud_rate;
+    uint miso_gpio;  // SPI MISO GPIO number (not pin number)
+    uint mosi_gpio;
+    uint sck_gpio;
+    uint baud_rate;
     // State variables:
     uint tx_dma;
     uint rx_dma;
@@ -45,13 +50,21 @@ typedef struct {
     SemaphoreHandle_t mutex;  // Assigned dynamically
 } spi_t;
 
-// SPI DMA interrupts
-void spi_irq_handler(spi_t *pSPI);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length);
-bool my_spi_init(spi_t *pSPI);
+    void spi_irq_handler(spi_t *pSPI);
+    bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length);
+    bool my_spi_init(spi_t *pSPI);
 
+#ifdef __cplusplus
+}
+#endif
+
+#ifndef NO_PICO_LED
 #define USE_LED 1
+#endif
 #if USE_LED
 #   define LED_PIN 25
 #   include "hardware/gpio.h"
