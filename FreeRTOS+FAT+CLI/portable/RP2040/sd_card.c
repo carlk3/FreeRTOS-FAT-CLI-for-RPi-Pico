@@ -1,14 +1,14 @@
 /* sd_card.c
 Copyright 2021 Carl John Kugler III
 
-Licensed under the Apache License, Version 2.0 (the License); you may not use 
-this file except in compliance with the License. You may obtain a copy of the 
+Licensed under the Apache License, Version 2.0 (the License); you may not use
+this file except in compliance with the License. You may obtain a copy of the
 License at
 
-   http://www.apache.org/licenses/LICENSE-2.0 
-Unless required by applicable law or agreed to in writing, software distributed 
-under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR 
-CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+   http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 /*
@@ -163,8 +163,10 @@ specific language governing permissions and limitations under the License.
 #include <inttypes.h>
 #include <string.h>
 //
+#include "pico/mutex.h"
+//
+#include "hw_config.h"  // Hardware Configuration of the SPI and SD Card "objects"
 #include "my_debug.h"
-#include "hw_config.h" // Hardware Configuration of the SPI and SD Card "objects"
 #include "sd_spi.h"
 //
 #include "sd_card.h"
@@ -175,7 +177,6 @@ specific language governing permissions and limitations under the License.
 #include "crc.h"
 static bool crc_on = true;
 #endif
-
 
 #define TRACE_PRINTF(fmt, args...)
 //#define TRACE_PRINTF printf  // task_printf
@@ -210,7 +211,9 @@ static bool crc_on = true;
 
 // Only HC block size is supported. Making this a static constant reduces code
 // size.
-#define BLOCK_SIZE_HC  512 /*!< Block size supported for SD card is 512 bytes */
+#define BLOCK_SIZE_HC                                      \
+    512 /*!< Block size supported for SD card is 512 bytes \
+         */
 static const uint32_t _block_size = BLOCK_SIZE_HC;
 
 /* R1 Response Format */
@@ -419,7 +422,7 @@ static const char *cmd2str(const cmdSupported cmd) {
     }
 }
 
-#define SD_COMMAND_TIMEOUT 5000 /*!< Timeout in ms for response */
+#define SD_COMMAND_TIMEOUT 2000 /*!< Timeout in ms for response */
 
 static int sd_cmd(sd_card_t *pSD, const cmdSupported cmd, uint32_t arg,
                   bool isAcmd, uint32_t *resp) {
@@ -503,17 +506,47 @@ static int sd_cmd(sd_card_t *pSD, const cmdSupported cmd, uint32_t arg,
             response |= sd_spi_write(pSD, SPI_FILL_CHAR);
             DBG_PRINTF("R3/R7: 0x%" PRIx32 "\n", response);
             break;
-
         case CMD12_STOP_TRANSMISSION:  // Response R1b
         case CMD38_ERASE:
             sd_wait_ready(pSD, SD_COMMAND_TIMEOUT);
             break;
-
-        case ACMD13_SD_STATUS:  // Response R2
-            response = sd_spi_write(pSD, SPI_FILL_CHAR);
-            DBG_PRINTF("R2: 0x%" PRIx32 "\n", response);
-            break;
-
+        case CMD13_SEND_STATUS:  // Response R2
+            response <<= 8;
+            response |= sd_spi_write(pSD, SPI_FILL_CHAR);
+            if (response) {
+                DBG_PRINTF("R2: 0x%" PRIx32 "\r\r\n", response);
+                if (response & 0x01 << 0)
+                    DBG_PRINTF("Card is Locked                         \r\n");
+                if (response & 0x01 << 1)
+                    DBG_PRINTF("WP Erase Skip, Lock/Unlock Cmd Failed  \r\n");
+                if (response & 0x01 << 2)
+                    DBG_PRINTF("Error                                  \r\n");
+                if (response & 0x01 << 3)
+                    DBG_PRINTF("CC Error                               \r\n");
+                if (response & 0x01 << 4)
+                    DBG_PRINTF("Card ECC Failed                        \r\n");
+                if (response & 0x01 << 5)
+                    DBG_PRINTF("WP Violation                           \r\n");
+                if (response & 0x01 << 6)
+                    DBG_PRINTF("Erase Param                            \r\n");
+                if (response & 0x01 << 7)
+                    DBG_PRINTF("Out of Range, CSD_Overwrite            \r\n");
+                if (response & 0x01 << 8)
+                    DBG_PRINTF("In Idle State                          \r\n");
+                if (response & 0x01 << 9)
+                    DBG_PRINTF("Erase Reset                            \r\n");
+                if (response & 0x01 << 10)
+                    DBG_PRINTF("Illegal Command                        \r\n");
+                if (response & 0x01 << 11)
+                    DBG_PRINTF("Com CRC Error                          \r\n");
+                if (response & 0x01 << 12)
+                    DBG_PRINTF("Erase Sequence Error                   \r\n");
+                if (response & 0x01 << 13)
+                    DBG_PRINTF("Address Error                          \r\n");
+                if (response & 0x01 << 14)
+                    DBG_PRINTF("Parameter Error                        \r\n");
+                break;
+            }
         default:  // Response R1
             break;
     }
@@ -556,7 +589,7 @@ bool sd_card_detect(sd_card_t *pSD) {
 }
 
 /*!< Number of retries for sending CMDO */
-#define SD_CMD0_GO_IDLE_STATE_RETRIES 10 
+#define SD_CMD0_GO_IDLE_STATE_RETRIES 10
 
 static uint32_t sd_go_idle_state(sd_card_t *pSD) {
     uint32_t response;
@@ -616,7 +649,7 @@ static int sd_init_card3(sd_card_t *pSD) {
     command.
     */
     sd_spi_go_low_frequency(pSD);
-    sd_spi_send_initializing_sequence(pSD);    
+    sd_spi_send_initializing_sequence(pSD);
 
     // The card is transitioned from SDCard mode to SPI mode by sending the CMD0
     // + CS Asserted("0")
@@ -647,7 +680,6 @@ static int sd_init_card3(sd_card_t *pSD) {
         (status = sd_cmd(pSD, CMD58_READ_OCR, 0x0, 0x0, &response))) {
         return status;
     }
-
     // Check if card supports voltage range: 3.3V
     if (!(response & OCR_3_3V)) {
         pSD->card_type = CARD_UNKNOWN;
@@ -668,10 +700,10 @@ static int sd_init_card3(sd_card_t *pSD) {
      */
     TickType_t xStart = xTaskGetTickCount();
     do {
-        status = sd_cmd(pSD, ACMD41_SD_SEND_OP_COND, arg, 1, &response);
-    } while ((response & R1_IDLE_STATE) &&
-             (xTaskGetTickCount() - xStart) <
-                 pdMS_TO_TICKS(SD_COMMAND_TIMEOUT));
+        status = sd_cmd(pSD, ACMD41_SD_SEND_OP_COND, arg, true, &response);
+        if (!(response & R1_IDLE_STATE)) break;
+
+    } while (xTaskGetTickCount() - xStart < pdMS_TO_TICKS(SD_COMMAND_TIMEOUT));
 
     // Initialization complete: ACMD41 successful
     if ((SD_BLOCK_DEVICE_ERROR_NONE != status) || (0x00 != response)) {
@@ -797,6 +829,7 @@ int sd_init_card(sd_card_t *pSD) {
     TRACE_PRINTF("> %s\n", __FUNCTION__);
     if (!sd_init_driver()) {
         pSD->m_Status |= STA_NOINIT;
+        configASSERT(0 != pSD->m_Status);
         return pSD->m_Status;
     }
     //	STA_NOINIT = 0x01, /* Drive not initialized */
@@ -812,11 +845,11 @@ int sd_init_card(sd_card_t *pSD) {
         xSemaphoreGiveRecursive(pSD->mutex);
         return pSD->m_Status;
     }
-    // Make sure we're not already initialized before proceeding
-    if (!(pSD->m_Status & STA_NOINIT)) {
-        xSemaphoreGiveRecursive(pSD->mutex);
-        return pSD->m_Status;
-    }
+    //// Make sure we're not already initialized before proceeding
+    // if (!(pSD->m_Status & STA_NOINIT)) {
+    //    xSemaphoreGiveRecursive(pSD->mutex);
+    //    return pSD->m_Status;
+    //}
     // Initialize the member variables
     pSD->card_type = SDCARD_NONE;
 
@@ -1118,33 +1151,33 @@ int sd_write_blocks(sd_card_t *pSD, const uint8_t *buffer,
 }
 
 bool sd_init_driver() {
-
-    static bool driver_initialized;
-    // bool __atomic_test_and_set (void *ptr, int memorder)
-    // This built-in function performs an atomic test-and-set operation on the
-    // byte at *ptr. The byte is set to some implementation defined nonzero
-    // “set” value and the return value is true if and only if the previous
-    // contents were “set”.
-    if (__atomic_test_and_set(&driver_initialized, __ATOMIC_SEQ_CST))
-        return true;
-
-    for (size_t i = 0; i < sd_get_num(); ++i) {
-        sd_card_t *pSD = sd_get_by_num(i);
-        gpio_init(pSD->card_detect_gpio);
-        gpio_pull_up(pSD->card_detect_gpio);
-        gpio_set_dir(pSD->card_detect_gpio, GPIO_IN);
-        // Chip select is active-low, so we'll initialise it to a driven-high
-        // state.
-        gpio_put(pSD->ss_gpio, 1); // Avoid any glitches when enabling output
-        gpio_init(pSD->ss_gpio);
-        gpio_set_dir(pSD->ss_gpio, GPIO_OUT);
-        gpio_put(pSD->ss_gpio, 1); // In case set_dir does anything
+    static int initialized;
+    auto_init_mutex(sd_init_driver_mutex);
+    mutex_enter_blocking(&sd_init_driver_mutex);
+    if (!initialized) {
+        for (size_t i = 0; i < sd_get_num(); ++i) {
+            sd_card_t *pSD = sd_get_by_num(i);
+            gpio_init(pSD->card_detect_gpio);
+            gpio_pull_up(pSD->card_detect_gpio);
+            gpio_set_dir(pSD->card_detect_gpio, GPIO_IN);
+            // Chip select is active-low, so we'll initialise it to a
+            // driven-high state.
+            gpio_put(pSD->ss_gpio,
+                     1);  // Avoid any glitches when enabling output
+            gpio_init(pSD->ss_gpio);
+            gpio_set_dir(pSD->ss_gpio, GPIO_OUT);
+            gpio_put(pSD->ss_gpio, 1);  // In case set_dir does anything
+        }
+        for (size_t i = 0; i < spi_get_num(); ++i) {
+            spi_t *pSPI = spi_get_by_num(i);
+            if (!my_spi_init(pSPI)) {
+                mutex_exit(&sd_init_driver_mutex);
+                return false;
+            }
+        }
+        initialized = true;
     }
-    for (size_t i = 0; i < spi_get_num(); ++i) {
-        spi_t *pSPI = spi_get_by_num(i);
-        if (!my_spi_init(pSPI)) return false;
-    }
-    driver_initialized = true;
+    mutex_exit(&sd_init_driver_mutex);
     return true;
 }
 

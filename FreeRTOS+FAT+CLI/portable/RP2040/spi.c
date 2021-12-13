@@ -13,6 +13,7 @@ specific language governing permissions and limitations under the License.
 */
 #include <stdbool.h>
 //
+#include "pico/mutex.h"
 #include "pico/stdlib.h"
 //
 #include "FreeRTOS.h"
@@ -119,76 +120,76 @@ bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length) {
 }
 
 bool my_spi_init(spi_t *pSPI) {
-    // bool __atomic_test_and_set (void *ptr, int memorder)
-    // This built-in function performs an atomic test-and-set operation on the
-    // byte at *ptr. The byte is set to some implementation defined nonzero
-    // “set” value and the return value is true if and only if the previous
-    // contents were “set”.
-    if (__atomic_test_and_set(&(pSPI->initialized), __ATOMIC_SEQ_CST))
-        return true;
+    auto_init_mutex(my_spi_init_mutex);
+    mutex_enter_blocking(&my_spi_init_mutex);
+    if (!pSPI->initialized) {
+        // The SPI may be shared (using multiple SSs); protect it
+        pSPI->mutex = xSemaphoreCreateRecursiveMutex();
+        xSemaphoreTakeRecursive(pSPI->mutex, portMAX_DELAY);
 
-    // The SPI may be shared (using multiple SSs); protect it
-    pSPI->mutex = xSemaphoreCreateRecursiveMutex();
-    xSemaphoreTakeRecursive(pSPI->mutex, portMAX_DELAY);
+        /* Configure component */
+        // Enable SPI at 100 kHz and connect to GPIOs
+        spi_init(pSPI->hw_inst, 100 * 1000);
+        spi_set_format(pSPI->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
-    /* Configure component */
-    // Enable SPI at 100 kHz and connect to GPIOs
-    spi_init(pSPI->hw_inst, 100 * 1000);
-    spi_set_format(pSPI->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+        gpio_set_function(pSPI->miso_gpio, GPIO_FUNC_SPI);
+        gpio_set_function(pSPI->mosi_gpio, GPIO_FUNC_SPI);
+        gpio_set_function(pSPI->sck_gpio, GPIO_FUNC_SPI);
+        // ss_gpio is initialized in sd_spi_init()
 
-    gpio_set_function(pSPI->miso_gpio, GPIO_FUNC_SPI);
-    gpio_set_function(pSPI->mosi_gpio, GPIO_FUNC_SPI);
-    gpio_set_function(pSPI->sck_gpio, GPIO_FUNC_SPI);
-    // ss_gpio is initialized in sd_spi_init()
+        // SD cards' DO MUST be pulled up.
+        gpio_pull_up(pSPI->miso_gpio);
 
-    // SD cards' DO MUST be pulled up.
-    gpio_pull_up(pSPI->miso_gpio);
+        // Grab some unused dma channels
+        pSPI->tx_dma = dma_claim_unused_channel(true);
+        pSPI->rx_dma = dma_claim_unused_channel(true);
 
-    // Grab some unused dma channels
-    pSPI->tx_dma = dma_claim_unused_channel(true);
-    pSPI->rx_dma = dma_claim_unused_channel(true);
+        pSPI->tx_dma_cfg = dma_channel_get_default_config(pSPI->tx_dma);
+        pSPI->rx_dma_cfg = dma_channel_get_default_config(pSPI->rx_dma);
+        channel_config_set_transfer_data_size(&pSPI->tx_dma_cfg, DMA_SIZE_8);
+        channel_config_set_transfer_data_size(&pSPI->rx_dma_cfg, DMA_SIZE_8);
 
-    pSPI->tx_dma_cfg = dma_channel_get_default_config(pSPI->tx_dma);
-    pSPI->rx_dma_cfg = dma_channel_get_default_config(pSPI->rx_dma);
-    channel_config_set_transfer_data_size(&pSPI->tx_dma_cfg, DMA_SIZE_8);
-    channel_config_set_transfer_data_size(&pSPI->rx_dma_cfg, DMA_SIZE_8);
+        // We set the outbound DMA to transfer from a memory buffer to the SPI
+        // transmit FIFO paced by the SPI TX FIFO DREQ The default is for the
+        // read address to increment every element (in this case 1 byte -
+        // DMA_SIZE_8) and for the write address to remain unchanged.
+        channel_config_set_dreq(&pSPI->tx_dma_cfg, spi_get_index(pSPI->hw_inst)
+                                                       ? DREQ_SPI1_TX
+                                                       : DREQ_SPI0_TX);
+        channel_config_set_write_increment(&pSPI->tx_dma_cfg, false);
 
-    // We set the outbound DMA to transfer from a memory buffer to the SPI
-    // transmit FIFO paced by the SPI TX FIFO DREQ The default is for the
-    // read address to increment every element (in this case 1 byte -
-    // DMA_SIZE_8) and for the write address to remain unchanged.
-    channel_config_set_dreq(&pSPI->tx_dma_cfg, spi_get_index(pSPI->hw_inst)
-                                                   ? DREQ_SPI1_TX
-                                                   : DREQ_SPI0_TX);
-    channel_config_set_write_increment(&pSPI->tx_dma_cfg, false);
+        // We set the inbound DMA to transfer from the SPI receive FIFO to a
+        // memory buffer paced by the SPI RX FIFO DREQ We coinfigure the read
+        // address to remain unchanged for each element, but the write address
+        // to increment (so data is written throughout the buffer)
+        channel_config_set_dreq(&pSPI->rx_dma_cfg, spi_get_index(pSPI->hw_inst)
+                                                       ? DREQ_SPI1_RX
+                                                       : DREQ_SPI0_RX);
+        channel_config_set_read_increment(&pSPI->rx_dma_cfg, false);
 
-    // We set the inbound DMA to transfer from the SPI receive FIFO to a
-    // memory buffer paced by the SPI RX FIFO DREQ We coinfigure the read
-    // address to remain unchanged for each element, but the write address
-    // to increment (so data is written throughout the buffer)
-    channel_config_set_dreq(&pSPI->rx_dma_cfg, spi_get_index(pSPI->hw_inst)
-                                                   ? DREQ_SPI1_RX
-                                                   : DREQ_SPI0_RX);
-    channel_config_set_read_increment(&pSPI->rx_dma_cfg, false);
+        /* Theory: we only need an interrupt on rx complete,
+        since if rx is complete, tx must also be complete. */
 
-    /* Theory: we only need an interrupt on rx complete,
-    since if rx is complete, tx must also be complete. */
+        // Configure the processor to run dma_handler() when DMA IRQ 0 is
+        // asserted
+        irq_set_exclusive_handler(DMA_IRQ_0, pSPI->dma_isr);
 
-    // Configure the processor to run dma_handler() when DMA IRQ 0 is
-    // asserted
-    irq_set_exclusive_handler(DMA_IRQ_0, pSPI->dma_isr);
+        /* Any interrupt that uses interrupt-safe FreeRTOS API functions must
+         * also execute at the priority defined by
+         * configKERNEL_INTERRUPT_PRIORITY. */
+        irq_set_priority(DMA_IRQ_0, 0xFF);  // Lowest urgency.
 
-    /* Any interrupt that uses interrupt-safe FreeRTOS API functions must also
-     * execute at the priority defined by configKERNEL_INTERRUPT_PRIORITY. */
-    irq_set_priority(DMA_IRQ_0, 0xFF);  // Lowest urgency.
+        // Tell the DMA to raise IRQ line 0 when the channel finishes a block
+        dma_channel_set_irq0_enabled(pSPI->rx_dma, true);
+        irq_set_enabled(DMA_IRQ_0, true);
 
-    // Tell the DMA to raise IRQ line 0 when the channel finishes a block
-    dma_channel_set_irq0_enabled(pSPI->rx_dma, true);
-    irq_set_enabled(DMA_IRQ_0, true);
+        LED_INIT();
 
-    LED_INIT();
+        xSemaphoreGiveRecursive(pSPI->mutex);
 
-    xSemaphoreGiveRecursive(pSPI->mutex);
+        pSPI->initialized = true;
+    }
+    mutex_exit(&my_spi_init_mutex);
     return true;
 }
 

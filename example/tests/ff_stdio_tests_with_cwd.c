@@ -101,8 +101,8 @@ specific language governing permissions and limitations under the License.
 
 /* The number of tasks to create if the stdio tests will be executed in
 multiple tasks simultaneously. */
-#define fsTASKS_TO_CREATE 5
-//#define fsTASKS_TO_CREATE 2
+//#define fsTASKS_TO_CREATE 5
+#define fsTASKS_TO_CREATE 3
 
 //#include "hardware/gpio.h" //DEBUG
 //#define TRACE_PRINTF(fmt, args...)
