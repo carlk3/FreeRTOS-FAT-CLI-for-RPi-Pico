@@ -39,12 +39,14 @@ void sd_spi_go_low_frequency(sd_card_t *pSD) {
 
 static void sd_spi_lock(sd_card_t *pSD) {
     configASSERT(pSD->spi->mutex);
-    xSemaphoreTakeRecursive(pSD->spi->mutex, portMAX_DELAY);
+    xSemaphoreTake(pSD->spi->mutex, portMAX_DELAY);
+    configASSERT(0 == pSD->spi->owner);    
     pSD->spi->owner = xTaskGetCurrentTaskHandle();
 }
 static void sd_spi_unlock(sd_card_t *pSD) {
+    configASSERT(xTaskGetCurrentTaskHandle() == pSD->spi->owner);
     pSD->spi->owner = 0;
-    xSemaphoreGiveRecursive(pSD->spi->mutex);
+    xSemaphoreGive(pSD->spi->mutex);
 }
 
 // Would do nothing if pSD->ss_gpio were set to GPIO_FUNC_SPI.
@@ -93,9 +95,9 @@ uint8_t sd_spi_write(sd_card_t *pSD, const uint8_t value) {
     int num = spi_write_read_blocking(pSD->spi->hw_inst, &value, &received, 1);    
     configASSERT(1 == num);
 #else
-    bool rc = sd_spi_transfer(pSD, &value, &received, 1);
-    configASSERT(rc);
-#endif    
+    bool success = spi_transfer(pSD->spi, &value, &received, 1);
+    configASSERT(success);
+#endif
     return received;
 }
 

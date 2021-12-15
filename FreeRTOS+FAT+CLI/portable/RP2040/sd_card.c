@@ -213,8 +213,7 @@ static bool crc_on = true;
 
 // Only HC block size is supported. Making this a static constant reduces code
 // size.
-#define BLOCK_SIZE_HC 512 /*!< Block size supported for SD card is 512 bytes \
-                           */
+#define BLOCK_SIZE_HC  512 /*!< Block size supported for SD card is 512 bytes */
 static const uint32_t _block_size = BLOCK_SIZE_HC;
 
 /* R1 Response Format */
@@ -354,12 +353,14 @@ static bool sd_wait_ready(sd_card_t *pSD, int timeout) {
 static void sd_lock(sd_card_t *pSD) {
     myASSERT(pSD->mutex);
     xSemaphoreTake(pSD->mutex, portMAX_DELAY);
-    sd_spi_acquire(pSD);
+    myASSERT(0 == pSD->owner);    
+    pSD->owner = xTaskGetCurrentTaskHandle();
 }
 static void sd_unlock(sd_card_t *pSD) {
     myASSERT(pSD->mutex);
+    myASSERT(xTaskGetCurrentTaskHandle() == pSD->owner);
+    pSD->owner = 0;
     xSemaphoreGive(pSD->mutex);
-    sd_spi_release(pSD);
 }
 
 // Locks the SD card and acquires its SPI
@@ -482,8 +483,7 @@ static int sd_cmd(sd_card_t *pSD, const cmdSupported cmd, uint32_t arg,
         return SD_BLOCK_DEVICE_ERROR_NO_DEVICE;  // No device
     }
     if (response & R1_COM_CRC_ERROR && ACMD23_SET_WR_BLK_ERASE_COUNT != cmd) {
-        DBG_PRINTF("CRC error CMD:%d response 0x%" PRIx32 "\r\n", cmd,
-                   response);
+        DBG_PRINTF("CRC error CMD:%d response 0x%" PRIx32 "\r\n", cmd, response);
         return SD_BLOCK_DEVICE_ERROR_CRC;  // CRC error
     }
     if (response & R1_ILLEGAL_COMMAND) {
@@ -634,8 +634,7 @@ static int sd_cmd8(sd_card_t *pSD) {
         // If check pattern is not matched, CMD8 communication is not valid
         if ((response & 0xFFF) != arg) {
             DBG_PRINTF("CMD8 Pattern mismatch 0x%" PRIx32 " : 0x%" PRIx32
-                       "\r\n",
-                       arg, response);
+                       "\r\n", arg, response);
             pSD->card_type = CARD_UNKNOWN;
             status = SD_BLOCK_DEVICE_ERROR_UNUSABLE;
         }
@@ -1000,8 +999,7 @@ static int sd_init_card2(sd_card_t *pSD) {
     // The card is transitioned from SDCard mode to SPI mode by sending the CMD0
     // + CS Asserted("0")
     if (sd_go_idle_state(pSD) != R1_IDLE_STATE) {
-        DBG_PRINTF(
-            "No disk, or could not put SD card in to SPI idle state\r\n");
+        DBG_PRINTF("No disk, or could not put SD card in to SPI idle state\r\n");
         return SD_BLOCK_DEVICE_ERROR_NO_DEVICE;
     }
 
@@ -1069,8 +1067,7 @@ static int sd_init_card2(sd_card_t *pSD) {
                 DBG_PRINTF("Card Initialized: High Capacity Card\r\n");
             } else {
                 DBG_PRINTF(
-                    "Card Initialized: Standard Capacity Card: Version "
-                    "2.x\r\n");
+                    "Card Initialized: Standard Capacity Card: Version 2.x\r\n");
             }
         }
     } else {

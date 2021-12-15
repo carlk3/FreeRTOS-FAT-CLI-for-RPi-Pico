@@ -54,7 +54,6 @@ void spi_irq_handler(spi_t *pSPI) {
 //   If the data that will be transmitted is not important,
 //     pass NULL as tx and then the SPI_FILL_CHAR is sent out as each data
 //     element.
-
 bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length) {
     configASSERT(xTaskGetCurrentTaskHandle() == pSPI->owner);
     configASSERT(tx || rx);
@@ -128,8 +127,8 @@ bool my_spi_init(spi_t *pSPI) {
     mutex_enter_blocking(&my_spi_init_mutex);
     if (!pSPI->initialized) {
         // The SPI may be shared (using multiple SSs); protect it
-        pSPI->mutex = xSemaphoreCreateRecursiveMutex();
-        xSemaphoreTakeRecursive(pSPI->mutex, portMAX_DELAY);
+        pSPI->mutex = xSemaphoreCreateMutex();
+        xSemaphoreTake(pSPI->mutex, portMAX_DELAY);
 
         /* Configure component */
         // Enable SPI at 100 kHz and connect to GPIOs
@@ -189,7 +188,7 @@ bool my_spi_init(spi_t *pSPI) {
 
         LED_INIT();
 
-        xSemaphoreGiveRecursive(pSPI->mutex);
+        xSemaphoreGive(pSPI->mutex);
 
         pSPI->initialized = true;
     }

@@ -39,6 +39,7 @@ typedef struct {
     spi_t *spi;
     // Slave select is here in sd_card_t because multiple SDs can share an SPI
     uint ss_gpio;                   // Slave select for this SD card
+
     bool use_card_detect;
     uint card_detect_gpio;    // Card detect; ignored if !use_card_detect
     uint card_detected_true;  // Varies with card socket; ignored if !use_card_detect
@@ -47,6 +48,7 @@ typedef struct {
     uint64_t sectors;                                // Assigned dynamically
     int card_type;                                   // Assigned dynamically
     SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
+    TaskHandle_t owner;       // Assigned dynamically
     size_t ff_disk_count;
     FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using this device
 } sd_card_t;
