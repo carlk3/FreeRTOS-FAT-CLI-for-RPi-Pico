@@ -32,7 +32,7 @@ specific language governing permissions and limitations under the License.
 #define configUSE_16_BIT_TICKS                  0
 #define configIDLE_SHOULD_YIELD                 1
 #define configUSE_TASK_NOTIFICATIONS            1
-#define configTASK_NOTIFICATION_ARRAY_ENTRIES   3
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES   2
 #define configUSE_MUTEXES                       1
 #define configUSE_RECURSIVE_MUTEXES             1
 #define configUSE_APPLICATION_TASK_TAG          0
@@ -130,4 +130,3 @@ extern uint64_t time_us_64(void); // "hardware/timer.h"
 /* A header file that defines trace macro can be included here. */
 
 #endif /* FREERTOS_CONFIG_H */
-

@@ -34,9 +34,12 @@ void spi_irq_handler(spi_t *pSPI) {
 
     /* Send a notification directly to the task to which interrupt processing is
      being deferred. */
-    vTaskNotifyGiveFromISR(pSPI->owner,  // The handle of the task to which the
-                                         // notification is being sent.
-                           &xHigherPriorityTaskWoken);
+    vTaskNotifyGiveIndexedFromISR(
+        pSPI->owner,  // The handle of the task to which the
+                      // notification is being sent.
+        1,  // uxIndexToNotify: The index within the target task's array of
+            // notification values to which the notification is to be sent.
+        &xHigherPriorityTaskWoken);
 
     /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
     If xHigherPriorityTaskWoken was set to pdTRUE inside
@@ -98,8 +101,8 @@ bool spi_transfer(spi_t *pSPI, const uint8_t *tx, uint8_t *rx, size_t length) {
     /* Timeout 1 sec */
     uint32_t timeOut = 1000;
     /* Wait until master completes transfer or time out has occured. */
-    rc = ulTaskNotifyTake(
-        pdFALSE, pdMS_TO_TICKS(timeOut));  // Wait for notification from ISR
+    rc = ulTaskNotifyTakeIndexed(
+        1, pdFALSE, pdMS_TO_TICKS(timeOut));  // Wait for notification from ISR
     if (!rc) {
         // This indicates that xTaskNotifyWait() returned without the
         // calling task receiving a task notification. The calling task will
