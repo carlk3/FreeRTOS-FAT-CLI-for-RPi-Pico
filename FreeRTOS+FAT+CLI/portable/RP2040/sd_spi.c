@@ -33,18 +33,20 @@ void sd_spi_go_high_frequency(sd_card_t *pSD) {
     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);
 }
 void sd_spi_go_low_frequency(sd_card_t *pSD) {
-    uint actual = spi_set_baudrate(pSD->spi->hw_inst, 100 * 1000);
+    uint actual = spi_set_baudrate(pSD->spi->hw_inst, 400 * 1000); // Actual frequency: 398089
     TRACE_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);
 }
 
 static void sd_spi_lock(sd_card_t *pSD) {
     configASSERT(pSD->spi->mutex);
-    xSemaphoreTakeRecursive(pSD->spi->mutex, portMAX_DELAY);
+    xSemaphoreTake(pSD->spi->mutex, portMAX_DELAY);
+    configASSERT(0 == pSD->spi->owner);    
     pSD->spi->owner = xTaskGetCurrentTaskHandle();
 }
 static void sd_spi_unlock(sd_card_t *pSD) {
+    configASSERT(xTaskGetCurrentTaskHandle() == pSD->spi->owner);
     pSD->spi->owner = 0;
-    xSemaphoreGiveRecursive(pSD->spi->mutex);
+    xSemaphoreGive(pSD->spi->mutex);
 }
 
 // Would do nothing if pSD->ss_gpio were set to GPIO_FUNC_SPI.
@@ -80,20 +82,23 @@ void sd_spi_release(sd_card_t *pSD) {
     sd_spi_unlock(pSD);
 }
 
-uint8_t sd_spi_write(sd_card_t *pSD, const uint8_t value) {
-    // TRACE_PRINTF("%s\n", __FUNCTION__);
-    u_int8_t received = SPI_FILL_CHAR;
-
-    configASSERT(xTaskGetCurrentTaskHandle() == pSD->spi->owner);
-
-    int num = spi_write_read_blocking(pSD->spi->hw_inst, &value, &received, 1);
-    configASSERT(1 == num);
-    return received;
-}
-
 bool sd_spi_transfer(sd_card_t *pSD, const uint8_t *tx, uint8_t *rx,
                      size_t length) {
     return spi_transfer(pSD->spi, tx, rx, length);
+}
+
+uint8_t sd_spi_write(sd_card_t *pSD, const uint8_t value) {
+    // TRACE_PRINTF("%s\n", __FUNCTION__);
+    u_int8_t received = SPI_FILL_CHAR;
+    configASSERT(xTaskGetCurrentTaskHandle() == pSD->spi->owner);
+#if 0
+    int num = spi_write_read_blocking(pSD->spi->hw_inst, &value, &received, 1);    
+    configASSERT(1 == num);
+#else
+    bool success = spi_transfer(pSD->spi, &value, &received, 1);
+    configASSERT(success);
+#endif
+    return received;
 }
 
 void sd_spi_send_initializing_sequence(sd_card_t * pSD) {

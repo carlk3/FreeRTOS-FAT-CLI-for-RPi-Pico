@@ -19,6 +19,18 @@ It is wrapped up in a complete runnable project, with a command line interface p
 * Supports Real Time Clock for maintaining file and directory time stamps
 * Supports Cyclic Redundancy Check (CRC)
 
+## Resources Used
+* At least one (depending on configuration) of the two Serial Peripheral Interface (SPI) controllers is used.
+* For each SPI controller used, two DMA channels are claimed with `dma_claim_unused_channel`.
+* DMA_IRQ_0 is hooked with `irq_add_shared_handler` and enabled.
+* For each SPI controller used, one GPIO is needed for each of RX, TX, and SCK. Note: each SPI controller can only use a limited set of GPIOs for these functions.
+* For each SD card attached to an SPI controller, a GPIO is needed for CS, and, optionally, another for CD (Card Detect).
+<!--* `size simple_example.elf`
+```
+   text	   data	    bss	    dec	    hex	filename
+  68428	     44	   4388	  72860	  11c9c	simple_example.elf
+```-->
+
 ## Performance
 Writing and reading a file of 0x10000000 (268,435,456) bytes (1/4 GiB) on a SanDisk 32GB card with SPI baud rate 12,500,000:
 * Writing
@@ -40,13 +52,13 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 
 ## Prerequisites:
 * Raspberry Pi Pico
+* Something like the [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
 * Breadboard and wires
 * Raspberry Pi Pico C/C++ SDK
-* Something like the [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
+* (Optional) A couple of ~5-10kΩ resistors for pull-ups
+* (Optional) A couple of ~100 pF capacitors for decoupling
 
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1478.JPG "Prototype")
-
-* (Optional) A couple of ~5-10kΩ resistors
 
 ## Dependencies:
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
@@ -80,6 +92,16 @@ Even if it is provided by the hardware, if you have no requirement for it you ca
 ## Notes about prewired boards with SD card sockets:
 * I don't think the [Pimoroni Pico VGA Demo Base](https://shop.pimoroni.com/products/pimoroni-pico-vga-demo-base) can work with a built in RP2040 SPI controller. It looks like RP20040 SPI0 SCK needs to be on GPIO 2, 6, or 18 (pin 4, 9, or 24, respectively), but Pimoroni wired it to GPIO 5 (pin 7).
 * The [SparkFun RP2040 Thing Plus](https://learn.sparkfun.com/tutorials/rp2040-thing-plus-hookup-guide/hardware-overview) looks like it should work, on SPI1.
+  * For SparkFun RP2040 Thing Plus:
+
+    |       | SPI0  | GPIO  | Description            | 
+    | ----- | ----  | ----- | ---------------------- |
+    | MISO  | RX    | 12    | Master In, Slave Out   |
+    | CS0   | CSn   | 09    | Slave (or Chip) Select |
+    | SCK   | SCK   | 14    | SPI clock              |
+    | MOSI  | TX    | 15    | Master Out, Slave In   |
+    | CD    |       |       | Card Detect            |
+  
 * [Maker Pi Pico](https://www.cytron.io/p-maker-pi-pico) looks like it could work on SPI1. It has CS on GPIO 15, which is not a pin that the RP2040 built in SPI1 controller would drive as CS, but this driver controls CS explicitly with `gpio_put`, so it doesn't matter.
 
 ## Firmware:
@@ -214,6 +236,9 @@ Even if it is provided by the hardware, if you have no requirement for it you ca
 
 ## Troubleshooting
 * The first thing to try is lowering the SPI baud rate (see hw_config.c). This will also make it easier to use things like logic analyzers.
+* Make sure the SD card(s) are getting enough power. Try an external supply. Try adding a decoupling capacitor between Vcc and GND. 
+  * Hint: check voltage while formatting card. It must be 2.7 to 3.6 volts. 
+  * Hint: If you are powering a Pico with a PicoProbe, try adding a USB cable to a wall charger to the Pico under test.
 * Try another brand of SD card. Some handle the SPI interface better than others. (Most consumer devices like cameras or PCs use the SDIO interface.) I have had good luck with SanDisk.
 * Tracing: Most of the source files have a couple of lines near the top of the file like:
 ```
@@ -222,7 +247,8 @@ Even if it is provided by the hardware, if you have no requirement for it you ca
 ```
 You can swap the commenting to enable tracing of what's happening in that file.
 * Logic analyzer: for less than ten bucks, something like this [Comidox 1Set USB Logic Analyzer Device Set USB Cable 24MHz 8CH 24MHz 8 Channel UART IIC SPI Debug for Arduino ARM FPGA M100 Hot](https://smile.amazon.com/gp/product/B07KW445DJ/) and [PulseView - sigrok](https://sigrok.org/) make a nice combination for looking at SPI, as long as you don't run the baud rate too high. 
-* 
+* Get yourself a protoboard and solder everything. So much more reliable than solderless breadboard!
+![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20211214_165648888.MP.jpg)
 ## Next Steps
 * There is a simple example of using the API in the `simple_example` subdirectory.
 * There is a demonstration data logging application in `FreeRTOS-FAT-CLI-for-RPi-Pico/src/data_log_demo.c`. 
@@ -240,6 +266,7 @@ If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, us
   ```
   git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
   ```
+  
 You will need to pick up the library in CMakeLists.txt:
 ```
 add_subdirectory(FreeRTOS-FAT-CLI-for-RPi-Pico/FreeRTOS+FAT+CLI build)

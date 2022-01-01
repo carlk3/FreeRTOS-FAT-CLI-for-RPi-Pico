@@ -33,35 +33,23 @@ void spi0_dma_isr();
 // Note: multiple SD cards can be driven by one SPI if they use different slave
 // selects.
 static spi_t spis[] = {  // One for each SPI.
-    {
-        .hw_inst = spi0,  // SPI component
-        .miso_gpio = 16,
-        .mosi_gpio = 19,
-        .sck_gpio = 18,
-        .baud_rate = 12500 * 1000, 
-        .dma_isr = spi0_dma_isr,
-        // State attributes:
-        .initialized = false,  // initialized flag
-        .owner = 0,            // Owning task, assigned dynamically
-        .mutex = 0             // Guard semaphore, assigned dynamically
-    }};
+    {.hw_inst = spi0,    // SPI component
+     .miso_gpio = 16,
+     .mosi_gpio = 19,
+     .sck_gpio = 18,
+     .baud_rate = 12500 * 1000,
+     .dma_isr = spi0_dma_isr}};
 
 // Hardware Configuration of the SD Card "objects"
 static sd_card_t sd_cards[] = {  // One for each SD card
     {.pcName = "sd0",            // Name used to mount device
-     .spi = &spis[0],             // Pointer to the SPI driving this card
+     .spi = &spis[0],            // Pointer to the SPI driving this card
      .ss_gpio = 17,              // The SPI slave select GPIO for this SD card
-     .card_detect_gpio = 22,     // Card detect
-     .card_detected_true = 1,    // What the GPIO read returns when a card is
-                                 // present. Use -1 if there is no card detect.
-    // State attributes:
-     .m_Status = STA_NOINIT,
-     .sectors = 0,
-     .card_type = 0,
-     .mutex = 0,
-     .ff_disk_count = 0,
-     .ff_disks = NULL}
-    };
+     .use_card_detect = true,
+     .card_detect_gpio = 22,   // Card detect
+     .card_detected_true = 1,  // What the GPIO read returns when a card is
+                               // present. Use -1 if there is no card detect.
+     .m_Status = STA_NOINIT}};
 
 void spi0_dma_isr() { spi_irq_handler(&spis[0]); }
 

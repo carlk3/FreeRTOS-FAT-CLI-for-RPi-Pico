@@ -42,13 +42,14 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
 target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
-        pico_multicore
         hardware_adc
         hardware_spi
         hardware_dma
         hardware_clocks
         hardware_rtc
         hardware_timer
+        pico_multicore
+        pico_sync
         pico_stdlib
 )
 target_include_directories(FreeRTOS+FAT+CLI INTERFACE 

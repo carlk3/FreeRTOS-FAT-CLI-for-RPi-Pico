@@ -33,42 +33,31 @@ void spi_dma_isr();
 // Note: multiple SD cards can be driven by one SPI if they use different slave
 // selects.
 static spi_t spis[] = {  // One for each SPI.
-    {
-        .hw_inst = spi1,  // SPI component
-        .miso_gpio = 12,  // GPIO number (not pin number)
-        .mosi_gpio = 15,
-        .sck_gpio = 14,
-        /* The choice of SD card matters! SanDisk runs at the highest speed. PNY
-           can only mangage 5 MHz. Those are all I've tried. */
-        //.baud_rate = 1000 * 1000,
-        .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.        
-        //.baud_rate = 6250 * 1000,  // The limitation here is SPI slew rate.
-        //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
-        // worked for me with SanDisk.
+    {.hw_inst = spi1,    // SPI component
+     .miso_gpio = 12,    // GPIO number (not pin number)
+     .mosi_gpio = 15,
+     .sck_gpio = 14,
 
-        // Following attributes are dynamically assigned
-        .dma_isr = spi_dma_isr,
-        .initialized = false,  // initialized flag
-        .owner = 0,            // Owning task, assigned dynamically
-        .mutex = 0             // Guard semaphore, assigned dynamically
-    }};
+     /* The choice of SD card matters! SanDisk runs at the highest speed. PNY
+        can only mangage 5 MHz. Those are all I've tried. */
+     //.baud_rate = 1000 * 1000,
+     .baud_rate = 12500 * 1000,  // The limitation here is SPI slew rate.
+     //.baud_rate = 6250 * 1000,  // The limitation here is SPI slew rate.
+     //.baud_rate = 25 * 1000 * 1000, // Actual frequency: 20833333. Has
+     // worked for me with SanDisk.
+
+     // Following attributes are dynamically assigned
+     .dma_isr = spi_dma_isr}};
 
 // Hardware Configuration of the SD Card "objects"
 static sd_card_t sd_cards[] = {  // One for each SD card
-    {.pcName = "sd0",            // Name used to mount device
-     .spi = &spis[0],             // Pointer to the SPI driving this card
-        .ss_gpio = 9,             // The SPI slave select GPIO for this SD card
+    {
+        .pcName = "sd0",  // Name used to mount device
+        .spi = &spis[0],  // Pointer to the SPI driving this card
+        .ss_gpio = 9,     // The SPI slave select GPIO for this SD card
         .use_card_detect = false,
-        .card_detect_gpio = 0,    // Card detect
-        .card_detected_true = 0, 
-     // Following attributes are dynamically assigned
-     .m_Status = STA_NOINIT,
-     .sectors = 0,
-     .card_type = 0,
-     .mutex = 0,
-     .ff_disk_count = 0,
-     .ff_disks = NULL}
-    };
+        .m_Status = STA_NOINIT,
+    }};
 
 void spi_dma_isr() { spi_irq_handler(&spis[0]); }
 

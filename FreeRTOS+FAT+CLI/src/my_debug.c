@@ -39,10 +39,11 @@ time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
 static SemaphoreHandle_t xSemaphore;
 static BaseType_t printf_locked;
 static void lock_printf() {
-    static StaticSemaphore_t xMutexBuffer;
+    static StaticSemaphore_t xMutexBuffer;    
     static bool initialized;
-    if (!__atomic_test_and_set(&initialized, __ATOMIC_SEQ_CST)) {
+    if (!initialized) {
         xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
+        initialized = true;
     }
     configASSERT(xSemaphore);
     printf_locked = xSemaphoreTake(xSemaphore, pdMS_TO_TICKS(1000));

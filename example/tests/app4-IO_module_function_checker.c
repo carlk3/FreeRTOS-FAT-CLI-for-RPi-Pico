@@ -23,7 +23,9 @@ specific language governing permissions and limitations under the License.
 #include <string.h>
 //#include "ff.h"         /* Declarations of sector size */
 //#include "diskio.h"     /* Declarations of disk functions */
-
+//
+#include "pico/mutex.h"
+//
 #include "hw_config.h"
 
 #define PRINTF task_printf
@@ -75,72 +77,64 @@ static WORD sz_sect;
 static DWORD sz_eblk, sz_drv;
 
 int test_diskio_initialize(const char *diskName) {
-    static int initialized;
-    // bool __atomic_test_and_set (void *ptr, int memorder)
-    // This built-in function performs an atomic test-and-set operation on
-    // the byte at *ptr. The byte is set to some implementation defined
-    // nonzero “set” value and the return value is true if and only if the
-    // previous contents were “set”.
-    if (!__atomic_test_and_set(&initialized, __ATOMIC_SEQ_CST)) {
-        PRINTF(" disk_initalize(%p)", pdrv);
-        //        ds = disk_initialize(pdrv);
+    PRINTF(" disk_initalize(%p)", pdrv);
+    //        ds = disk_initialize(pdrv);
 
-        pdrv = sd_get_by_name(diskName);
-        if (!pdrv) {
-            PRINTF("sd_get_by_name: unknown name %s\n", diskName);
-            return -1;
-        }
-        // Initialize the media driver
-        if (0 != sd_init_card(pdrv)) {
-            // Couldn't init
-            PRINTF(" - failed.\n");
-            fflush(stdout);
-            return 2;
-        } else {
-            PRINTF(" - ok.\n");
-        }
-        PRINTF("**** Get drive size ****\n");
-        PRINTF(" disk_ioctl(%p, GET_SECTOR_COUNT, 0x%08X)", pdrv,
-               (UINT)&sz_drv);
-        //        sz_drv = 0;
-        //        dr = disk_ioctl(pdrv, GET_SECTOR_COUNT, &sz_drv);
-        sz_drv = sd_sectors(pdrv);
-        if (sz_drv < 128) {
-            PRINTF("Failed: Insufficient drive size to test.\n");
-            return 4;
-        }
-        PRINTF(" Number of sectors on the drive %p is %lu.\n", pdrv,
-               (unsigned long)sz_drv);
+    pdrv = sd_get_by_name(diskName);
+    if (!pdrv) {
+        PRINTF("sd_get_by_name: unknown name %s\n", diskName);
+        return -1;
+    }
+    // Initialize the media driver
+    if (0 != sd_init_card(pdrv)) {
+        // Couldn't init
+        PRINTF(" - failed.\n");
+        fflush(stdout);
+        return 2;
+    } else {
+        PRINTF(" - ok.\n");
+    }
+    PRINTF("**** Get drive size ****\n");
+    PRINTF(" disk_ioctl(%p, GET_SECTOR_COUNT, 0x%08X)", pdrv, (UINT)&sz_drv);
+    //        sz_drv = 0;
+    //        dr = disk_ioctl(pdrv, GET_SECTOR_COUNT, &sz_drv);
+    sz_drv = sd_sectors(pdrv);
+    if (sz_drv < 128) {
+        PRINTF("Failed: Insufficient drive size to test.\n");
+        return 4;
+    }
+    PRINTF(" Number of sectors on the drive %p is %lu.\n", pdrv,
+           (unsigned long)sz_drv);
 
 #if FF_MAX_SS != FF_MIN_SS
-        PRINTF("**** Get sector size ****\n");
-        PRINTF(" disk_ioctl(%u, GET_SECTOR_SIZE, 0x%X)", pdrv, (UINT)&sz_sect);
-        sz_sect = 0;
-        dr = disk_ioctl(pdrv, GET_SECTOR_SIZE, &sz_sect);
-        if (dr == RES_OK) {
-            PRINTF(" - ok.\n");
-        } else {
-            PRINTF(" - failed.\n");
-            fflush(stdout);
-            return 5;
-        }
-        PRINTF(" Size of sector is %u bytes.\n", sz_sect);
+    PRINTF("**** Get sector size ****\n");
+    PRINTF(" disk_ioctl(%u, GET_SECTOR_SIZE, 0x%X)", pdrv, (UINT)&sz_sect);
+    sz_sect = 0;
+    dr = disk_ioctl(pdrv, GET_SECTOR_SIZE, &sz_sect);
+    if (dr == RES_OK) {
+        PRINTF(" - ok.\n");
+    } else {
+        PRINTF(" - failed.\n");
+        fflush(stdout);
+        mutex_exit(&test_diskio_initialize_mutex);
+        return 5;
+    }
+    PRINTF(" Size of sector is %u bytes.\n", sz_sect);
 #else
-        sz_sect = FF_MAX_SS;
+    sz_sect = FF_MAX_SS;
 #endif
 
-        PRINTF("**** Get block size ****\n");
-        PRINTF(" disk_ioctl(%p, GET_BLOCK_SIZE, 0x%X)", pdrv, (UINT)&sz_eblk);
-        //        sz_eblk = 0;
-        //        dr = disk_ioctl(pdrv, GET_BLOCK_SIZE, &sz_eblk);
-        //        sz_eblk = get_block_size();
-        sz_eblk = 512;
-        if (sz_eblk >= 2) {
-            PRINTF(" Size of the erase block is %lu sectors.\n",
-                   (unsigned long)sz_eblk);
-        } else {
-            PRINTF(" Size of the erase block is unknown.\n");
-        }
+    PRINTF("**** Get block size ****\n");
+    PRINTF(" disk_ioctl(%p, GET_BLOCK_SIZE, 0x%X)", pdrv, (UINT)&sz_eblk);
+    //        sz_eblk = 0;
+    //        dr = disk_ioctl(pdrv, GET_BLOCK_SIZE, &sz_eblk);
+    //        sz_eblk = get_block_size();
+    sz_eblk = 512;
+    if (sz_eblk >= 2) {
+        PRINTF(" Size of the erase block is %lu sectors.\n",
+               (unsigned long)sz_eblk);
+    } else {
+        PRINTF(" Size of the erase block is unknown.\n");
     }
     return 0;
 }
