@@ -43,7 +43,7 @@ pico_set_program_name(example "example")
 pico_set_program_version(example "0.1")
 
 pico_enable_stdio_uart(example 1)
-pico_enable_stdio_usb(example 0)
+pico_enable_stdio_usb(example 1)
 
 # Add the standard library to the build
 target_link_libraries(example 

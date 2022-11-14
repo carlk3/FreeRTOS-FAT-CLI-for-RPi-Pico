@@ -1,0 +1,5 @@
+{
+    "cmake.configureEnvironment": {
+        "FREERTOS_KERNEL_PATH": "/home/carlk/pi/pico/FreeRTOS-FAT-CLI-for-RPi-Pico/FreeRTOS-Kernel"
+    }
+}
