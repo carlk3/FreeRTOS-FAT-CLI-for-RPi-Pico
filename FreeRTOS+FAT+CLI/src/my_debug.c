@@ -58,10 +58,10 @@ void task_printf(const char *pcFormat, ...) {
     va_start(xArgs, pcFormat);
     vsnprintf(pcBuffer, sizeof(pcBuffer), pcFormat, xArgs);
     va_end(xArgs);
-    lock_printf();
+    // lock_printf();
     printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
     fflush(stdout);
-    unlock_printf();
+    // unlock_printf();
 }
 
 int stdio_fail(const char *const fn, const char *const str) {
