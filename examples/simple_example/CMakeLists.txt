@@ -22,7 +22,7 @@ set(PARAM_ASSERTIONS_ENABLE_ALL 1)
 # Initialise the Pico SDK
 pico_sdk_init()
 
-add_subdirectory(../../FreeRTOS+FAT+CLI build)
+add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
 
 # Add executable. Default name is the project name, version 0.1
 add_executable(simple_example
