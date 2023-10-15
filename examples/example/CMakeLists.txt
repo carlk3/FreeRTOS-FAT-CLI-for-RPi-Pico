@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Pull in Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
+
 # Pull in FreeRTOS
 include(FreeRTOS_Kernel_import.cmake)
 
@@ -22,7 +23,7 @@ set(PARAM_ASSERTIONS_ENABLE_ALL 1)
 # Initialise the Pico SDK
 pico_sdk_init()
 
-add_subdirectory(../FreeRTOS+FAT+CLI build)
+add_subdirectory(../../FreeRTOS+FAT+CLI build)
 
 # Add executable. Default name is the project name, version 0.1
 add_executable(example

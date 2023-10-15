@@ -1,0 +1,5 @@
+example/.vscode/.cortex-debug.peripherals.state.json
+example/.vscode/.cortex-debug.registers.state.json
+example/.vscode/launch.json
+**/build/**
+*.bak
