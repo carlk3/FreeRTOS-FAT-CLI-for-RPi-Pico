@@ -3,5 +3,5 @@
 	url = https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT
 [submodule "FreeRTOS-Kernel"]
 	path = FreeRTOS-Kernel
-	url = git@github.com:FreeRTOS/FreeRTOS-Kernel.git
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 	branch = smp
