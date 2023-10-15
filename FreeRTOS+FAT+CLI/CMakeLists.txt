@@ -1,16 +1,5 @@
 add_library(FreeRTOS+FAT+CLI INTERFACE)
 target_sources(FreeRTOS+FAT+CLI INTERFACE
-        ${FREERTOS_KERNEL_PATH}/event_groups.c
-        ${FREERTOS_KERNEL_PATH}/list.c
-        ${FREERTOS_KERNEL_PATH}/queue.c
-        ${FREERTOS_KERNEL_PATH}/stream_buffer.c
-        ${FREERTOS_KERNEL_PATH}/tasks.c
-        ${FREERTOS_KERNEL_PATH}/timers.c 
-#${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}        
-        #FreeRTOS-Kernel/portable/GCC/ARM_CM0_RP2040/port.c 
-        #FreeRTOS-Kernel/portable/GCC/ARM_CM0/port.c 
-        ${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}/port.c
-        ${FREERTOS_KERNEL_PATH}/portable/MemMang/heap_4.c 
         ../Lab-Project-FreeRTOS-FAT/ff_crc.c
         ../Lab-Project-FreeRTOS-FAT/ff_dir.c
         ../Lab-Project-FreeRTOS-FAT/ff_error.c
@@ -56,7 +45,4 @@ target_include_directories(FreeRTOS+FAT+CLI INTERFACE
         include/ 
         ../Lab-Project-FreeRTOS-FAT/include/
         portable/RP2040/
-        ${FREERTOS_KERNEL_PATH}/include 
-#        FreeRTOS-Kernel/portable/GCC/ARM_CM0 #_RP2040
-        ${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}/include
 )

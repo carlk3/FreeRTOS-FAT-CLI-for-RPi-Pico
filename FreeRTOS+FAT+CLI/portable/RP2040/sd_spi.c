@@ -112,10 +112,10 @@ void sd_spi_send_initializing_sequence(sd_card_t * pSD) {
     gpio_put(pSD->ss_gpio, 1);
     uint8_t ones[10];
     memset(ones, 0xFF, sizeof ones);
-    absolute_time_t timeout_time = make_timeout_time_ms(1);
+    TickType_t xStart = xTaskGetTickCount();
     do {
         sd_spi_transfer(pSD, ones, NULL, sizeof ones);
-    } while (0 < absolute_time_diff_us(get_absolute_time(), timeout_time));
+    } while (xTaskGetTickCount() - xStart < pdMS_TO_TICKS(1));
     gpio_put(pSD->ss_gpio, old_ss);
 }
 
