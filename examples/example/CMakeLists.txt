@@ -52,11 +52,6 @@ target_link_libraries(example
 )
 target_include_directories(example PUBLIC 
         include/ 
-        ../FreeRTOS+FAT+CLI/Lab-Project-FreeRTOS-FAT/include
-        ../FreeRTOS+FAT+CLI/portable/RP2040
-        ../FreeRTOS+FAT+CLI/include
-        #${FREERTOS_KERNEL_PATH}/include 
-        #${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}/include
 )
 
 #target_compile_options(example PRIVATE -save-temps)

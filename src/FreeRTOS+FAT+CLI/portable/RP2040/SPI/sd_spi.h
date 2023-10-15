@@ -16,7 +16,7 @@ specific language governing permissions and limitations under the License.
 #define _SD_SPI_H_
 
 #include <stdint.h>
-#include "sd_card.h"
+#include "SPI/sd_card_spi.h"
 
 /* Transfer tx to SPI while receiving SPI to rx. 
 tx or rx can be NULL if not important. */

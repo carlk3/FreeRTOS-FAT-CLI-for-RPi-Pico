@@ -21,8 +21,8 @@ specific language governing permissions and limitations under the License.
 //#include "FreeRTOSFATConfig.h" // for DBG_PRINTF
 //
 #include "my_debug.h"
-#include "sd_card.h"
-#include "sd_spi.h"
+#include "SPI/sd_card_spi.h"
+#include "SPI/sd_spi.h"
 #include "spi.h"
 
 //#define TRACE_PRINTF(fmt, args...)

@@ -17,7 +17,7 @@ specific language governing permissions and limitations under the License.
 #include "ff_sddisk.h"
 #include "ff_stdio.h"
 //
-#include "sd_card.h"
+#include "SPI/sd_card_spi.h"
 #include "hw_config.h"
 
 #define TRACE_PRINTF(fmt, args...)

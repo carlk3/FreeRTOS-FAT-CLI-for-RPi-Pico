@@ -169,7 +169,7 @@ specific language governing permissions and limitations under the License.
 #include "my_debug.h"
 #include "sd_spi.h"
 //
-#include "sd_card.h"
+#include "SPI/sd_card_spi.h"
 
 #define SD_CRC_ENABLED 1
 

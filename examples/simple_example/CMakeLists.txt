@@ -41,12 +41,6 @@ target_link_libraries(simple_example
         pico_stdlib
         FreeRTOS+FAT+CLI
 )
-target_include_directories(simple_example PUBLIC 
-        include/ 
-        ../FreeRTOS+FAT+CLI/Lab-Project-FreeRTOS-FAT/include
-        ../FreeRTOS+FAT+CLI/portable/RP2040
-        ../FreeRTOS+FAT+CLI/include
-)
 
 #target_compile_options(simple_example PRIVATE -save-temps)
 #target_compile_options(simple_example PRIVATE -Wall, -Wextra -Wshadow -Wdouble-promotion)

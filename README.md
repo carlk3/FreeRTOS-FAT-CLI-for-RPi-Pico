@@ -12,6 +12,11 @@ It is wrapped up in a complete runnable project, with a command line interface p
 
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1473.JPG "Prototype")
 
+## Migration actions
+* Directory restructuring: 
+    * Examples have been moved to subdirectory `src`.
+    * Libraries `FreeRTOS+FAT+CLI`, `FreeRTOS-Kernel`, and `Lab-Project-FreeRTOS-FAT` have been moved to subdirectory `src`.
+
 ## Features:
 * Supports multiple SD Cards
 * Supports multiple SPIs

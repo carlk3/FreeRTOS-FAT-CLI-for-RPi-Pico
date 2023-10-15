@@ -36,7 +36,7 @@ specific language governing permissions and limitations under the License.
 #include "crash.h"
 #include "filesystem_test_suite.h"
 #include "stdio_cli.h"
-#include "sd_card.h"
+#include "SPI/sd_card_spi.h"
 
 //#define TRACE_PRINTF(fmt, args...)
 #define TRACE_PRINTF printf  // task_printf

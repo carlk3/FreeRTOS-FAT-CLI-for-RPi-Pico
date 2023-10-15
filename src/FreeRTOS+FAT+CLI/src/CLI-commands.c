@@ -106,7 +106,7 @@ specific language governing permissions and limitations under the License.
 //
 #include "crash.h"
 #include "hw_config.h"
-#include "sd_card.h"
+#include "SPI/sd_card_spi.h"
 #include "ff_sddisk.h"
 #include "stdio_cli.h"
 
