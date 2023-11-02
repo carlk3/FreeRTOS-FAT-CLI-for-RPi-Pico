@@ -32,8 +32,58 @@ time_t GLOBAL_uptime_seconds();
 extern void vLoggingPrintf(const char *pcFormat, ...)
     __attribute__((format(__printf__, 1, 2)));
 
-//#define DBG_PRINTF task_printf 
-#define DBG_PRINTF printf
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* USE_PRINTF
+If this is defined and not zero, 
+these message output functions will use the Pico SDK's stdout.
+*/
+
+/* USE_DBG_PRINTF
+If this is not defined or is zero or NDEBUG is defined, 
+DBG_PRINTF statements will be effectively stripped from the code.
+*/
+
+/* Single string output callbacks: send message output somewhere.
+To use these, do not define the USE_PRINTF compile definition,
+and override these "weak" functions by strongly implementing them in user code.
+The weak implementations do nothing.
+ */
+void put_out_error_message(const char *s);
+void put_out_info_message(const char *s);
+void put_out_debug_message(const char *s);
+
+// https://gcc.gnu.org/onlinedocs/gcc-3.2.3/cpp/Variadic-Macros.html
+
+int error_message_printf(const char *func, int line, const char *fmt, ...) __attribute__ ((format (__printf__, 3, 4)));
+#ifndef EMSG_PRINTF
+#define EMSG_PRINTF(fmt, ...) error_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
+#endif
+
+int error_message_printf_plain(const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2)));
+
+int debug_message_printf(const char *func, int line, const char *fmt, ...) __attribute__ ((format (__printf__, 3, 4)));
+#ifndef DBG_PRINTF
+#  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF && !defined(NDEBUG)
+#    define DBG_PRINTF(fmt, ...) debug_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
+#  else
+#    define DBG_PRINTF(fmt, ...) (void)0
+#  endif
+#endif
+
+int info_message_printf(const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2)));
+#ifndef IMSG_PRINTF
+#define IMSG_PRINTF(fmt, ...) info_message_printf(fmt, ##__VA_ARGS__)
+#endif
+
+/* For passing an output function as an argument */
+typedef int (*printer_t)(const char* format, ...);
+
+void my_assert_func(const char *file, int line, const char *func, const char *pred);
+#define myASSERT(__e) \
+    { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
 
 void task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 
@@ -78,6 +128,30 @@ int ff_stdio_fail(const char *const func, char const *const str,
                   char const *const filename);
 #define FF_FAIL(str, filname) ff_stdio_fail(__FUNCTION__, str, filename)
 
+static inline void dump_bytes(size_t num, uint8_t bytes[]) {
+    DBG_PRINTF("     ");
+    for (size_t j = 0; j < 16; ++j) {
+        DBG_PRINTF("%02hhx", j);
+        if (j < 15)
+            DBG_PRINTF(" ");
+        else {
+            DBG_PRINTF("\n");
+        }
+    }
+    for (size_t i = 0; i < num; i += 16) {
+        DBG_PRINTF("%04x ", i);        
+        for (size_t j = 0; j < 16 && i + j < num; ++j) {
+            DBG_PRINTF("%02hhx", bytes[i + j]);
+            if (j < 15)
+                DBG_PRINTF(" ");
+            else {
+                DBG_PRINTF("\n");
+            }
+        }
+    }
+    DBG_PRINTF("\n");
+}
+
 void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes);
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes);
 bool compare_buffers_8(const char *s0, const uint8_t *pbytes0, const char *s1,
@@ -90,5 +164,9 @@ bool compare_buffers_32(const char *s0, const uint32_t *pwords0, const char *s1,
                         const uint32_t *pwords1, const size_t nwords);
 
 bool DBG_Connected();
+
+#ifdef __cplusplus
+}
+#endif
 
 /* [] END OF FILE */

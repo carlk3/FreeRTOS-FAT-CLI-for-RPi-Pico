@@ -277,7 +277,7 @@ that can be recognised. */
 
 /* Defines how many drives can be combined in total.  Should be set to at
 least 2. */
-#define	ffconfigMAX_FILE_SYS 3
+#define	ffconfigMAX_FILE_SYS 5
 
 /* In case the low-level driver returns an error 'FF_ERR_DRIVER_BUSY',
 the library will pause for a number of ms, defined in
@@ -330,11 +330,12 @@ struct tm *gmtime_r( const time_t *pxTime, struct tm *tmStruct );
 /* Prototype for the function used to print out.  In this case it prints to the
 console before the network is connected then a UDP port after the network has
 connected. */
-extern void vLoggingPrintf( const char *pcFormatString, ... ) __attribute__ ((format (printf, 1, 2)));
-//#define FF_PRINTF vLoggingPrintf
-//#define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
-#define FF_PRINTF   task_printf
-//#define FF_PRINTF   printf
+// extern void vLoggingPrintf( const char *pcFormatString, ... ) __attribute__ ((format (printf, 1, 2)));
+// #define FF_PRINTF vLoggingPrintf
+// #define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
+// #define FF_PRINTF   task_printf
+// #define FF_PRINTF   printf
+#define FF_PRINTF error_message_printf_plain
 
 /* Visual studio does not have an implementation of strcasecmp().
 _RB_ Cannot use FF_NOSTRCASECMP setting as the internal implementation of

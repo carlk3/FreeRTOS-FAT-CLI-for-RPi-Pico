@@ -56,8 +56,15 @@ target_include_directories(example PUBLIC
 
 #target_compile_options(example PRIVATE -save-temps)
 #target_compile_options(example PRIVATE -Wall, -Wextra -Wshadow -Wdouble-promotion)
-target_compile_options(example PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
+# target_compile_options(example PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
+target_compile_options(example PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter -fanalyzer)
+
 target_compile_definitions(example PUBLIC DEBUG)
+add_compile_definitions(PARAM_ASSERTIONS_ENABLE_ALL=1)
+
+# This program is useless without standard standard input and output.
+add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
+
 
 IF (NOT DEFINED N_SD_CARDS)
     SET(N_SD_CARDS 1)

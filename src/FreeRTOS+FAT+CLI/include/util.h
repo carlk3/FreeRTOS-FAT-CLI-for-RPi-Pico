@@ -14,15 +14,21 @@ specific language governing permissions and limitations under the License.
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
+#include <RP2040.h>
 #include <stddef.h>    
 #include <stdint.h>
 
 #include "hardware/structs/scb.h"
+//
+#include "my_debug.h"
 
 // works with negative index
 static inline int wrap_ix(int index, int n)
 {
     return ((index % n) + n) % n;
+}
+static inline int mod_floor(int a, int n) {
+    return ((a % n) + n) % n;
 }
 
 __attribute__((always_inline)) static inline uint32_t calculate_checksum(uint32_t const *p, size_t const size){
@@ -40,10 +46,6 @@ __attribute__((always_inline)) static inline uint32_t calculate_checksum(uint32_
 #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
 #endif
 
-__attribute__((always_inline)) static inline void __DSB(void) {
-    __asm volatile("dsb 0xF" ::: "memory");
-}
-
 // Patterned after CMSIS NVIC_SystemReset
 __attribute__((__noreturn__)) static inline void system_reset() {
     __DSB(); /* Ensure all outstanding memory accesses included
@@ -55,13 +57,19 @@ __attribute__((__noreturn__)) static inline void system_reset() {
     }
 }
 
-/**
-  \brief   Disable IRQ Interrupts
-  \details Disables IRQ interrupts by setting the I-bit in the CPSR.
-           Can only be executed in Privileged modes.
- */
-__attribute__((always_inline)) static inline void __disable_irq(void) {
-    __asm volatile("cpsid i" : : : "memory");
+char const* uint_binary_str(unsigned int number);
+
+static inline uint32_t ext_bits(unsigned char const *data, int msb, int lsb) {
+    uint32_t bits = 0;
+    uint32_t size = 1 + msb - lsb;
+    for (uint32_t i = 0; i < size; i++) {
+        uint32_t position = lsb + i;
+        uint32_t byte = 15 - (position >> 3);
+        uint32_t bit = position & 0x7;
+        uint32_t value = (data[byte] >> bit) & 1;
+        bits |= value << i;
+    }
+    return bits;
 }
 
 #endif

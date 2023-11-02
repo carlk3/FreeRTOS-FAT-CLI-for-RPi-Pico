@@ -15,31 +15,37 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         ../Lab-Project-FreeRTOS-FAT/ff_time.c 
         portable/RP2040/demo_logging.c
         portable/RP2040/ff_sddisk.c
+        portable/RP2040/sd_card.c
         portable/RP2040/SPI/crc.c
         portable/RP2040/SPI/sd_card_spi.c
         portable/RP2040/SPI/sd_spi.c
         portable/RP2040/SPI/spi.c
-        src/my_debug.c
-        src/FreeRTOS_time.c
+        portable/RP2040/SDIO/sd_card_sdio.c
+        portable/RP2040/SDIO/rp2040_sdio.c
         #src/stdio_cli.c
-        src/crash.c
         src/CLI-commands.c
+        src/crash.c
         src/ff_utils.c
         src/File-related-CLI-commands.c
         src/FreeRTOS_CLI.c
+        src/FreeRTOS_time.c
+        src/my_debug.c
+        src/util.c
 )
 target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
+        cmsis_core
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
         hardware_adc
-        hardware_spi
-        hardware_dma
         hardware_clocks
+        hardware_dma
+        hardware_pio
         hardware_rtc
+        hardware_spi
         hardware_timer
         pico_multicore
-        pico_sync
         pico_stdlib
+        pico_sync
 )
 target_include_directories(FreeRTOS+FAT+CLI INTERFACE 
         include/ 

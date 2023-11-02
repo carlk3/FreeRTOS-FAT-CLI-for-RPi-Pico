@@ -24,9 +24,9 @@ specific language governing permissions and limitations under the License.
 #include "task.h"
 
 //
-#include "cmsis_gcc.h"
-#include "core_cm0plus.h"
-
+// #include "cmsis_gcc.h"
+// #include "core_cm0plus.h"
+#include <RP2040.h>
 //
 #include "crash.h"
 #include "my_debug.h"
@@ -35,6 +35,110 @@ static time_t start_time;
 
 void mark_start_time() { start_time = FreeRTOS_time(NULL); }
 time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
+
+/* Function Attribute ((weak))
+The weak attribute causes a declaration of an external symbol to be emitted as a weak symbol rather than a global.
+This is primarily useful in defining library functions that can be overridden in user code, though it can also be used with non-function declarations.
+The overriding symbol must have the same type as the weak symbol.
+https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
+
+You can override these functions in your application to redirect "stdout"-type messages.
+*/
+
+/* Single string output callbacks */
+
+void __attribute__((weak)) put_out_error_message(const char *s) {
+    (void)s;
+}
+void __attribute__((weak)) put_out_info_message(const char *s) {
+    (void)s;
+}
+void __attribute__((weak)) put_out_debug_message(const char *s) {
+    (void)s;
+}
+
+/* "printf"-style output callbacks */
+
+#if defined(USE_PRINTF) && USE_PRINTF
+
+int __attribute__((weak)) error_message_printf(const char *func, int line, const char *fmt, ...) {
+    printf("%s:%d: ", func, line);
+    va_list args;
+    va_start(args, fmt);
+    int cw = vprintf(fmt, args);
+    va_end(args);
+    // stdio_flush();
+    fflush(stdout);
+    return cw;
+}
+int __attribute__((weak)) error_message_printf_plain(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int cw = vprintf(fmt, args);
+    va_end(args);
+    // stdio_flush();
+    fflush(stdout);
+    return cw;
+}
+int __attribute__((weak)) info_message_printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int cw = vprintf(fmt, args);
+    va_end(args);
+    return cw;
+}
+int __attribute__((weak)) debug_message_printf(const char *func, int line, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int cw = vprintf(fmt, args);
+    va_end(args);
+    // stdio_flush();
+    fflush(stdout);
+    return cw;
+}
+
+#else
+
+/* These will truncate at 256 bytes. You can tell by checking the return code. */
+
+int __attribute__((weak)) error_message_printf(const char *func, int line, const char *fmt, ...) {
+    char buf[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
+    put_out_error_message(buf);
+    va_end(args);
+    return cw;
+}
+int __attribute__((weak)) error_message_printf_plain(const char *fmt, ...) {
+    char buf[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
+    put_out_info_message(buf);
+    va_end(args);
+    return cw;
+}
+int __attribute__((weak)) info_message_printf(const char *fmt, ...) {
+    char buf[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
+    put_out_info_message(buf);
+    va_end(args);
+    return cw;
+}
+int __attribute__((weak)) debug_message_printf(const char *func, int line, const char *fmt, ...) {
+    char buf[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
+    put_out_debug_message(buf);
+    va_end(args);
+    return cw;
+}
+
+#endif
 
 static SemaphoreHandle_t xSemaphore;
 static BaseType_t printf_locked;

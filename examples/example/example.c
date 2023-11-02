@@ -23,9 +23,6 @@ specific language governing permissions and limitations under the License.
 #include "crash.h"
 #include "stdio_cli.h"
 
-static void prvLaunchRTOS() {
-}
-
 int main() {
 
     crash_handler_init();

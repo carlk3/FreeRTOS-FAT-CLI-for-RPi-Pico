@@ -27,15 +27,18 @@ specific language governing permissions and limitations under the License.
 #include "pico/mutex.h"
 //
 #include "hw_config.h"
+#include "sd_card.h"
 
 #define PRINTF task_printf
 
 extern bool die_now;
 
 typedef uint32_t DWORD;
+typedef uint64_t QWORD;
 typedef unsigned int UINT;
 typedef uint8_t BYTE;
 typedef uint16_t WORD;
+typedef QWORD LBA_t;
 
 /* Status of Disk Functions */
 typedef BYTE DSTATUS;
@@ -52,8 +55,28 @@ typedef enum {
 #define FF_MIN_SS 512
 #define FF_MAX_SS 512
 
-#define disk_read sd_read_blocks
-#define disk_write sd_write_blocks
+static int sdrc2dresult(int sd_rc) {
+    switch (sd_rc) {
+        case SD_BLOCK_DEVICE_ERROR_NONE:
+            return RES_OK;
+        case SD_BLOCK_DEVICE_ERROR_UNUSABLE:
+        case SD_BLOCK_DEVICE_ERROR_NO_RESPONSE:
+        case SD_BLOCK_DEVICE_ERROR_NO_INIT:
+        case SD_BLOCK_DEVICE_ERROR_NO_DEVICE:
+            return RES_NOTRDY;
+        case SD_BLOCK_DEVICE_ERROR_PARAMETER:
+        case SD_BLOCK_DEVICE_ERROR_UNSUPPORTED:
+            return RES_PARERR;
+        case SD_BLOCK_DEVICE_ERROR_WRITE_PROTECTED:
+            return RES_WRPRT;
+        case SD_BLOCK_DEVICE_ERROR_CRC:
+        case SD_BLOCK_DEVICE_ERROR_WOULD_BLOCK:
+        case SD_BLOCK_DEVICE_ERROR_ERASE:
+        case SD_BLOCK_DEVICE_ERROR_WRITE:
+        default:
+            return RES_ERROR;
+    }
+}
 
 /* Pseudo random number generator */
 static DWORD pn(DWORD pns /* 0:Initialize, !0:Read */, DWORD *plfsr) {
@@ -76,6 +99,19 @@ static sd_card_t *pdrv;
 static WORD sz_sect;
 static DWORD sz_eblk, sz_drv;
 
+// uint64_t (*get_num_sectors)(sd_card_t *sd_card_p)
+static uint64_t sd_sectors(sd_card_t *pdrv) {
+    return pdrv->get_num_sectors(pdrv);
+}
+static DRESULT disk_write(sd_card_t *p_sd, const BYTE *buff, LBA_t sector, UINT count) {
+    int rc = p_sd->write_blocks(p_sd, buff, sector, count);
+    return sdrc2dresult(rc);
+}
+static DRESULT disk_read(sd_card_t *p_sd, BYTE *buff, LBA_t sector, UINT count) {
+    int rc = p_sd->read_blocks(p_sd, buff, sector, count);
+    return sdrc2dresult(rc);
+}
+
 int test_diskio_initialize(const char *diskName) {
     PRINTF(" disk_initalize(%p)", pdrv);
     //        ds = disk_initialize(pdrv);
@@ -86,7 +122,7 @@ int test_diskio_initialize(const char *diskName) {
         return -1;
     }
     // Initialize the media driver
-    if (0 != sd_init_card(pdrv)) {
+    if (!sd_init_driver()) {
         // Couldn't init
         PRINTF(" - failed.\n");
         fflush(stdout);

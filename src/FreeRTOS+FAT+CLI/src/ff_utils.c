@@ -136,7 +136,7 @@ void eject(const char *const name, const char *pcPath) {
             FF_SDDiskDelete(pxDisk);
         }
     }
-    sd_card_deinit(pSD);
+    pSD->deinit(pSD);
 }
 
 void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct) {

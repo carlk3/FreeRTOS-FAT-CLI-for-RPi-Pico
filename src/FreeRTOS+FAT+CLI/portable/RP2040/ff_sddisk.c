@@ -60,7 +60,7 @@ static int32_t prvWrite(uint8_t *pucSource, /* Source of data to be written. */
 		uint32_t ulSectorCount, /* The number of sectors to write. */
 		FF_Disk_t *pxDisk) /* Describes the disk being written to. */
 {
-	int status = sd_write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
+	int status = ((sd_card_t *)(pxDisk->pvTag))->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
 	if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
 		return FF_ERR_NONE;
 	} else {
@@ -74,7 +74,7 @@ static int32_t prvRead(uint8_t *pucDestination, /* Destination for data being re
 		uint32_t ulSectorCount, /* Number of sectors to read. */
 		FF_Disk_t *pxDisk) /* Describes the disk being read from. */
 {
-	int status = sd_read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
+	int status = ((sd_card_t *)(pxDisk->pvTag))->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
 	if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
 		return FF_ERR_NONE;
 	} else {
@@ -98,10 +98,16 @@ static bool disk_init(sd_card_t *pSD) {
 	configASSERT((xIOManagerCacheSize >= (2 * SECTOR_SIZE)));    
 	
 	// Initialize the media driver
-	if (0 != sd_init_card(pSD)) {
-		// Couldn't init
+    bool rc = sd_init_driver();
+    if (!rc) return rc;
+
+    //	STA_NOINIT = 0x01, /* Drive not initialized */
+    //	STA_NODISK = 0x02, /* No medium in the drive */
+    //	STA_PROTECT = 0x04 /* Write protected */
+	int ds = pSD->init(pSD);  
+	if (STA_NODISK & ds || STA_NOINIT & ds) 
 		return false;
-	}    
+
 	// This logic needs to change in order to support multiple partitions per card:
 	if ((pSD->ff_disk_count)
 		&& (pSD->ff_disks)
@@ -210,7 +216,7 @@ BaseType_t FF_SDDiskMount(FF_Disk_t *pDisk) {
 BaseType_t FF_SDDiskDelete(FF_Disk_t *pxDisk) {
 	if (pxDisk) {
 		if (pxDisk->pvTag) {
-			sd_card_deinit(pxDisk->pvTag);                    
+			((sd_card_t *)(pxDisk->pvTag))->init(pxDisk->pvTag);
 		}
 		if (pxDisk->xStatus.bIsInitialised) {
 			if (pxDisk->pxIOManager) {
