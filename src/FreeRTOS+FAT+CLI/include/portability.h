@@ -46,7 +46,10 @@ call to millis() returns 0xFFFFFFFF:
     while (millis() < end)  // while (0xFFFFFFFF < 0x00000054)
 
 */
-
 static inline uint32_t millis() {
     return xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+}
+
+static inline void delay_ms(uint32_t ulTime_ms) {
+    vTaskDelay( pdMS_TO_TICKS( ulTime_ms ) );
 }

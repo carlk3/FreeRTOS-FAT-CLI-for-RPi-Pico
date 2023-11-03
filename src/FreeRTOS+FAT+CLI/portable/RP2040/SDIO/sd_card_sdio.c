@@ -65,7 +65,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     // Establish initial connection with the card
     for (int retries = 0; retries < 5; retries++)
     {
-        delayMicroseconds(1000);
+        delay_ms(1);
         reply = 0;
         rp2040_sdio_command_R1(sd_card_p, CMD0, 0, NULL); // GO_IDLE_STATE
         status = rp2040_sdio_command_R1(sd_card_p, CMD8, 0x1AA, &reply); // SEND_IF_COND
