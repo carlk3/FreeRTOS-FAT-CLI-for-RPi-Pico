@@ -29,7 +29,7 @@ specific language governing permissions and limitations under the License.
 #include "hw_config.h"
 #include "sd_card.h"
 
-#define PRINTF task_printf
+#define PRINTF IMSG_PRINTF
 
 extern bool die_now;
 

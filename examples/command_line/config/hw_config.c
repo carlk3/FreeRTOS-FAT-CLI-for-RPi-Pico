@@ -29,7 +29,7 @@ There should be one element of the sdio_ifs[] array for each SDIO interface obje
 
 There should be one element of the sd_cards[] array for each SD card slot.
 * Each element of sd_cards[] must point to its interface with spi_if_p or sdio_if_p.
-* The name (pcName) should correspond to the FatFs "logical drive" identifier.
+* The name (name) should correspond to the FatFs "logical drive" identifier.
   (See http://elm-chan.org/fsw/ff/doc/filename.html#vol)
   In general, this should correspond to the (zero origin) array index.
 
@@ -58,7 +58,7 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .set_drive_strength = true,
         .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
-        // .DMA_IRQ_num = DMA_IRQ_0,
+        .DMA_IRQ_num = DMA_IRQ_0,
         // .use_exclusive_DMA_IRQ_handler = true,
         .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
     },
@@ -70,7 +70,7 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .set_drive_strength = true,
         .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
-        // .DMA_IRQ_num = DMA_IRQ_1,
+        .DMA_IRQ_num = DMA_IRQ_1,
         .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
     }
 };
@@ -113,25 +113,28 @@ static sd_sdio_if_t sdio_ifs[] = {
     {   // sdio_ifs[0]
         .CMD_gpio = 3,
         .D0_gpio = 4,
-        .baud_rate = 15 * 1000 * 1000,  // 15 MHz
-        .DMA_IRQ_num = DMA_IRQ_1
+        .DMA_IRQ_num = DMA_IRQ_0,
+        .baud_rate = 15 * 1000 * 1000  // 15 MHz
     },
     {   // sdio_ifs[1]
         .CMD_gpio = 17,
         .D0_gpio = 18,
-        .baud_rate = 15 * 1000 * 1000,  // 15 MHz
-        .DMA_IRQ_num = DMA_IRQ_1
+        .DMA_IRQ_num = DMA_IRQ_1,
+        .baud_rate = 15 * 1000 * 1000  // 15 MHz
     }
 };
 
 /* Hardware Configuration of the SD Card "objects"
-These correspond to SD card sockets
+    These correspond to SD card sockets
 */
 static sd_card_t sd_cards[] = {  // One for each SD card
-    #ifdef SPI_SD0
+#ifdef SPI_SD0
     {   // sd_cards[0]: Socket sd0
-        .pcName = "sd0",            // Name used to mount device        .type = SD_IF_SPI,
-        .type = SD_IF_SPI,     
+        // "device_name" is arbitrary:
+        .device_name = "sd0",
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd0", 
+        .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[0],  // Pointer to the SPI interface driving this card
         // SD Card detect:
         .use_card_detect = true,
@@ -143,7 +146,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
     },
 #else
     {   // sd_cards[0]: Socket sd0
-        .pcName = "sd0",            // Name used to mount device        .type = SD_IF_SPI,
+        // "device_name" is arbitrary:
+        .device_name = "sd0",
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd0",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[0],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -156,7 +162,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
     },
 #endif
     {   // sd_cards[1]: Socket sd1
-        .pcName = "sd1",            // Name used to mount device        .type = SD_IF_SPI,
+        // "device_name" is arbitrary:
+        .device_name = "sd1",
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd1",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[1],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -168,19 +177,25 @@ static sd_card_t sd_cards[] = {  // One for each SD card
         .card_detect_pull_hi = true                                 
     },
     {   // sd_cards[2]: Socket sd2
-        .pcName = "sd2",            // Name used to mount device        .type = SD_IF_SPI,
+        // "device_name" is arbitrary:
+        .device_name = "sd2", 
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd2",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[2],  // Pointer to the SPI interface driving this card
         // SD Card detect:
         .use_card_detect = true,
-        .card_detect_gpio = 15,
-     .card_detected_true = 0, // What the GPIO read returns when a card is
+        .card_detect_gpio = 15,  
+        .card_detected_true = 0, // What the GPIO read returns when a card is
                                  // present.
         .card_detect_use_pull = true,
         .card_detect_pull_hi = true                                 
     },
     {   // sd_cards[3]: Socket sd3
-        .pcName = "sd3",            // Name used to mount device        .type = SD_IF_SPI,
+        // "device_name" is arbitrary:
+        .device_name = "sd3",
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd3",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[1],
         // SD Card detect:

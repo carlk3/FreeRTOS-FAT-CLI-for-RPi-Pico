@@ -17,6 +17,10 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 //
 #include "FreeRTOS.h"
@@ -35,10 +39,6 @@ specific language governing permissions and limitations under the License.
 #include "util.h"
 //
 #include "SdCardInfo.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Disk Status Bits (DSTATUS) */
 enum {
@@ -99,7 +99,8 @@ typedef struct sd_card_t sd_card_t;
 
 // "Class" representing SD Cards
 struct sd_card_t {
-    const char *pcName;
+    const char *device_name;
+    const char *mount_point; // Must be a directory off the file system's root directory and must be an absolute path that starts with a forward slash (/)
     sd_if_t type;
     union {
         sd_spi_if_t *spi_if_p;
@@ -120,9 +121,7 @@ struct sd_card_t {
     int card_type;     // Assigned dynamically
     SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
     TaskHandle_t owner;       // Assigned dynamically
-    size_t ff_disk_count;
-    FF_Disk_t **ff_disks;  // FreeRTOS+FAT "disks" using this device
-    bool mounted;
+    FF_Disk_t ff_disk;  // FreeRTOS+FAT "disk" using this device
 
     int (*init)(sd_card_t *sd_card_p);
     void (*deinit)(sd_card_t *sd_card_p);
@@ -147,6 +146,7 @@ bool sd_card_detect(sd_card_t *sd_card_p);
 void cidDmp(sd_card_t *sd_card_p, printer_t printer);
 void csdDmp(sd_card_t *sd_card_p, printer_t printer);
 sd_card_t *sd_get_by_name(const char *const name);
+sd_card_t *sd_get_by_mount_point(const char *const name);
 
 #ifdef __cplusplus
 }

@@ -11,7 +11,6 @@ under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
-#include "ff_utils.h"
 
 #include "ff_headers.h"
 #include "ff_sddisk.h"
@@ -19,9 +18,11 @@ specific language governing permissions and limitations under the License.
 //
 #include "SPI/sd_card_spi.h"
 #include "hw_config.h"
+//
+#include "ff_utils.h"
 
 #define TRACE_PRINTF(fmt, args...)
-//#define TRACE_PRINTF printf
+// #define TRACE_PRINTF printf
 
 static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     FF_PartitionParameters_t xPartition;
@@ -74,69 +75,72 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     return xError;
 }
 
-bool format(FF_Disk_t **ppxDisk, const char *const devName) {
-    *ppxDisk = FF_SDDiskInit(devName);
-    if (!*ppxDisk) {
+bool format(const char *name) {
+    FF_Disk_t *pxDisk = FF_SDDiskInit(name);
+    if (!pxDisk) {
         return false;
     }
-    FF_Error_t e = prvPartitionAndFormatDisk(*ppxDisk);
+    FF_Error_t e = prvPartitionAndFormatDisk(pxDisk);
     return FF_ERR_NONE == e ? true : false;
 }
 
-bool mount(FF_Disk_t **ppxDisk, const char *const devName,
-           const char *const path) {
+bool mount(const char *name) {
     TRACE_PRINTF("> %s\n", __FUNCTION__);
-    configASSERT(ppxDisk);
-    if (!(*ppxDisk) || !(*ppxDisk)->xStatus.bIsInitialised) {
-        *ppxDisk = FF_SDDiskInit(devName);
-    }
-    if (!*ppxDisk) {
+    FF_Disk_t *pxDisk = FF_SDDiskInit(name);
+    if (!pxDisk) {
         return false;
     }
-    if (!(*ppxDisk)->xStatus.bIsMounted) {
+    if (!(pxDisk)->xStatus.bIsMounted) {
         // BaseType_t FF_SDDiskMount( FF_Disk_t *pDisk );
-        FF_Error_t xError = FF_SDDiskMount(*ppxDisk);
+        FF_Error_t xError = FF_SDDiskMount(pxDisk);
         if (FF_isERR(xError) != pdFALSE) {
             FF_PRINTF("FF_SDDiskMount: %s\n",
                       (const char *)FF_GetErrMessage(xError));
             return false;
         }
     }
-    return FF_FS_Add(path, *ppxDisk);
+    sd_card_t *sd_card_p = pxDisk->pvTag;
+    return FF_FS_Add(sd_card_p->mount_point, pxDisk);
 }
-void unmount(FF_Disk_t *pxDisk, const char *pcPath) {
-    FF_FS_Remove(pcPath);
+void unmount(const char *name) {
+    TRACE_PRINTF("> %s\n", __FUNCTION__);
+    sd_card_t *sd_card_p = sd_get_by_name(name);
+    if (!sd_card_p) {
+        FF_PRINTF("%s: unknown name %s\n", __func__, name);
+        return;
+    }
+    FF_FS_Remove(sd_card_p->mount_point);
+    FF_Disk_t *pxDisk = &sd_card_p->ff_disk;
+    if (!pxDisk)
+        return;
 
     /*Unmount the partition. */
     FF_Error_t xError = FF_SDDiskUnmount(pxDisk);
     if (FF_isERR(xError) != pdFALSE) {
         FF_PRINTF("FF_Unmount: %s\n", (const char *)FF_GetErrMessage(xError));
     }
-    // FF_SDDiskDelete(pxDisk);
+    FF_SDDiskDelete(pxDisk);
 }
-
-void eject(const char *const name, const char *pcPath) {
-    sd_card_t *pSD = sd_get_by_name(name);
-    if (!pSD) {
-        FF_PRINTF("Unknown device name %s\n", name);
+void eject(const char *const name) {
+    sd_card_t *sd_card_p = sd_get_by_name(name);
+    if (!sd_card_p) {
+        FF_PRINTF("%s: unknown name %s\n", __func__, name);
         return;
     }
-    FF_FS_Remove(pcPath);
-    for (size_t i = 0; i < pSD->ff_disk_count; ++i) {
-        FF_Disk_t *pxDisk = pSD->ff_disks[i];
-        if (pxDisk) {
-            if (pxDisk->xStatus.bIsMounted) {
-                FF_FlushCache(pxDisk->pxIOManager);
-                FF_PRINTF("Invalidating %s\n", pSD->pcName);
-                FF_Invalidate(pxDisk->pxIOManager);
-                FF_PRINTF("Unmounting %s\n", pSD->pcName);
-                FF_Unmount(pxDisk);
-                pxDisk->xStatus.bIsMounted = pdFALSE;
-            }
-            FF_SDDiskDelete(pxDisk);
+    FF_FS_Remove(sd_card_p->mount_point);
+    FF_Disk_t *pxDisk = &sd_card_p->ff_disk;
+    if (pxDisk) {
+        if (pxDisk->xStatus.bIsMounted) {
+            FF_FlushCache(pxDisk->pxIOManager);
+            FF_PRINTF("Invalidating %s\n", name);
+            FF_Invalidate(pxDisk->pxIOManager);
+            FF_PRINTF("Unmounting %s\n", name);
+            FF_Unmount(pxDisk);
+            pxDisk->xStatus.bIsMounted = pdFALSE;
         }
+        FF_SDDiskDelete(pxDisk);
     }
-    pSD->deinit(pSD);
+    //	sd_card_deinit(pDrv);
 }
 
 void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct) {
@@ -220,6 +224,8 @@ FF_Error_t ff_set_fsize(FF_FILE *pxStream) {
 **	1			all directories already exist
 **	-1 (and sets errno)	error
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 int mkdirhier(char *path) {
     char src[ffconfigMAX_FILENAME], dst[ffconfigMAX_FILENAME] = "";
     char *dirp, *nextp = src;
@@ -254,5 +260,79 @@ int mkdirhier(char *path) {
 
     return retval;
 }
+#pragma GCC diagnostic pop
+
+void ls(const char *path) {
+    char pcWriteBuffer[128] = {0};
+
+    FF_FindData_t xFindStruct;
+    memset(&xFindStruct, 0x00, sizeof(FF_FindData_t));
+
+    if (!path)
+        ff_getcwd(pcWriteBuffer, sizeof(pcWriteBuffer));
+    FF_PRINTF("Directory Listing: %s\n", path ? path : pcWriteBuffer);
+
+    int iReturned = ff_findfirst(path ? path : "", &xFindStruct);
+    if (FF_ERR_NONE != iReturned) {
+        FF_PRINTF("ff_findfirst error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+                  -stdioGET_ERRNO());
+        return;
+    }
+    do {
+        const char *pcWritableFile = "writable file",
+                   *pcReadOnlyFile = "read only file",
+                   *pcDirectory = "directory";
+        const char *pcAttrib;
+
+        /* Point pcAttrib to a string that describes the file. */
+        if ((xFindStruct.ucAttributes & FF_FAT_ATTR_DIR) != 0) {
+            pcAttrib = pcDirectory;
+        } else if (xFindStruct.ucAttributes & FF_FAT_ATTR_READONLY) {
+            pcAttrib = pcReadOnlyFile;
+        } else {
+            pcAttrib = pcWritableFile;
+        }
+        /* Create a string that includes the file name, the file size and the
+         attributes string. */
+        FF_PRINTF("%s [%s] [size=%d]\n", xFindStruct.pcFileName, pcAttrib,
+                  (int)xFindStruct.ulFileSize);
+    } while (FF_ERR_NONE == ff_findnext(&xFindStruct));
+}
+
+
+sd_card_t *get_current_sd_card_p() {
+    char buf[256] ;
+    char *ret = ff_getcwd(buf, sizeof buf);
+    if (!ret) {
+        FF_PRINTF("ff_getcwd failed\n");
+        return NULL;
+    }
+    FF_PRINTF("Working directory: %s\n", buf);
+    if (strlen(buf) < 2) {
+        FF_PRINTF("Can't write to current working directory: %s\n", buf);
+        return NULL;       
+    }
+    configASSERT('/' == buf[0]);
+    size_t i;
+    for (i = 1; i < sizeof buf; ++i) {
+        if (0 == buf[i])
+            break;
+        if ('/' == buf[i]) {
+            buf[i] = 0;
+            break;
+        }
+    }
+    if (sizeof buf == i) {
+        FF_PRINTF("Couldn't find mount point in %s\n", buf);
+        return NULL;
+    }
+    sd_card_t *sd_card_p = sd_get_by_mount_point(buf);
+    if (!sd_card_p) {
+        FF_PRINTF("Unknown device at mount point %s\n", buf);
+        return NULL;
+    }
+    return sd_card_p;
+}
+
 
 /* [] END OF FILE */

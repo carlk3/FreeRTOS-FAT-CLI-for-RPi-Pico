@@ -27,6 +27,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // #include "../common/SysCall.h"
 // Based on the document:
 //
@@ -449,4 +453,9 @@ typedef struct SdStatus {
     uint8_t reservedManufacturer[40];
 } SdStatus_t;
 #endif  // DOXYGEN_SHOULD_SKIP_THIS
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif  // SdCardInfo_h

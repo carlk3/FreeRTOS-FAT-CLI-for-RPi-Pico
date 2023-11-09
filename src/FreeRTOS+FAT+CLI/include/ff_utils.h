@@ -11,22 +11,30 @@ under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
-#ifndef _FS_UTILS_H
-#define _FS_UTILS_H   
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "FreeRTOS.h"
 #include "ff_headers.h"
+#include "sd_card.h"
 
-bool format(FF_Disk_t **ppxDisk, const char *const devName);
-bool mount(FF_Disk_t **ppxDisk, const char *const devName, const char *const path);
-void unmount(FF_Disk_t *pxDisk, const char *pcPath);
-void eject(const char *const name, const char *pcPath);
+bool format(const char *devName);
+bool mount(const char *devName);
+void unmount(const char *devName);
+void eject(const char *name);
 void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct);
 FF_Error_t ff_set_fsize( FF_FILE *pxFile ); // Make Filesize equal to the FilePointer
 int mkdirhier(char *path);
+void ls(const char *path);
+sd_card_t *get_current_sd_card_p();
 
+#ifdef __cplusplus
+}
 #endif
 /* [] END OF FILE */

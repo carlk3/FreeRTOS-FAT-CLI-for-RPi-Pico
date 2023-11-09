@@ -11,8 +11,6 @@ under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
-#ifndef _CRASH_H_
-#define _CRASH_H_
 // Original from M0AGX (blog@m0agx.eu), "Preserving debugging breadcrumbs across
 // reboots in Cortex-M,"
 // https://m0agx.eu/2018/08/18/preserving-debugging-breadcrumbs-across-reboots-in-cortex-m/
@@ -26,6 +24,10 @@ specific language governing permissions and limitations under the License.
 
 //
 #include "pico/stdlib.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* The crash info section is at the beginning of the RAM,
  * that is not initialized by the linker to preserve
@@ -103,10 +105,6 @@ _Static_assert(sizeof(crash_info_ram_t) == CRASH_INFO_SECTION_LENGTH,
 // char (*__kaboom)[sizeof(crash_info_flash_t)] = 1;
 // warning: initialization of 'char (*)[132]' from 'int' makes ...
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void crash_handler_init();
 const crash_info_t *crash_handler_get_info(void);
 volatile const crash_info_t *crash_handler_get_info_flash();
@@ -127,9 +125,9 @@ void capture_assert_case_not(const char *file, int line, const char *func,
 int dump_crash_info(crash_info_t const *const pCrashInfo, int next,
                     char *const buf, size_t const buf_sz);
 
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif
 /* [] END OF FILE */

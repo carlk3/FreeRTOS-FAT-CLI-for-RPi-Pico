@@ -12,18 +12,16 @@ CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 #include <stdio.h>
-
+//
 #include "FreeRTOS.h"
 #include "ff_time.h"
-
+#include "timers.h"
 //
 #include "hardware/rtc.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
-
 //
 #include "util.h"  // calculate_checksum
-
 //
 #include "FreeRTOS_time.h"
 
@@ -42,7 +40,7 @@ static void update_epochtime() {
         rtc_save.signature = 0xBABEBABE;
         struct tm timeinfo = {
             .tm_sec = rtc_save.datetime
-                          .sec, /* Seconds.	[0-60] (1 leap second) */
+                          .sec,                       /* Seconds.	[0-60] (1 leap second) */
             .tm_min = rtc_save.datetime.min,          /* Minutes.	[0-59] */
             .tm_hour = rtc_save.datetime.hour,        /* Hours.	[0-23] */
             .tm_mday = rtc_save.datetime.day,         /* Day.		[1-31] */
@@ -67,12 +65,11 @@ time_t FreeRTOS_time(time_t *pxTime) {
     return epochtime;
 }
 
-static bool repeating_timer_callback(struct repeating_timer *t) {
-    update_epochtime();
-    return true;
-}
+static TimerHandle_t TimeUpdateTimer;
 
-static struct repeating_timer timer;
+static void TimeUpdateTimerCallback(TimerHandle_t xTimer) {
+    update_epochtime();
+}
 
 void FreeRTOS_time_init() {
     rtc_init();
@@ -89,22 +86,22 @@ void FreeRTOS_time_init() {
             }
         }
     }
+    static StaticTimer_t TimerState;
+    TimeUpdateTimer = xTimerCreateStatic("TimeUpdate",             // pcTimerName
+                                         pdMS_TO_TICKS(1000),      // xTimerPeriod
+                                         pdTRUE,                   // uxAutoReload
+                                         (void *)0,                // pvTimerID
+                                         TimeUpdateTimerCallback,  // callback
+                                         &TimerState);             // pxTimerBuffer
     if (rtc_running()) {
-        // Create a repeating timer that calls repeating_timer_callback.
-        // If the delay is > 0 then this is the delay between the previous
-        // callback ending and the next starting. If the delay is negative (see
-        // below) then the next call to the callback will be exactly 500ms after
-        // the start of the call to the last callback
-        // Negative delay so means we will call repeating_timer_callback, and
-        // call it again 500ms later regardless of how long the callback took to
-        // execute
-        add_repeating_timer_ms(-1000, repeating_timer_callback, NULL, &timer);
+        xTimerStart(TimeUpdateTimer, portMAX_DELAY);
     }
 }
 
-void setrtc(datetime_t *t) { 
+void setrtc(datetime_t *t) {
     rtc_set_datetime(t);
-    if (rtc_running()) {
-        add_repeating_timer_ms(-1000, repeating_timer_callback, NULL, &timer);
+    // Start callback timer if it's not already running
+    if (rtc_running() && pdFALSE == xTimerIsTimerActive(TimeUpdateTimer)) {
+        xTimerStart(TimeUpdateTimer, portMAX_DELAY);
     }
 }

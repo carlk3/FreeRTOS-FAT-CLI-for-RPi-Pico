@@ -166,7 +166,7 @@ sdio_status_t rp2040_sdio_command_R1(sd_card_t *sd_card_p, uint8_t command, uint
     uint32_t wait_words = response ? 2 : 1;
     while (pio_sm_get_rx_fifo_level(SDIO_PIO, SDIO_CMD_SM) < wait_words)
     {
-        if ((uint32_t)(millis() - start) > 2)
+        if ((uint32_t)(millis() - start) > 5)
         {
             if (command != 8) // Don't log for missing SD card
             {

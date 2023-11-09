@@ -18,6 +18,10 @@ specific language governing permissions and limitations under the License.
 #include <stdio.h>
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //#include "pico/stdio.h"
 
 void mark_start_time();
@@ -31,10 +35,6 @@ time_t GLOBAL_uptime_seconds();
 
 extern void vLoggingPrintf(const char *pcFormat, ...)
     __attribute__((format(__printf__, 1, 2)));
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* USE_PRINTF
 If this is defined and not zero, 

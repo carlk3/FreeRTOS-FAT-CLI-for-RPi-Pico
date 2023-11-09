@@ -249,7 +249,8 @@ void configure_fault_register(void) {
 void my_assert_func(const char *file, int line, const char *func,
                     const char *pred) {
     TRIG();  // DEBUG
-    task_printf(
+    // task_printf(
+    error_message_printf_plain(
         "%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
         pcTaskGetName(NULL), pred, file, line, func);
     fflush(stdout);

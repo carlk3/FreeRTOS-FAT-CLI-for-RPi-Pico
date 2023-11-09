@@ -23,6 +23,7 @@ specific language governing permissions and limitations under the License.
 #include "util.h"
 #include "my_debug.h"
 #include "hw_config.h"
+#include "task_config.h"
 //
 #include "spi.h"
 
@@ -56,10 +57,10 @@ static void in_spi_irq_handler(const uint DMA_IRQ_num, io_rw_32 *dma_hw_ints_p) 
                     /* Send a notification directly to the task to which interrupt processing is
                      being deferred. */
                     vTaskNotifyGiveIndexedFromISR(
-                        spi_p->owner,  // The handle of the task to which the
-                                       // notification is being sent.
-                        1,             // uxIndexToNotify: The index within the target task's array of
-                            // notification values to which the notification is to be sent.
+                        spi_p->owner,            // The handle of the task to which the
+                                                 // notification is being sent.
+                        NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
+                                                 // notification values to which the notification is to be sent.
                         &xHigherPriorityTaskWoken);
 
                     /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
@@ -158,7 +159,7 @@ void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t len
     /* Ensure this task does not already have a notification pending by calling
      ulTaskNotifyTake() with the xClearCountOnExit parameter set to pdTRUE, and
      a block time of 0 (don't block). */
-    uint32_t rc = ulTaskNotifyTakeIndexed(1, pdTRUE, 0);
+    uint32_t rc = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdTRUE, 0);
     myASSERT(!rc);
 
     // start them exactly simultaneously to avoid races (in extreme cases
@@ -171,7 +172,7 @@ bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {
     /* Wait until master completes transfer or time out has occured. */    
     // Wait for notification from ISR.
     uint32_t rc = ulTaskNotifyTakeIndexed(
-        1, pdFALSE, pdMS_TO_TICKS(timeout_ms));
+        NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
     if (!rc) { 
         // This indicates that xTaskNotifyWait() returned without the
         // calling task receiving a task notification. The calling task will

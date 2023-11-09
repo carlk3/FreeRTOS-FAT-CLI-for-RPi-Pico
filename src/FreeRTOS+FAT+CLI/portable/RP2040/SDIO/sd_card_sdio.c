@@ -4,7 +4,6 @@
 
 #ifdef SD_USE_SDIO
 
-#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 //
@@ -49,7 +48,7 @@ static bool logSDError(sd_card_t *sd_card_p, int line)
 static float calculate_clk_div(uint baud) {
     float div = (float)clock_get_hz(clk_sys) / (CLKDIV * baud);
     /* Baud rate cannot exceed clk_sys frequency divided by CLKDIV! */
-    assert(div >= 1 && div <= 65536);
+    myASSERT(div >= 1 && div <= 65536);
     return div;
 }
 
@@ -122,7 +121,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
         return false;
     }
 
-    sd_card_p->sectors = sd_sdio_sectorCount(sd_card_p);
+    sd_card_p->sectors = CSD_capacity(&sd_card_p->csd);
 
     // Select card
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD7, STATE.rca, &reply)))
@@ -202,12 +201,6 @@ bool sd_sdio_readData(sd_card_t *sd_card_p, uint8_t* dst)
 //     azlog("sd_sdio_readStop() called but not implemented!");
 //     return false;
 // }
-
-uint64_t sd_sdio_sectorCount(sd_card_t *sd_card_p)
-{
-    // return g_sdio_csd.capacity();
-    return CSD_capacity(&sd_card_p->csd);
-}
 
 uint32_t sd_sdio_status(sd_card_t *sd_card_p)
 {
@@ -547,6 +540,12 @@ static void sd_sdio_deinit(sd_card_t *sd_card_p) {
     sd_unlock(sd_card_p);    
 }
 
+uint64_t sd_sdio_sectorCount(sd_card_t *sd_card_p) {
+    sd_sdio_init(sd_card_p);
+    // return g_sdio_csd.capacity();
+    return CSD_capacity(&sd_card_p->csd);
+}
+
 static int sd_sdio_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
                                 uint64_t ulSectorNumber, uint32_t blockCnt) {
     // bool sd_sdio_writeSectors(sd_card_t *sd_card_p, uint32_t sector, const uint8_t* src, size_t ns);
@@ -587,15 +586,15 @@ static int sd_sdio_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer, uint64_t u
 }
 
 void sd_sdio_ctor(sd_card_t *sd_card_p) {
-    assert(sd_card_p->sdio_if_p); // Must have an interface object
+    myASSERT(sd_card_p->sdio_if_p); // Must have an interface object
     /*
     Pins CLK_gpio, D1_gpio, D2_gpio, and D3_gpio are at offsets from pin D0_gpio.
     The offsets are determined by sd_driver\SDIO\rp2040_sdio.pio.
     */
-    assert(!sd_card_p->sdio_if_p->CLK_gpio);
-    assert(!sd_card_p->sdio_if_p->D1_gpio);
-    assert(!sd_card_p->sdio_if_p->D2_gpio);
-    assert(!sd_card_p->sdio_if_p->D3_gpio);
+    myASSERT(!sd_card_p->sdio_if_p->CLK_gpio);
+    myASSERT(!sd_card_p->sdio_if_p->D1_gpio);
+    myASSERT(!sd_card_p->sdio_if_p->D2_gpio);
+    myASSERT(!sd_card_p->sdio_if_p->D3_gpio);
 
     sd_card_p->sdio_if_p->CLK_gpio = (sd_card_p->sdio_if_p->D0_gpio + SDIO_CLK_PIN_D0_OFFSET) % 32;
     sd_card_p->sdio_if_p->D1_gpio = sd_card_p->sdio_if_p->D0_gpio + 1;

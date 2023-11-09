@@ -14,6 +14,7 @@ specific language governing permissions and limitations under the License.
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
+#include "RP2040.h"
 #include "my_debug.h"
 
 #ifndef portINLINE
@@ -32,7 +33,7 @@ specific language governing permissions and limitations under the License.
 #define configUSE_16_BIT_TICKS                  0
 #define configIDLE_SHOULD_YIELD                 1
 #define configUSE_TASK_NOTIFICATIONS            1
-#define configTASK_NOTIFICATION_ARRAY_ENTRIES   2
+#define configTASK_NOTIFICATION_ARRAY_ENTRIES   3
 #define configUSE_MUTEXES                       1
 #define configUSE_RECURSIVE_MUTEXES             1
 #define configUSE_APPLICATION_TASK_TAG          0
@@ -50,7 +51,7 @@ specific language governing permissions and limitations under the License.
 /* Memory allocation related definitions. */
 #define configSUPPORT_STATIC_ALLOCATION         1
 #define configSUPPORT_DYNAMIC_ALLOCATION        1
-#define configTOTAL_HEAP_SIZE                   64 * 1024
+#define configTOTAL_HEAP_SIZE                   192 * 1024
 #define configAPPLICATION_ALLOCATED_HEAP        0
 
 /* Hook function related definitions. */
@@ -76,9 +77,16 @@ specific language governing permissions and limitations under the License.
 #define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE
 
 /* Interrupt nesting behaviour configuration. */
-#define configKERNEL_INTERRUPT_PRIORITY         [dependent of processor]
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY    [dependent on processor and application]
-#define configMAX_API_CALL_INTERRUPT_PRIORITY   [dependent on processor and application]
+/*  The Cortex-M0+ implements the two most significant bits of an 8-bit priority field, 
+    so four priority levels are available, 
+    and the numerically-lowest level (level 0) is the highest priority.
+*/
+#define configKERNEL_INTERRUPT_PRIORITY         (3 << (8 - __NVIC_PRIO_BITS))
+
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    (2 << (8 - __NVIC_PRIO_BITS))
+/* configMAX_API_CALL_INTERRUPT_PRIORITY is a new name for configMAX_SYSCALL_INTERRUPT_PRIORITY
+ that is used by newer ports only. The two are equivalent. */
+#define configMAX_API_CALL_INTERRUPT_PRIORITY 	configMAX_SYSCALL_INTERRUPT_PRIORITY
 
 /* SMP port only */
 #define configNUM_CORES                         2

@@ -146,7 +146,6 @@
  * +------+---------+---------+- -  - -+---------+-----------+----------+
  */
 
-// #include <assert.h>
 #include <inttypes.h>
 //
 #include "crc.h"
@@ -381,8 +380,8 @@ static const char *cmd2str(const cmdSupported cmd) {
 static int sd_cmd(sd_card_t *sd_card_p, const cmdSupported cmd, uint32_t arg,
                   bool isAcmd, uint32_t *resp) {
     TRACE_PRINTF("%s(%s(0x%08lx)): ", __FUNCTION__, cmd2str(cmd), arg);
-    assert(sd_is_locked(sd_card_p));
-    assert(0 == gpio_get(sd_card_p->spi_if_p->ss_gpio));
+    myASSERT(sd_is_locked(sd_card_p));
+    myASSERT(0 == gpio_get(sd_card_p->spi_if_p->ss_gpio));
 
     int32_t status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint32_t response;
@@ -614,12 +613,13 @@ static uint64_t in_sd_spi_sectors(sd_card_t *sd_card_p) {
 
         default:
             DBG_PRINTF("CSD struct unsupported\r\n");
-            assert(!"CSD struct unsupported\r\n");
+            myASSERT(!"CSD struct unsupported\r\n");
             return 0;
     };
     return blocks;
 }
 uint64_t sd_spi_sectors(sd_card_t *sd_card_p) {
+    sd_card_p->init(sd_card_p);
     sd_acquire(sd_card_p);
     uint64_t sectors = in_sd_spi_sectors(sd_card_p);
     sd_release(sd_card_p);
@@ -928,7 +928,7 @@ static uint32_t sd_go_idle_state(sd_card_t *sd_card_p) {
             break;
         }
         sd_spi_deselect(sd_card_p);
-        busy_wait_us(100 * 1000);
+        delay_ms(100);
         sd_spi_select(sd_card_p);
     }
     return response;
@@ -1191,8 +1191,9 @@ static void sd_deinit(sd_card_t *sd_card_p) {
 }
 
 void sd_spi_ctor(sd_card_t *sd_card_p) {
-    assert(sd_card_p->spi_if_p); // Must have an interface object
-
+    myASSERT(sd_card_p->spi_if_p); // Must have an interface object
+    myASSERT(sd_card_p->spi_if_p->spi);  
+    
     // State variables:
     sd_card_p->m_Status = STA_NOINIT;
     sd_card_p->write_blocks = sd_write_blocks;

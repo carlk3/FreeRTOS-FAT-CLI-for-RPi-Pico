@@ -14,6 +14,10 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 // Only HC block size is supported. Making this a static constant reduces code
 // size.
@@ -87,3 +91,6 @@ typedef enum {
 //    STA_PROTECT = 0x04 /* Write protected */
 //};
 
+#ifdef __cplusplus
+}
+#endif

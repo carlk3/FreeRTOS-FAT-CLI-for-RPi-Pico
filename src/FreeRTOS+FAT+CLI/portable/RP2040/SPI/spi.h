@@ -14,6 +14,10 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 //
 // Pico includes
@@ -59,10 +63,6 @@ typedef struct spi_t {
     TaskHandle_t owner;       // Assigned dynamically
     bool initialized;  
 } spi_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 // // SPI DMA interrupts
 // void __not_in_flash_func(spi_irq_handler)();

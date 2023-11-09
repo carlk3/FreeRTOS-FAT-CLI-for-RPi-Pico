@@ -11,8 +11,8 @@ under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
-#ifndef _UTIL_H_
-#define _UTIL_H_
+
+#pragma once
 
 #include <RP2040.h>
 #include <stddef.h>    
@@ -21,6 +21,10 @@ specific language governing permissions and limitations under the License.
 #include "hardware/structs/scb.h"
 //
 #include "my_debug.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // works with negative index
 static inline int wrap_ix(int index, int n)
@@ -72,5 +76,7 @@ static inline uint32_t ext_bits(unsigned char const *data, int msb, int lsb) {
     return bits;
 }
 
+#ifdef __cplusplus
+}
 #endif
 /* [] END OF FILE */

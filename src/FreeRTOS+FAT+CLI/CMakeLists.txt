@@ -13,7 +13,6 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         ../Lab-Project-FreeRTOS-FAT/ff_string.c
         ../Lab-Project-FreeRTOS-FAT/ff_sys.c
         ../Lab-Project-FreeRTOS-FAT/ff_time.c 
-        portable/RP2040/demo_logging.c
         portable/RP2040/ff_sddisk.c
         portable/RP2040/sd_card.c
         portable/RP2040/SPI/crc.c
@@ -22,12 +21,8 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         portable/RP2040/SPI/spi.c
         portable/RP2040/SDIO/sd_card_sdio.c
         portable/RP2040/SDIO/rp2040_sdio.c
-        #src/stdio_cli.c
-        src/CLI-commands.c
         src/crash.c
         src/ff_utils.c
-        src/File-related-CLI-commands.c
-        src/FreeRTOS_CLI.c
         src/FreeRTOS_time.c
         src/my_debug.c
         src/util.c

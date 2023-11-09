@@ -21,7 +21,6 @@ specific language governing permissions and limitations under the License.
 #include "hardware/adc.h"
 #include "pico/stdlib.h"
 //
-#include "FreeRTOS_CLI.h"
 #include "ff_headers.h"
 #include "ff_stdio.h"
 #include "task.h"
@@ -86,9 +85,7 @@ static void DemoTask(void *arg) {
 
     printf("%s started\n", pcTaskGetName(NULL));
 
-    FF_Disk_t *pxDisk = NULL;
-
-    if (!mount(&pxDisk, DEVICENAME, MOUNTPOINT)) goto quit;
+    if (!mount(DEVICENAME)) goto quit;
 
     adc_init();
 
@@ -162,7 +159,7 @@ quit:
     vTaskDelete(NULL);
 }
 
-static void data_log_demo() {
+void data_log_demo() {
     static StackType_t xStack[768];
     static StaticTask_t xTaskBuffer;
     if (!th) {
@@ -173,22 +170,3 @@ static void data_log_demo() {
     }
     configASSERT(th);
 }
-
-/*-----------------------------------------------------------*/
-static BaseType_t data_log_demo_cmd(char *pcWriteBuffer, size_t xWriteBufferLen,
-                                    const char *pcCommandString) {
-    (void)pcCommandString;
-    (void)pcWriteBuffer;
-    (void)xWriteBufferLen;
-
-    data_log_demo();
-
-    return pdFALSE;
-}
-const CLI_Command_Definition_t xDataLogDemo = {
-    "data_log_demo", /* The command string to type. */
-    "\ndata_log_demo:\n Launch data logging task\n",
-    data_log_demo_cmd, /* The function to run. */
-    0                  /* No parameters are expected. */
-};
-/*-----------------------------------------------------------*/

@@ -1,15 +1,18 @@
+
 // SD card access using SDIO for RP2040 platform.
 // This module contains the low-level SDIO bus implementation using
 // the PIO peripheral. The high-level commands are in sd_card_sdio.cpp.
 
 #pragma once
 #include <stdint.h>
-//
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include "sd_card.h"
+
+//FIXME: why?
 typedef struct sd_card_t sd_card_t;
 
 typedef
