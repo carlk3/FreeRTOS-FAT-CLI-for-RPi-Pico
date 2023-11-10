@@ -1,7 +1,6 @@
 #pragma once
 #include "FreeRTOS.h"
 
-
 enum {
     PRIORITY_stdioTask = configMAX_PRIORITIES - 2
 };

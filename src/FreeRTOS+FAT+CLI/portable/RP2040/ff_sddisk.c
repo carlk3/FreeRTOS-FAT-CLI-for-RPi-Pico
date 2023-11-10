@@ -96,7 +96,7 @@ BaseType_t FF_SDDiskDetect(FF_Disk_t *pxDisk) {
     return sd_card_detect(pxDisk->pvTag);
 }
 
-static bool disk_init(sd_card_t *sd_card_p) {
+bool disk_init(sd_card_t *sd_card_p) {
     FF_Error_t xError = 0;
     FF_CreationParameters_t xParameters;
     const uint32_t xIOManagerCacheSize = 4 * SECTOR_SIZE;

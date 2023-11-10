@@ -1,7 +1,4 @@
-example/.vscode/.cortex-debug.peripherals.state.json
-example/.vscode/.cortex-debug.registers.state.json
-example/.vscode/launch.json
 **/build/**
 *.bak
-examples/example/.vscode/settings.json
-src/FreeRTOS+FAT+CLI/.vscode/settings.json
+**/.vscode/**
+examples/simple_spi/CMakeFiles/cmake.check_cache

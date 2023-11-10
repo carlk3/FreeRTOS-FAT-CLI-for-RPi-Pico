@@ -17,6 +17,7 @@
 #include "util.h"
 #include "portability.h"
 #include "my_debug.h"
+#include "ff_sddisk.h"
 
 #define STATE sd_card_p->sdio_if_p->state
 
@@ -541,7 +542,7 @@ static void sd_sdio_deinit(sd_card_t *sd_card_p) {
 }
 
 uint64_t sd_sdio_sectorCount(sd_card_t *sd_card_p) {
-    sd_sdio_init(sd_card_p);
+    disk_init(sd_card_p);
     // return g_sdio_csd.capacity();
     return CSD_capacity(&sd_card_p->csd);
 }

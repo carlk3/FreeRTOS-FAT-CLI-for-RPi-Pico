@@ -45,8 +45,9 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
+#include <stdbool.h>
+#include "sd_card.h"
 #include "ff_headers.h"
-
 
 /* Return non-zero if the SD-card is present.
 The parameter 'pxDisk' may be null, unless device locking is necessary. */
@@ -81,6 +82,8 @@ BaseType_t FF_SDDiskInserted( BaseType_t xDriveNr );
 /* _RB_ Temporary function - ideally the application would not need the IO
 manageer structure, just a handle to a disk. */
 FF_IOManager_t *sddisk_ioman( FF_Disk_t *pxDisk );
+
+bool disk_init(sd_card_t *sd_card_p);
 
 #ifdef __cplusplus
 } /* extern "C" */

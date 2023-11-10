@@ -11,11 +11,12 @@
 //
 #include "hw_config.h"
 
-static void stop() {
+static inline void stop() {
     fflush(stdout);
-    //vTaskSuspend(NULL);
     __breakpoint();
 }
+
+// See https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html
 
 static void SimpleTask(void *arg) {
     (void)arg;

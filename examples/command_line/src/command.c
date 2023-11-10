@@ -612,22 +612,22 @@ static cmd_def_t cmds[] = {
      "\te.g.:setrtc 16 3 21 0 4 0"},
     {"date", run_date, "date:\n Print current date and time"},
     {"format", run_format,
-     "format [<device name>]:\n"
+     "format <device name>:\n"
      " Creates an FAT/exFAT volume on the device name.\n"
-     "\te.g.: format 0:"},
+     "\te.g.: format sd0"},
     {"mount", run_mount,
-     "mount [<device name>]:\n"
+     "mount <device name>:\n"
      " Makes the specified device available at its mount point in the directory tree.\n"
-     "\te.g.: mount 0:"},
+     "\te.g.: mount sd0"},
     {"unmount", run_unmount,
-     "unmount [<device name>]:\n"
+     "unmount <device name>:\n"
      " Unregister the work area of the volume"},
     {"info", run_info,
-     "info [<device name>]:\n"
+     "info <device name>:\n"
      " Print information about an SD card"},
-    {"getfree", run_getfree,
-     "getfree [<device name>]:\n"
-     " Print the free space on drive"},
+    // {"getfree", run_getfree,
+    //  "getfree <device name>:\n"
+    //  " Print the free space on drive"},
     {"cd", run_cd,
      "cd <path>:\n"
      " Changes the current directory of the device name.\n"
@@ -654,7 +654,7 @@ static cmd_def_t cmds[] = {
     {"pwd", run_pwd,
      "pwd:\n"
      " Print Working Directory"},
-    {"ls", run_ls, "ls:\n List directory"},
+    {"ls", run_ls, "ls [pathname]:\n List directory"},
     // {"dir", run_ls, "dir:\n List directory"},
     {"cat", run_cat, "cat <filename>:\n Type file contents"},
     {"simple", simple, "simple:\n Run simple FS tests"},
@@ -668,7 +668,7 @@ static cmd_def_t cmds[] = {
      " Writes random data to file <pathname>.\n"
      " Specify <size in MiB> in units of mebibytes (2^20, or 1024*1024 bytes)\n"
      "\te.g.: big_file_test bf 1 1\n"
-     "\tor: big_file_test big3G-3 3072 3"},
+     "\tor: big_file_test /sd1/big3G-3 3072 3"},
     {"cvef", run_cvef,
      "cvef:\n Create and Verify Example Files\n"
      "Expects card to be already formatted and mounted\n"},

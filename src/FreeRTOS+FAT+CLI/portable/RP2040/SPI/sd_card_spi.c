@@ -153,10 +153,7 @@
 #include "portability.h"
 #include "sd_card.h"
 #include "util.h"
-
-//
-// #include "ff.h"
-// #include "diskio.h" /* Declarations of disk functions */  // Needed for STA_NOINIT, ...
+#include "ff_sddisk.h"
 
 #if defined(NDEBUG)
 #  pragma GCC diagnostic ignored "-Wunused-function"
@@ -619,7 +616,7 @@ static uint64_t in_sd_spi_sectors(sd_card_t *sd_card_p) {
     return blocks;
 }
 uint64_t sd_spi_sectors(sd_card_t *sd_card_p) {
-    sd_card_p->init(sd_card_p);
+    disk_init(sd_card_p);
     sd_acquire(sd_card_p);
     uint64_t sectors = in_sd_spi_sectors(sd_card_p);
     sd_release(sd_card_p);
