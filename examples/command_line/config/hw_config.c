@@ -17,9 +17,6 @@ specific language governing permissions and limitations under the License.
 
 This file should be tailored to match the hardware design.
 
-See 
-  https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
-
 There should be one element of the spi[] array for each RP2040 hardware SPI used.
 
 There should be one element of the spi_ifs[] array for each SPI interface object.
@@ -29,10 +26,6 @@ There should be one element of the sdio_ifs[] array for each SDIO interface obje
 
 There should be one element of the sd_cards[] array for each SD card slot.
 * Each element of sd_cards[] must point to its interface with spi_if_p or sdio_if_p.
-* The name (name) should correspond to the FatFs "logical drive" identifier.
-  (See http://elm-chan.org/fsw/ff/doc/filename.html#vol)
-  In general, this should correspond to the (zero origin) array index.
-
 */
 
 /* Hardware configuration for Pico SD Card Development Board

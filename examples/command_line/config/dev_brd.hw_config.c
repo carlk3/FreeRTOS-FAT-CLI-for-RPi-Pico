@@ -17,9 +17,6 @@ specific language governing permissions and limitations under the License.
 
 This file should be tailored to match the hardware design.
 
-See 
-  https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
-
 There should be one element of the spi[] array for each RP2040 hardware SPI used.
 
 There should be one element of the spi_ifs[] array for each SPI interface object.
@@ -29,10 +26,6 @@ There should be one element of the sdio_ifs[] array for each SDIO interface obje
 
 There should be one element of the sd_cards[] array for each SD card slot.
 * Each element of sd_cards[] must point to its interface with spi_if_p or sdio_if_p.
-* The name (pcName) should correspond to the FatFs "logical drive" identifier.
-  (See http://elm-chan.org/fsw/ff/doc/filename.html#vol)
-  In general, this should correspond to the (zero origin) array index.
-
 */
 
 /* Hardware configuration for Pico SD Card Development Board
@@ -59,7 +52,7 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
         .DMA_IRQ_num = DMA_IRQ_0,
-        .use_exclusive_DMA_IRQ_handler = true,
+        // .use_exclusive_DMA_IRQ_handler = true,
         .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
     },
     {   // spis[1]
@@ -113,11 +106,13 @@ static sd_sdio_if_t sdio_ifs[] = {
     {   // sdio_ifs[0]
         .CMD_gpio = 3,
         .D0_gpio = 4,
+        .DMA_IRQ_num = DMA_IRQ_0,
         .baud_rate = 15 * 1000 * 1000  // 15 MHz
     },
     {   // sdio_ifs[1]
         .CMD_gpio = 17,
         .D0_gpio = 18,
+        .DMA_IRQ_num = DMA_IRQ_1,
         .baud_rate = 15 * 1000 * 1000  // 15 MHz
     }
 };
@@ -128,9 +123,10 @@ static sd_sdio_if_t sdio_ifs[] = {
 static sd_card_t sd_cards[] = {  // One for each SD card
 #ifdef SPI_SD0
     {   // sd_cards[0]: Socket sd0
-        /* "pcName" is the FatFs "logical drive" identifier.
-        (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
-        .pcName = "0:",
+        // "device_name" is arbitrary:
+        .device_name = "sd0", 
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+		.mount_point = "/sd0",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[0],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -143,7 +139,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
     },
 #else
     {   // sd_cards[0]: Socket sd0
-        .pcName = "0:",  // Name used to mount device
+        // "device_name" is arbitrary:
+        .device_name = "sd0", 
+		// "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd0",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[0],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -156,9 +155,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
     },
 #endif
     {   // sd_cards[1]: Socket sd1
-        /* "pcName" is the FatFs "logical drive" identifier.
-        (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
-        .pcName = "1:",
+        // "device_name" is arbitrary:
+        .device_name = "sd1", 
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+		.mount_point = "/sd1",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[1],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -170,9 +170,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
         .card_detect_pull_hi = true                                 
     },
     {   // sd_cards[2]: Socket sd2
-        /* "pcName" is the FatFs "logical drive" identifier.
-        (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
-        .pcName = "2:", 
+        // "device_name" is arbitrary:
+        .device_name = "sd2", 
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .mount_point = "/sd2",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[2],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -184,9 +185,10 @@ static sd_card_t sd_cards[] = {  // One for each SD card
         .card_detect_pull_hi = true                                 
     },
     {   // sd_cards[3]: Socket sd3
-        /* "pcName" is the FatFs "logical drive" identifier.
-        (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
-        .pcName = "3:",
+        // "device_name" is arbitrary:
+        .device_name = "sd3", 
+        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+		.mount_point = "/sd3",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[1],
         // SD Card detect:

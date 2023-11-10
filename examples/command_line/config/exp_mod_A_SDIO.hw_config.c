@@ -57,7 +57,8 @@ static sd_sdio_if_t sdio_if = {
 static sd_card_t sd_card = {    
     /* "pcName" is the FatFs "logical drive" identifier.
     (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
-    .pcName = "0:",
+    .device_name = "sd0",
+    .mount_point = "/sd0",
     .type = SD_IF_SDIO,
     .sdio_if_p = &sdio_if,
     // SD Card detect:
