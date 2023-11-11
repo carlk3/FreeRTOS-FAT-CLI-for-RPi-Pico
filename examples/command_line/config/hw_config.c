@@ -124,9 +124,9 @@ static sd_card_t sd_cards[] = {  // One for each SD card
 #ifdef SPI_SD0
     {   // sd_cards[0]: Socket sd0
         // "device_name" is arbitrary:
-        .device_name = "sd0",
+        .device_name = "sd0", 
         // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
-        .mount_point = "/sd0", 
+		.mount_point = "/sd0",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[0],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -140,8 +140,8 @@ static sd_card_t sd_cards[] = {  // One for each SD card
 #else
     {   // sd_cards[0]: Socket sd0
         // "device_name" is arbitrary:
-        .device_name = "sd0",
-        // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+        .device_name = "sd0", 
+		// "mount_point" must be a directory off the file system's root directory and must be an absolute path:
         .mount_point = "/sd0",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[0],  // Pointer to the SPI interface driving this card
@@ -156,9 +156,9 @@ static sd_card_t sd_cards[] = {  // One for each SD card
 #endif
     {   // sd_cards[1]: Socket sd1
         // "device_name" is arbitrary:
-        .device_name = "sd1",
+        .device_name = "sd1", 
         // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
-        .mount_point = "/sd1",
+		.mount_point = "/sd1",
         .type = SD_IF_SPI,
         .spi_if_p = &spi_ifs[1],  // Pointer to the SPI interface driving this card
         // SD Card detect:
@@ -186,9 +186,9 @@ static sd_card_t sd_cards[] = {  // One for each SD card
     },
     {   // sd_cards[3]: Socket sd3
         // "device_name" is arbitrary:
-        .device_name = "sd3",
+        .device_name = "sd3", 
         // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
-        .mount_point = "/sd3",
+		.mount_point = "/sd3",
         .type = SD_IF_SDIO,
         .sdio_if_p = &sdio_ifs[1],
         // SD Card detect:
