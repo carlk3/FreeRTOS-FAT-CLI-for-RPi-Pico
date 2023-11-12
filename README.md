@@ -318,7 +318,7 @@ This library can support many different hardware configurations.
 Therefore, the hardware configuration is not defined in the library. 
 Instead, the application must provide it. 
 The configuration is defined in "objects" of type `spi_t` (see 
-[sd_driver/spi.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/SPI/sd_spi.h)), 
+[sd_driver/spi.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/SPI/spi.h)), 
 `sd_spi_if_t`, `sd_sdio_if_t`, and `sd_card_t` (see 
 [sd_driver/sd_card.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/sd_card.h)). 
 * Instances of `sd_card_t` describe the configuration of SD card sockets.
