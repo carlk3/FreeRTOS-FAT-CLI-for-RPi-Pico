@@ -14,8 +14,6 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 [ZuluSCSI-firmware](https://github.com/ZuluSCSI/ZuluSCSI-firmware). 
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
-![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1473.JPG "Prototype")
-
 ## What's new
 * 4-wire SDIO support
 * Rewritten Command Line Interface (CLI)
@@ -49,8 +47,8 @@ or you can use something like
   * For each SPI controller used, two DMA channels are claimed with `dma_claim_unused_channel`.
   * A configurable DMA IRQ is hooked with `irq_add_shared_handler` or `irq_set_exclusive_handler` (configurable) and enabled.
   * For each SPI controller used, one GPIO is needed for each of RX, TX, and SCK. Note: each SPI controller can only use a limited set of GPIOs for these functions.
-  * For each SD card attached to an SPI controller, a GPIO is needed for slave (or "chip") select (SS or CS), and, optionally, another for Card Detect (CD or "Det").
-* SDIO attached card:
+  * For each SD card attached to an SPI controller, a GPIO is needed for slave (or "chip") select (SS or "CS"), and, optionally, another for Card Detect (CD or "DET").
+* SDIO attached cards:
   * A PIO block
   * Two DMA channels claimed with `dma_claim_unused_channel`
   * A configurable DMA IRQ is hooked with `irq_add_shared_handler` or `irq_set_exclusive_handler` (configurable) and enabled.
@@ -89,7 +87,8 @@ so the maximum heap utilization was 4184 bytes, or about 1.6 % of the Pico's RAM
 Writing and reading a file of 200 MiB of psuedorandom data on a 
 [Silicon Power 3D NAND U1 32GB microSD card](https://www.amazon.com/gp/product/B07RSXSYJC/) inserted into a 
 [Pico Stackable, Plug & Play SD Card Expansion Module](https://forums.raspberrypi.com/viewtopic.php?t=356864)
-![PXL_20230926_212422091](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/7edfea8c-59b0-491c-8321-45487bce9693) at the default Pico `clk_sys` of 125 MHz, `MinSizeRel` build, using the command `big_file_test bf 200 7`:
+at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` build, using the command 
+[big_file_test bf 200 7](#appendix-b-operation-of-command_line-example):
 
 * SDIO:
   * Writing
@@ -107,7 +106,10 @@ Writing and reading a file of 200 MiB of psuedorandom data on a
     * Elapsed seconds 76.2
     * Transfer rate 2.63 MiB/s (2.75 MB/s), or 2688 KiB/s (2753 kB/s) (22021 kb/s)
 
-Results from a port of SdFat's `bench`:
+Results from a 
+[port](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/command_line/tests/bench.c)
+ of 
+[SdFat's bench](https://github.com/greiman/SdFat/blob/master/examples/bench/bench.ino):
 
 * SDIO:
   ```
@@ -195,7 +197,7 @@ SDIO needs at least six GPIOs, and the 4 bits of the data bus have to be on cons
 It is possible to put more than one card on an SDIO bus (each card has an address in the protocol), but at the higher speeds (higher than this implementation can do) the tight timing requirements don't allow it. I haven't tried it.
 Running multiple SD cards on multiple SDIO buses works, but it does require a lot of pins and PIO resources.
 
-You can mix and match the attachement types.
+You can mix and match the attachment types.
 One strategy: use SDIO for cache and SPI for backing store. 
 A similar strategy that I have used: SDIO for fast, interactive use, and SPI to offload data.
 
@@ -213,6 +215,7 @@ There are a variety of RP2040 boards on the market that provide an integrated µ
 * I don't think the [Pimoroni Pico VGA Demo Base](https://shop.pimoroni.com/products/pimoroni-pico-vga-demo-base) can work with a built in RP2040 SPI controller. It looks like RP20040 SPI0 SCK needs to be on GPIO 2, 6, or 18 (pin 4, 9, or 24, respectively), but Pimoroni wired it to GPIO 5 (pin 7). SDIO? For sure it could work with one bit SDIO, but I don't know about 4-bit. It looks like it *can* work, depending on what other functions you need on the board.
 * The [SparkFun RP2040 Thing Plus](https://learn.sparkfun.com/tutorials/rp2040-thing-plus-hookup-guide/hardware-overview) works well on SPI1. For SDIO, the data lines are consecutive, but in the reverse order! I think that it could be made to work, but you might have to do some bit twiddling. A downside to this board is that it's difficult to access the signal lines if you want to look at them with, say, a logic analyzer or an oscilloscope.
 * [Challenger RP2040 SD/RTC](https://ilabs.se/challenger-rp2040-sd-rtc-datasheet/) looks usable for SPI only. 
+* [RP2040-GEEK](https://www.waveshare.com/wiki/RP2040-GEEK) This looks capable of 4 bit wide SDIO.
 * Here is one list of RP2040 boards: [earlephilhower/arduino-pico: Raspberry Pi Pico Arduino core, for all RP2040 boards](https://github.com/earlephilhower/arduino-pico) Only a fraction of them have an SD card socket.
   
 ### Rolling your own
@@ -241,6 +244,8 @@ Prerequisites:
 Please see [here](https://docs.google.com/spreadsheets/d/1BrzLWTyifongf_VQCc2IpJqXWtsrjmG7KnIbSBy-CPU/edit?usp=sharing) for an example wiring table for an SPI attached card and an SDIO attached card on the same Pico. 
 SPI and SDIO at 31.5 MHz are pretty demanding electrically. You need good, solid wiring, especially for grounds. A printed circuit board with a ground plane would be nice!
 
+
+![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1473.JPG "Prototype")
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232043568.jpg "Protoboard, top")
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232026240_3.jpg "Protoboard, bottom")
 
@@ -267,15 +272,18 @@ On some SD cards, you can even configure the card's output drivers using the Dri
 
 ## Notes about Card Detect
 * There is one case in which Card Detect can be important: when the user can hot swap the physical card while the file system is mounted. In this case, the file system might have no way of knowing that the card was swapped, and so it will continue to assume that its prior knowledge of the FATs and directories is still valid. File system corruption and data loss are the likely results.
-* If Card Detect is used, in order to detect a card swap there needs to be a way for the application to be made aware of a change in state when the card is removed. This could take the form of a GPIO interrupt (see [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line)), or polling.
+* If Card Detect is used, in order to detect a card swap there needs to be a way for the application to be made aware of a change in state when the card is removed. This could take the form of a GPIO interrupt (see 
+[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/783e3dce97e65d65e592eb4e7f01e8033c2ade5a/examples/command_line/src/main.cpp#L21)), 
+or polling.
 * Some workarounds for absence of Card Detect:
   * If you don't care much about performance or battery life, you could mount the card before each access and unmount it after. This might be a good strategy for a slow data logging application, for example.
   * Some other form of polling: if the card is periodically accessed at rate faster than the user can swap cards, then the temporary absence of a card will be noticed, so a swap will be detected. For example, if a data logging application writes a log record to the card once per second, it is unlikely that the user could swap cards between accesses.
-
+<!-- 
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1478.JPG "Prototype")
+-->
 
 ## Firmware
-### Dependencies:
+Dependencies:
 These will be picked up automatically as submodules when you git clone this library.
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
 * [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
@@ -283,7 +291,9 @@ These will be picked up automatically as submodules when you git clone this libr
 Procedure:
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
-  `git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI`
+  ```
+  git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI
+  ```
 * Customize:
   * Configure the code to match the hardware: see section 
   [Customizing for the Hardware Configuration](#customizing-for-the-hardware-configuration), below.
@@ -299,8 +309,9 @@ Procedure:
 ```   
   * Program the device
   * See [Appendix B: Operation of `command_line` example](#appendix-b-operation-of-command_line-example) for operation.
-  
+<--
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
+-->
 
 ## Customizing for the Hardware Configuration 
 This library can support many different hardware configurations. 
@@ -503,7 +514,7 @@ However, it might be done externally. If `no_miso_gpio_pull_up` is false, the li
 If `set_drive_strength` is false, all will be implicitly set to 4 mA. 
 If `set_drive_strength` is true, each GPIO's drive strength can be set individually. Note that if it is not explicitly set, it will default to 0, which equates to `GPIO_DRIVE_STRENGTH_2MA` (2 mA nominal drive strength).
 * `mosi_gpio_drive_strength` SPI Master Out, Slave In (MOSI) drive strength, 
-* and `sck_gpio_drive_strength` SPI Serial Clock (SCK) drive strength.
+* and `sck_gpio_drive_strength` SPI Serial Clock (SCK) drive strength:
   Ignored if `set_drive_strength` is false. Otherwise, these can be set to one of the following:
   ```
   GPIO_DRIVE_STRENGTH_2MA 
@@ -535,11 +546,12 @@ for an example of dynamic configuration.
 
 ## Using the Application Programming Interface
 In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but 
-is conventional:
+is conventional in FreeRTOS-Plus-FAT:
 
-`FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
-[FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
-structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`.
+  `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
+  [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
+  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/  FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter   `pcName` is the Device Name; `device_name` in 
+  [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
 
 A typical sequence would be:
 * `FF_SDDiskInit`
@@ -567,13 +579,15 @@ Two compile definitions control how these are handled in the SD card driver (or 
 [media driver](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Creating_a_file_system_media_driver.html)
 "):
 * `USE_PRINTF` If this is defined and not zero, 
-these message output functions will use the Pico SDK's stdout.
+these message output functions will use the Pico SDK's Standard Output (`stdout`).
 * `USE_DBG_PRINTF` If this is not defined or is zero or `NDEBUG` is defined, 
 `DBG_PRINTF` statements will be effectively stripped from the code.
 
 Messages are sent using `EMSG_PRINTF`, `IMSG_PRINTF`, and `DBG_PRINTF` macros, which can be redefined (see 
 [my_debug.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/src/FreeRTOS%2BFAT%2BCLI/include/my_debug.h)
-). By default, these call `error_message_printf`, `info_message_printf`, and `debug_message_printf`, which are implemented as [weak](https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html) functions, meaning that they can be overridden by strongly implementing them in user code. If `USE_PRINTF` is defined and not zero, the weak implementations will write to the Pico SDK's stdout. Otherwise, they will format the messages into strings and forward to `put_out_error_message`, `put_out_info_message`, and `put_out_debug_message`. These are implemented as weak functions that do nothing. You can override these to send the output somewhere.
+). By default, these call `error_message_printf`, `info_message_printf`, and `debug_message_printf`, 
+which are implemented as [weak](https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html) functions, meaning that they can be overridden by strongly implementing them in user code. 
+If `USE_PRINTF` is defined and not zero, the weak implementations will write to the Pico SDK's stdout. Otherwise, they will format the messages into strings and forward to `put_out_error_message`, `put_out_info_message`, and `put_out_debug_message`. These are implemented as weak functions that do nothing. You can override these to send the output somewhere.
 
 #### Messages from FreeRTOS-Plus-FAT
 FreeRTOS-Plus-FAT uses a macro called `FF_PRINTF`, which is defined in the 
@@ -608,17 +622,14 @@ target_link_libraries(_my_app_ FreeRTOS+FAT+CLI)
 ```  
 
 Happy hacking!
-![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_20210322_201928116.jpg "Prototype")
 
 ## Future Directions
-You are welcome to contribute to this project! Just submit a Pull Request. Here are some ideas for future enhancements:
+You are welcome to contribute to this project! Just submit a Pull Request in GitHub. Here are some ideas for future enhancements:
 * Battery saving: at least stop the SDIO clock when it is not needed
 * Support 1-bit SDIO
 * Try multiple cards on a single SDIO bus
 * [RP2040: Enable up to 42 MHz SDIO bus speed](https://github.com/ZuluSCSI/ZuluSCSI-firmware/tree/rp2040_highspeed_sdio)
 * SD UHS Double Data Rate (DDR): clock data on both edges of the clock
-
-![image](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/8a28782e-84c4-40c8-8757-a063a4b83292)
 
 ## Appendix A: Migration actions
 
@@ -627,7 +638,7 @@ You are welcome to contribute to this project! Just submit a Pull Request. Here 
     * Examples have been moved to subdirectory `examples`.
     * Libraries `FreeRTOS+FAT+CLI`, `FreeRTOS-Kernel`, and `Lab-Project-FreeRTOS-FAT` have been moved to subdirectory `src`.
 * The example previously called `example` is renamed `command_line`. The names and syntax of some CLI commands have changed, and new ones added. See [Appendix B: Operation of `command_line` example](#appendix-b-operation-of-command_line-example).
-* `sd_card_t` attribute (or "field" or "memeber") `pcName` has been removed and replaced by `device_name` and `mount_point`. 
+* `sd_card_t` attribute (or "field" or "member") `pcName` has been removed and replaced by `device_name` and `mount_point`. 
 `device_name` is equivalent to the old `pcName`. `mount_point` specifies the directory name for the mount point in the root directory.
 * The object model for hardware configuration has changed.
  If you are migrating a project from 
@@ -783,6 +794,8 @@ help:
  Shows this command help.
 ```    
 
+![image](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/8a28782e-84c4-40c8-8757-a063a4b83292)
+
 ## Appendix C: Adding Additional Cards
 When you're dealing with information storage, it's always nice to have redundancy. There are many possible combinations of SPIs and SD cards. One of these is putting multiple SD cards on the same SPI bus, at a cost of one (or two) additional Pico I/O pins (depending on whether or you care about Card Detect). I will illustrate that example here. 
 
@@ -804,26 +817,53 @@ GND|||18, 23|||GND|GND
 ### Wiring: 
 As you can see from the table above, the only new signals are CD1 and CS1. Otherwise, the new card is wired in parallel with the first card.
 ### Firmware:
-* `sd_driver/hw_config.c` must be edited to add a new instance to `static sd_card_t sd_cards[]`
+* [The hardware configuration](#customizing-for-the-hardware-configuration) must be edited to add a new instance of 
+[sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket)
+and its interface
+[sd_sdio_if_t](#an-instance-of-sd_sdio_if_t-describes-the-configuration-of-one-sdio-to-sd-card-interface)
+or
+[sd_spi_if_t](#an-instance-of-sd_spi_if_t-describes-the-configuration-of-one-spi-to-sd-card-interface).
 
 ## Appendix D: Performance Tuning Tips
 Obviously, set the baud rate as high as you can.
 
-The modern SD card is a block device, meaning that the smallest addressable unit is a a block (or sector) of 512 bytes. So, it helps performance if your write size is a multiple of 512. If it isn't, partial block writes involve reading the existing block, modifying it in memory, and writing it back out. With all the space in SD cards these days, it can be well worth it to pad a record length to a multiple of 512.
+In general, it is much faster to transfer a given number of bytes in one large write (or read) 
+than to transfer the same number of bytes in multiple smaller writes (or reads). 
 
-There is a controller in each SD card running all kinds of internal processes. Generally, flash memory has to be erased before it can be written, and the minimum erase size is the erase block or segment. The size of an erase block varies between devices, but is typically around 256kB or 512kB. When a smaller amount of data is to be written the whole erase block is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a translation layer. For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. The SD card is a "black box'": Most of this is invisible to the user, except for performance. So, the write times are far from deterministic. It might be helpful to have your write size be some factor of the erase block size. The `info` command in [examples/command_line](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main/examples/command_line) reports the erase block size. It gets it from the Card-Specific Data register (CSR) in the SD card.
+The modern SD card is a block device, meaning that the smallest addressable unit is a a block (or "sector") of 512 bytes. So, it helps performance if your write size is a multiple of 512. If it isn't, partial block writes involve reading the existing block, modifying it in memory, and writing it back out. With all the space in SD cards these days, it can be well worth it to pad a record length to a multiple of 512.
 
-There are more variables at the file system level. The allocation unit, also known as cluster, is a unit of "disk" space allocation for files. When the size of the allocation unit is 32768 bytes, a file with 100 bytes in size occupies 32768 bytes of disk space. The space efficiency of disk usage gets worse with increasing size of allocation unit, but, on the other hand, the read/write performance increases. Therefore the size of allocation unit is a trade-off between space efficiency and performance. This is something you can change by formatting the SD card. See [f_mkfs](http://elm-chan.org/fsw/ff/doc/mkfs.html).
+There is a controller in each SD card running all kinds of internal processes. Generally, flash memory has to be erased before it can be written, and the minimum erase size is the "erase block" or "segment". The size of an erase block varies between devices, but as of this writing it is typically around 64 kB. Back when SD cards were smaller, it tended to be 32 kB. When a smaller amount of data is to be written the whole erase block is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a "translation layer". For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. It might be helpful to have your write size be some factor or multiple of the erase block size. 
+The `info` command in 
+[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line) 
+reports the erase block size. It gets it from the Card-Specific Data register (CSR) in the SD card.
 
-File fragmentation can lead to long access times. One commonly used trick is to use [f_lseek](http://elm-chan.org/fsw/ff/doc/lseek.html) to pre-allocate a file to its ultimate size before beginning to write to it. Even better, you can pre-allocate a contiguous file using [f_expand](http://elm-chan.org/fsw/ff/doc/expand.html).
+The SD card is a "black box": most of this is invisible to the user, except for performance. So, the write times are far from deterministic. 
+
+There are more variables at the file system level. The "allocation unit", also known as "cluster", is a unit of "disk" space allocation for files. When the size of the allocation unit is 32768 bytes, a file with 100 bytes in size occupies 32768 bytes of disk space. The space efficiency of disk usage gets worse with increasing size of allocation unit, but, on the other hand, the read/write performance increases. Therefore the size of allocation unit is a trade-off between space efficiency and performance. This is something you can change by formatting the SD card. See 
+[FF_Format](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/native_API/FF_Format.html) 
+and 
+[Description of Default Cluster Sizes for FAT32 File System](https://support.microsoft.com/en-us/topic/description-of-default-cluster-sizes-for-fat32-file-system-905ea1b1-5c4e-a03f-3863-e4846a878d31). 
+Again, there might be some advantage to making your write size be some factor or multiple of the allocation unit.
+The `info` command in [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line) reports the allocation unit.
+
+File fragmentation can lead to long access times. 
+Fragmented files can result from multiple files being incrementally extended in an interleaved fashion. 
+One strategy to avoid fragmentation is to pre-allocate files to their maximum expected size, 
+then reuse these files at run time. 
+Since a flash memory erase block is typically filled with 0xFF after an erase, 
+you could write a file full of 0xFF bytes (chosen to avoid flash memory "wear") ahead of time. 
+Then 
+[ff_fopen](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fopen.html) 
+it in mode "r+" at run time.
+Obviously, you'd need to store a header or something to keep track of how much valid data is in the file.
 
 ## Appendix E: Troubleshooting
-* The first thing to try is lowering the SPI baud rate (see hw_config.c). This will also make it easier to use things like logic analyzers.
-   * For SDIO, you can increase the clock divider in `sd_sdio_begin` in `sd_driver/SDIO/sd_card_sdio.c`.
-   ```
-    // Increase to 25 MHz clock rate
-    rp2040_sdio_init(sd_card_p, 1);
-    ```
+* **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.
+* Try lowering the SPI or SDIO baud rate (e.g., in `hw_config.c`). This will also make it easier to use things like logic analyzers.
+  * For SPI, this is in the
+  [spi_t](#an-instance-of-spi_t-describes-the-configuration-of-one-rp2040-spi-controller) instance.
+  * For SDIO, this is in the 
+  [sd_sdio_if_t](#an-instance-of-sd_sdio_if_t-describes-the-configuration-of-one-sdio-to-sd-card-interface) instance.
 * Make sure the SD card(s) are getting enough power. Try an external supply. Try adding a decoupling capacitor between Vcc and GND. 
   * Hint: check voltage while formatting card. It must be 2.7 to 3.6 volts. 
   * Hint: If you are powering a Pico with a PicoProbe, try adding a USB cable to a wall charger to the Pico under test.
@@ -841,7 +881,5 @@ You can swap the commenting to enable tracing of what's happening in that file.
 
 [^3]: In my experience, the Card Detect switch on these doesn't work worth a damn. This might not be such a big deal, because according to [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/) the Chip Select (CS) line can be used for Card Detection: "At power up this line has a 50KOhm pull up enabled in the card... For Card detection, the host detects that the line is pulled high." 
 However, the Adafruit card has it's own 47 kΩ pull up on CS - Card Detect / Data Line [Bit 3], rendering it useless for Card Detection.
-
 [^4]: [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/)
-
 [^5]: Rationale: Instances of `sd_spi_if_t` or `sd_sdio_if_t` are separate objects instead of being embedded in `sd_card_t` objects because `sd_sdio_if_t` carries a lot of state information with it (including things like data buffers). The union of the two types has the size of the largest type, which would result in a lot of wasted space in instances of `sd_spi_if_t`. I had another solution using `malloc`, but some people are frightened of `malloc` in embedded systems.
