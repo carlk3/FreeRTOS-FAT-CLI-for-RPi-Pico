@@ -61,7 +61,7 @@ or you can use something like
 SPI and SDIO can share the same DMA IRQ.
 
 For the complete 
-[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line) application, 
+[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/command_line) application, 
 configured for oneSDIO-attached card, `MinSizeRel` build, 
 as reported by link flag `-Wl,--print-memory-usage`:
 ```
@@ -107,7 +107,7 @@ at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` 
     * Transfer rate 2.63 MiB/s (2.75 MB/s), or 2688 KiB/s (2753 kB/s) (22021 kb/s)
 
 Results from a 
-[port](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/command_line/tests/bench.c)
+[port](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/tests/bench.c)
  of 
 [SdFat's bench](https://github.com/greiman/SdFat/blob/master/examples/bench/bench.ino):
 
@@ -309,7 +309,7 @@ Procedure:
 ```   
   * Program the device
   * See [Appendix B: Operation of `command_line` example](#appendix-b-operation-of-command_line-example) for operation.
-<--
+<!--
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1481.JPG "Prototype")
 -->
 
@@ -318,9 +318,9 @@ This library can support many different hardware configurations.
 Therefore, the hardware configuration is not defined in the library. 
 Instead, the application must provide it. 
 The configuration is defined in "objects" of type `spi_t` (see 
-[sd_driver/spi.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/SPI/sd_spi.h)), 
+[sd_driver/spi.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/SPI/spi.h)), 
 `sd_spi_if_t`, `sd_sdio_if_t`, and `sd_card_t` (see 
-[sd_driver/sd_card.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/sd_card.h)). 
+[sd_driver/sd_card.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/sd_card.h)). 
 * Instances of `sd_card_t` describe the configuration of SD card sockets.
 * Each instance of `sd_card_t` is associated (one to one) with an `sd_spi_if_t` or `sd_sdio_if_t` interface object, 
 and points to it with `spi_if_p` or `sdio_if_p`[^5].
@@ -336,7 +336,7 @@ below, the C runtime initializes static memory to 0.)
 ![Illustration of the configuration dev_brd.hw_config.c](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/0eedadea-f6cf-44cb-9b76-544ec74287d2)
 
 Illustration of the configuration 
-[dev_brd.hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/command_line/config/dev_brd.hw_config.c)
+[dev_brd.hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/config/dev_brd.hw_config.c)
 
 ### An instance of `sd_card_t` describes the configuration of one SD card socket.
 ```
@@ -536,11 +536,11 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
 The definition of the hardware configuration can either be built in at build time, which I'm calling "static configuration", or supplied at run time, which I call "dynamic configuration". 
 In either case, the application simply provides an implementation of the functions declared in `sd_driver/hw_config.h`. 
 * See 
-[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/simple_sdio/hw_config.c)
+[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/simple_sdio/hw_config.c)
  or 
- [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/command_line/config/hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/command_line/config/hw_config.c) for examples of static configuration.
+ [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/command_line/config/hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/config/hw_config.c) for examples of static configuration.
 * See 
-[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/dynamic_config/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/dynamic_config)
+[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/dynamic_config/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/dynamic_config)
 for an example of dynamic configuration.
 * One advantage of static configuration is that the fantastic GNU Linker (ld) strips out anything that you don't use.
 
@@ -565,7 +565,7 @@ A typical sequence would be:
 * `FF_Unmount`
 * `FF_SDDiskDelete`
 
-See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/simple_sdio) for an example.
+See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
 
 ### Messages
 Sometimes problems arise when attempting to use SD cards. At the 
@@ -584,7 +584,7 @@ these message output functions will use the Pico SDK's Standard Output (`stdout`
 `DBG_PRINTF` statements will be effectively stripped from the code.
 
 Messages are sent using `EMSG_PRINTF`, `IMSG_PRINTF`, and `DBG_PRINTF` macros, which can be redefined (see 
-[my_debug.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/src/FreeRTOS%2BFAT%2BCLI/include/my_debug.h)
+[my_debug.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/my_debug.h)
 ). By default, these call `error_message_printf`, `info_message_printf`, and `debug_message_printf`, 
 which are implemented as [weak](https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html) functions, meaning that they can be overridden by strongly implementing them in user code. 
 If `USE_PRINTF` is defined and not zero, the weak implementations will write to the Pico SDK's stdout. Otherwise, they will format the messages into strings and forward to `put_out_error_message`, `put_out_info_message`, and `put_out_debug_message`. These are implemented as weak functions that do nothing. You can override these to send the output somewhere.
@@ -592,14 +592,14 @@ If `USE_PRINTF` is defined and not zero, the weak implementations will write to 
 #### Messages from FreeRTOS-Plus-FAT
 FreeRTOS-Plus-FAT uses a macro called `FF_PRINTF`, which is defined in the 
 [FreeRTOS-Plus-FAT Configuration file](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Embedded_File_System_Configuration.html).
-See [FreeRTOSFATConfig.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/src/FreeRTOS%2BFAT%2BCLI/include/FreeRTOSFATConfig.h).
+See [FreeRTOSFATConfig.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/FreeRTOSFATConfig.h).
 
 ## Next Steps
 * There is a simple example of using the API in the 
-[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/simple_sdio)
+[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio)
 subdirectory.
 * There is a demonstration data logging application in 
-[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/command_line/src/data_log_demo.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/dev/examples/command_line/src/data_log_demo.c).
+[FreeRTOS-FAT-CLI-for-RPi-Pico/examples/command_line/src/data_log_demo.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/data_log_demo.c).
 It runs as a separate task, and can be launched from the CLI with the `data_log_demo` command.
 (Stop it with the `die` command.)
 It records the temperature as reported by the RP2040 internal Temperature Sensor once per second 
@@ -674,7 +674,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
 
 ## Appendix B: Operation of `command_line` example:
 * Connect a terminal. [PuTTY](https://www.putty.org/) or `tio` work OK. For example:
-  * `tio -m ODELBS /dev/ttyACM0`
+  * `tio -m ODELBS /master/ttyACM0`
 * Press Enter to start the CLI. You should see a prompt like:
 ```
     > 
@@ -834,7 +834,7 @@ The modern SD card is a block device, meaning that the smallest addressable unit
 
 There is a controller in each SD card running all kinds of internal processes. Generally, flash memory has to be erased before it can be written, and the minimum erase size is the "erase block" or "segment". The size of an erase block varies between devices, but as of this writing it is typically around 64 kB. Back when SD cards were smaller, it tended to be 32 kB. When a smaller amount of data is to be written the whole erase block is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a "translation layer". For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. It might be helpful to have your write size be some factor or multiple of the erase block size. 
 The `info` command in 
-[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line) 
+[examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/command_line) 
 reports the erase block size. It gets it from the Card-Specific Data register (CSR) in the SD card.
 
 The SD card is a "black box": most of this is invisible to the user, except for performance. So, the write times are far from deterministic. 
@@ -844,7 +844,7 @@ There are more variables at the file system level. The "allocation unit", also k
 and 
 [Description of Default Cluster Sizes for FAT32 File System](https://support.microsoft.com/en-us/topic/description-of-default-cluster-sizes-for-fat32-file-system-905ea1b1-5c4e-a03f-3863-e4846a878d31). 
 Again, there might be some advantage to making your write size be some factor or multiple of the allocation unit.
-The `info` command in [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/command_line) reports the allocation unit.
+The `info` command in [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/command_line) reports the allocation unit.
 
 File fragmentation can lead to long access times. 
 Fragmented files can result from multiple files being incrementally extended in an interleaved fashion. 
