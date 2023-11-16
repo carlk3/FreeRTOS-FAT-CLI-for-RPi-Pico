@@ -15,14 +15,14 @@ specific language governing permissions and limitations under the License.
 
 #include <stdbool.h>
 #include <stdint.h>
+//
+#include "FreeRTOS.h"
+#include "ff_headers.h"
+#include "sd_card.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "FreeRTOS.h"
-#include "ff_headers.h"
-#include "sd_card.h"
 
 bool format(const char *devName);
 bool mount(const char *devName);

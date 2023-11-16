@@ -24,6 +24,7 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         src/crash.c
         src/ff_utils.c
         src/freertos_callbacks.c
+        src/FreeRTOS_strerror.c
         src/FreeRTOS_time.c
         src/my_debug.c
         src/util.c

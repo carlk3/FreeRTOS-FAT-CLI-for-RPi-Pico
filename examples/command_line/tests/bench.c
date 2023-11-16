@@ -3,8 +3,9 @@
  * This program is a simple binary write/read benchmark.
  */
 #include <my_debug.h>
-#include <string.h>
+// #include <string.h>
 
+#include "FreeRTOS_strerror.h"
 #include "SDIO/SdioCard.h"
 #include "SdCardInfo.h"
 #include "ff_utils.h"
@@ -83,7 +84,7 @@ static void bench_test(FF_FILE *file_p, uint8_t buf[BUF_SIZE]) {
             uint32_t m = micros();
             size_t bw = ff_fwrite(buf, 1, BUF_SIZE, file_p); /* Write it to the destination file */
             if (BUF_SIZE != bw) {
-                EMSG_PRINTF("ff_fwrite: %s\n", strerror(stdioGET_ERRNO()));
+                EMSG_PRINTF("ff_fwrite: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
                 return;
             }
             m = micros() - m;
@@ -124,7 +125,7 @@ static void bench_test(FF_FILE *file_p, uint8_t buf[BUF_SIZE]) {
             uint32_t m = micros();
             size_t nr = ff_fread(buf, 1, BUF_SIZE, file_p);
             if (BUF_SIZE != nr) {
-                EMSG_PRINTF("ff_fread: %s\n", strerror(stdioGET_ERRNO()));
+                EMSG_PRINTF("ff_fread: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
                 return;
             }
             m = micros() - m;
@@ -201,7 +202,7 @@ static void bench_open_close(sd_card_t *sd_card_p, uint8_t *buf) {
         file_p = ff_fopen(pathname, "rw");
     }
     if (!file_p) {
-        EMSG_PRINTF("ff_fopen: %s\n", strerror(stdioGET_ERRNO()));
+        EMSG_PRINTF("ff_fopen: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
         return;
     }
     IMSG_PRINTF("\nFILE_SIZE_MB = %d\n", FILE_SIZE_MiB);  // << FILE_SIZE_MB << endl;
@@ -211,7 +212,7 @@ static void bench_open_close(sd_card_t *sd_card_p, uint8_t *buf) {
 
     int rc = ff_fclose(file_p);
     if (-1 == rc) {
-        EMSG_PRINTF("ff_fclose: %s\n", strerror(stdioGET_ERRNO()));
+        EMSG_PRINTF("ff_fclose: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
     }
 }
 

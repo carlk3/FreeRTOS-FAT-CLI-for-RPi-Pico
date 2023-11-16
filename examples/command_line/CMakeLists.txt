@@ -28,6 +28,7 @@ add_executable(command_line
     src/data_log_demo.c
     src/main.cpp 
     src/stdio_cli.c
+    src/unmounter.c
     tests/app4-IO_module_function_checker.c
     tests/bench.c
     tests/big_file_test.c

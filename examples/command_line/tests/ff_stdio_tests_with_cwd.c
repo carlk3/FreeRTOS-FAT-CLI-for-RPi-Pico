@@ -93,6 +93,7 @@ specific language governing permissions and limitations under the License.
 #include "ff_headers.h"
 #include "ff_stdio.h"
 //
+#include "FreeRTOS_strerror.h"
 #include "my_debug.h"
 //
 #include "tests.h"
@@ -177,9 +178,13 @@ void vStdioWithCWDTest( const char *pcMountPath )
     /* Non-systematic sanity checks for the API defined in ff_stdio.c. */
 
 	/* Clean up from previous run */
-	ff_remove("Dummy.txt");
-	ff_deltree("source_dir");
-	ff_deltree("destination_dir");
+    FF_Stat_t xStat;
+    if (0 == ff_stat("Dummy.txt", &xStat))
+        ff_remove("Dummy.txt");
+    if (0 == ff_stat("source_dir", &xStat))
+    	ff_deltree("source_dir");
+    if (0 == ff_stat("destination_dir", &xStat))
+    	ff_deltree("destination_dir");
 
     /* Must come after the prvCreateDemoFilesUsing_fwrite() and
     prvCreateDemoFileUsing_fputc() functions as it expects the files created by
@@ -335,7 +340,7 @@ char *pcRAMBuffer, *pcFileName;
 		/* Open a test file for writing. */
 		pxFile = ff_fopen( pcTestFileName, "w+" );
         if (!pxFile) {
-    		FF_PRINTF("ff_fopen error: %s (%d)\n", strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());            
+    		FF_PRINTF("ff_fopen error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());            
 		    configASSERT( pxFile );
         }
 		/* Write the strings to the file. */
@@ -1031,7 +1036,7 @@ char cReadBuffer[ 45 ];
 
 	iReturned = ff_rename( "source.txt", "../destination_dir/destination.txt", pdFALSE );
 	if (iReturned != pdFREERTOS_ERRNO_NONE) {
-		FF_PRINTF("ff_rename error: %s (%d)\n", strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());
+		FF_PRINTF("ff_rename error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), -stdioGET_ERRNO());
 	    configASSERT( iReturned == pdFREERTOS_ERRNO_NONE );
 	}
 

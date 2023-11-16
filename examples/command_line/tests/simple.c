@@ -18,6 +18,7 @@ specific language governing permissions and limitations under the License.
 #include <stdlib.h>
 #include <string.h>
 //
+#include "FreeRTOS_strerror.h"
 #include "ff_stdio.h"
 #include "ff_utils.h"
 #include "my_debug.h"
@@ -46,7 +47,7 @@ void simple() {
         f = ff_fopen("numbers.txt", "w+");
         IMSG_PRINTF("%s\n", (!f ? "Fail :(" : "OK"));
         if (!f) {
-            EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+            EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                         stdioGET_ERRNO());
             return;
         }
@@ -56,7 +57,7 @@ void simple() {
             err = ff_fprintf(f, "    %d\n", i);
             if (err < 0) {
                 EMSG_PRINTF("Fail :(\n");
-                EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+                EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                             stdioGET_ERRNO());
                 return;
             }
@@ -66,7 +67,7 @@ void simple() {
         err = ff_fseek(f, 0, FF_SEEK_SET);
         IMSG_PRINTF("%s\n", (err < 0 ? "Fail :(" : "OK"));
         if (err < 0) {
-            EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+            EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                         stdioGET_ERRNO());
             return;
         }
@@ -80,7 +81,7 @@ void simple() {
         // Parse out the number and increment
         char buf[BUFFER_MAX_LEN];
         if (!ff_fgets(buf, BUFFER_MAX_LEN, f)) {
-            EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+            EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                         stdioGET_ERRNO());
             return;
         }
@@ -109,7 +110,7 @@ void simple() {
     err = ff_fclose(f);
     IMSG_PRINTF("%s\n", (err < 0 ? "Fail :(" : "OK"));
     if (err < 0) {
-        EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+        EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                     stdioGET_ERRNO());
         return;
     }
@@ -120,7 +121,7 @@ void simple() {
     f = ff_fopen("numbers.txt", "r");
     IMSG_PRINTF("%s\n", (!f ? "Fail :(" : "OK"));
     if (!f) {
-        EMSG_PRINTF("f_open error: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("f_open error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
     }
 
@@ -134,7 +135,7 @@ void simple() {
     err = ff_fclose(f);
     IMSG_PRINTF("%s\n", (err < 0 ? "Fail :(" : "OK"));
     if (err < 0) {
-        EMSG_PRINTF("error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+        EMSG_PRINTF("error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                     stdioGET_ERRNO());
     }
 }

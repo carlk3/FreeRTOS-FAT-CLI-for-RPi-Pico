@@ -25,6 +25,7 @@ specific language governing permissions and limitations under the License.
 //
 #include <RP2040.h>
 //
+#include "FreeRTOS_strerror.h"
 #include "crash.h"
 #include "FreeRTOS_time.h"
 #include "my_debug.h"
@@ -169,7 +170,7 @@ void task_printf(const char *pcFormat, ...) {
 int stdio_fail(const char *const fn, const char *const str) {
     int error = stdioGET_ERRNO();
     FF_PRINTF("%s: %s: %s: %s (%d)\n", pcTaskGetName(NULL), fn, str,
-              strerror(error), error);
+              FreeRTOS_strerror(error), error);
     return error;
 }
 
@@ -177,7 +178,7 @@ int ff_stdio_fail(const char *const func, char const *const str,
                   char const *const filename) {
     int error = stdioGET_ERRNO();
     FF_PRINTF("%s: %s: %s(%s): %s (%d)\n", pcTaskGetName(NULL), func, str,
-              filename, strerror(error), error);
+              filename, FreeRTOS_strerror(error), error);
     return error;
 }
 

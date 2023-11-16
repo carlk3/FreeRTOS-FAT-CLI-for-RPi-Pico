@@ -87,11 +87,12 @@ specific language governing permissions and limitations under the License.
  */
 
 #include <stdio.h>
-#include <string.h> // strerror
+// #include <string.h> // FreeRTOS_strerror
 //
 /* FreeRTOS+FAT headers. */
 #include "ff_headers.h"
 #include "ff_stdio.h"
+#include "FreeRTOS_strerror.h"
 //
 #include "my_debug.h"
 
@@ -175,7 +176,7 @@ char *pcRAMBuffer, *pcFileName;
 	lResult = ff_chdir( pcMountPath );
 	if (-1 == lResult)
 		FF_PRINTF("ff_chdir(%s) failed: %s (%d)\n", pcMountPath,
-					strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+					FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 	configASSERT(lResult >= 0);
 
 	/* Create xMaxFiles files.  Each created file will be
@@ -195,7 +196,7 @@ char *pcRAMBuffer, *pcFileName;
 		pxFile = ff_fopen( pcFileName, "w" );
 		if (!pxFile)
 			FF_PRINTF("ff_fopen(%s) failed: %s (%d)\n", pcFileName,
-						strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+						FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 		configASSERT( pxFile );
 
 		/* Fill the RAM buffer with data that will be written to the file.  This
@@ -308,7 +309,7 @@ char *pcRAMBuffer, *pcFileName;
 	/* Move into the created sub-directory. */
 	iReturn = ff_chdir( pcDirectory1 );
     if (iReturn != pdFREERTOS_ERRNO_NONE) {
-	    FF_PRINTF("ff_chdir error: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());                
+	    FF_PRINTF("ff_chdir error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());                
 	    configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
     }
 	/* Obtain and print out the working directory. */

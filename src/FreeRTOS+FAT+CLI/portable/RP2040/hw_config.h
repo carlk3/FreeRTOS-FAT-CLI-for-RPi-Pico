@@ -12,13 +12,12 @@ CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 #pragma once
+
+#include "sd_card.h"    
     
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// #include "ff.h"
-#include "sd_card.h"    
 
     size_t sd_get_num();
     sd_card_t *sd_get_by_num(size_t num);

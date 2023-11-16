@@ -83,7 +83,7 @@ static void stdioTask(void *arg) {
         uint32_t nv = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_STDIO,  // uxIndexToWaitOn
                                               pdTRUE,                 // xClearCountOnExit
                                               portMAX_DELAY);         // xTicksToWait
-        if (1 != nv)
+        if (nv < 1)
             continue;
 
         for (;;) {
