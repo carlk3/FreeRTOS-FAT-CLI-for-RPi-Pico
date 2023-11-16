@@ -1,4 +1,5 @@
-# FreeRTOS-FAT-CLI-for-RPi-Pico, Release 2.0.0
+# FreeRTOS-FAT-CLI-for-RPi-Pico 
+# Release 2.1.0
 
 ## SD Cards on the Pico
 
@@ -17,6 +18,7 @@ It is wrapped up in a complete runnable project, with a little command line inte
 ## What's new
 * 4-wire SDIO support
 * Rewritten Command Line Interface (CLI)
+
 For required migration actions, see [Appendix A: Migration actions](#appendix-a-migration-actions).
 
 *Note:* Release 1 remains available on the [v1.0.0 branch](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/v1.0.0).
@@ -827,26 +829,38 @@ or
 ## Appendix D: Performance Tuning Tips
 Obviously, set the baud rate as high as you can.
 
-In general, it is much faster to transfer a given number of bytes in one large write (or read) 
+TL;DR: In general, it is much faster to transfer a given number of bytes in one large write (or read) 
 than to transfer the same number of bytes in multiple smaller writes (or reads). 
 
 The modern SD card is a block device, meaning that the smallest addressable unit is a a block (or "sector") of 512 bytes. So, it helps performance if your write size is a multiple of 512. If it isn't, partial block writes involve reading the existing block, modifying it in memory, and writing it back out. With all the space in SD cards these days, it can be well worth it to pad a record length to a multiple of 512.
 
-There is a controller in each SD card running all kinds of internal processes. Generally, flash memory has to be erased before it can be written, and the minimum erase size is the "erase block" or "segment". The size of an erase block varies between devices, but as of this writing it is typically around 64 kB. Back when SD cards were smaller, it tended to be 32 kB. When a smaller amount of data is to be written the whole erase block is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a "translation layer". For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. It might be helpful to have your write size be some factor or multiple of the erase block size. 
+Generally, flash memory has to be erased before it can be written, and the minimum erase size is the "erase block". The size of an erase block varies between devices, but as of this writing it is typically around 64 kB for a 16 or 32 GB card. It might be helpful to have your write size be some factor or multiple of the erase block size. 
 The `info` command in 
 [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/command_line) 
-reports the erase block size. It gets it from the Card-Specific Data register (CSR) in the SD card.
+reports the erase block size. It gets it from the Card-Specific Data register (CSD) in the SD card.
 
-The SD card is a "black box": most of this is invisible to the user, except for performance. So, the write times are far from deterministic. 
+Beyond that, an SD card has an "allocation unit" or "segment":
 
-There are more variables at the file system level. The "allocation unit", also known as "cluster", is a unit of "disk" space allocation for files. When the size of the allocation unit is 32768 bytes, a file with 100 bytes in size occupies 32768 bytes of disk space. The space efficiency of disk usage gets worse with increasing size of allocation unit, but, on the other hand, the read/write performance increases. Therefore the size of allocation unit is a trade-off between space efficiency and performance. This is something you can change by formatting the SD card. See 
+> AU (Allocation Unit): is a physical boundary of the card and consists of one or more blocks and its
+size depends on each card. The maximum AU size is defined for memory capacity. Furthermore AU
+is the minimal unit in which the card guarantees its performance for devices which complies with
+Speed Class Specification. The information about the size and the Speed Class are stored in the
+SD Status.
+
+> -- SD Card Association; Physical Layer Specification Version 3.01
+
+This is typically 4 MiB for a 16 or 32 GB card, for example. Of course, nobody is going to be using 4 MiB write buffers on a Pico, but the AU is still important. For good performance and wear tolerance, it is recommended that the "disk partition" be aligned to an AU boundary. [SD Memory Card Formatter](https://www.sdcard.org/downloads/formatter/) makes this happen. For my 16 GB card, it set "Partition Starting Offset	4,194,304 bytes". This accomplished by inserting "hidden sectors" between the actual start of the physical media and the start of the volume. Also, it might be helpful to have your write size be some factor or multiple of the segment size.
+
+There is a controller in each SD card running all kinds of internal processes. When an amount of data to be written is smaller than a segment, the segment is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a "translation layer". For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. The SD card is a "black box": much of this is invisible to the user, except as revealed in the Card-Specific Data register (CSD), SD_STATUS, and the observable performance characteristics. So, the write times are far from deterministic.
+
+There are more variables at the file system level. The FAT "allocation unit" (not to be confused with the SD card "allocation unit"), also known as "cluster", is a unit of "disk" space allocation for files. These are identically sized small blocks of contiguous space that are indexed by the File Allocation Table. When the size of the allocation unit is 32768 bytes, a file with 100 bytes in size occupies 32768 bytes of disk space. The space efficiency of disk usage gets worse with increasing size of allocation unit, but, on the other hand, the read/write performance increases. Therefore the size of allocation unit is a trade-off between space efficiency and performance. This is something you can change by formatting the SD card. See 
 [FF_Format](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/native_API/FF_Format.html) 
 and 
 [Description of Default Cluster Sizes for FAT32 File System](https://support.microsoft.com/en-us/topic/description-of-default-cluster-sizes-for-fat32-file-system-905ea1b1-5c4e-a03f-3863-e4846a878d31). 
-Again, there might be some advantage to making your write size be some factor or multiple of the allocation unit.
+Again, there might be some advantage to making your write size be some factor or multiple of the FAT allocation unit.
 The `info` command in [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/command_line) reports the allocation unit.
 
-File fragmentation can lead to long access times. 
+[File fragmentation](https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system#Fragmentation) can lead to long access times. 
 Fragmented files can result from multiple files being incrementally extended in an interleaved fashion. 
 One strategy to avoid fragmentation is to pre-allocate files to their maximum expected size, 
 then reuse these files at run time. 
