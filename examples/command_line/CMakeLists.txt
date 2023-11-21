@@ -32,6 +32,7 @@ add_executable(command_line
     tests/app4-IO_module_function_checker.c
     tests/bench.c
     tests/big_file_test.c
+    tests/mtbft.c
     tests/CreateAndVerifyExampleFiles.c
     tests/ff_stdio_tests_with_cwd.c
     tests/simple.c

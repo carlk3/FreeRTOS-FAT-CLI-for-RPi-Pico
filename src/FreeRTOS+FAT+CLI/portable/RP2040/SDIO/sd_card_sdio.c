@@ -21,21 +21,19 @@
 
 #define STATE sd_card_p->sdio_if_p->state
 
-// #define azlog(...)
 // #define azdbg(...)
 
 //FIXME
 #define azdbg(arg1, ...) {\
     DBG_PRINTF("%s,%d: %s\n", __func__, __LINE__, arg1); \
 }
-#define azlog azdbg
 
 #define checkReturnOk(call) ((STATE.error = (call)) == SDIO_OK ? true : logSDError(sd_card_p, __LINE__))
 
 static bool logSDError(sd_card_t *sd_card_p, int line)
 {
     STATE.error_line = line;
-    azlog("SDIO SD card error on line ", line, ", error code ", (int)STATE.error);
+    EMSG_PRINTF("SDIO SD card error on line %d error code %d\n", line, (int)STATE.error);
     return false;
 }
 
@@ -96,7 +94,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
 
         if ((uint32_t)(millis() - start) > 1000)
         {
-            azlog("SDIO card initialization timeout");
+            EMSG_PRINTF("SDIO card initialization timeout\n");
             return false;
         }
     } while (!(STATE.ocr & (1 << 31)));
@@ -185,24 +183,6 @@ bool sd_sdio_readOCR(sd_card_t *sd_card_p, uint32_t* ocr)
     return checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD13, STATE.rca, ocr));
 }
 
-bool sd_sdio_readData(sd_card_t *sd_card_p, uint8_t* dst)
-{
-    azlog("sd_sdio_readData() called but not implemented!");
-    return false;
-}
-
-// bool sd_sdio_readStart(sd_card_t *sd_card_p, uint32_t sector)
-// {
-//     azlog("sd_sdio_readStart() called but not implemented!");
-//     return false;
-// }
-
-// bool sd_sdio_readStop(sd_card_t *sd_card_p)
-// {
-//     azlog("sd_sdio_readStop() called but not implemented!");
-//     return false;
-// }
-
 uint32_t sd_sdio_status(sd_card_t *sd_card_p)
 {
     uint32_t reply;
@@ -227,10 +207,10 @@ bool sd_sdio_stopTransmission(sd_card_t *sd_card_p, bool blocking)
     else
     {
         uint32_t start = millis();
-        while (millis() - start < 100 && sd_sdio_isBusy(sd_card_p));
+        while (millis() - start < 200 && sd_sdio_isBusy(sd_card_p));
         if (sd_sdio_isBusy(sd_card_p))
         {
-            azlog("sd_sdio_stopTransmission() timeout");
+            EMSG_PRINTF("sd_sdio_stopTransmission() timeout\n");
             return false;
         }
         else
@@ -253,39 +233,6 @@ uint8_t sd_sdio_type(sd_card_t *sd_card_p) // const
         return SD_CARD_TYPE_SD2;
 }
 
-bool sd_sdio_writeData(sd_card_t *sd_card_p, const uint8_t* src)
-{
-    azlog("sd_sdio_writeData() called but not implemented!");
-    return false;
-}
-
-// bool sd_sdio_writeStart(sd_card_t *sd_card_p, uint32_t sector)
-// {
-//     azlog("sd_sdio_writeStart() called but not implemented!");
-//     return false;
-// }
-
-// bool sd_sdio_writeStop(sd_card_t *sd_card_p)
-// {
-//     azlog("sd_sdio_writeStop() called but not implemented!");
-//     return false;
-// }
-
-bool sd_sdio_erase(sd_card_t *sd_card_p, uint32_t firstSector, uint32_t lastSector)
-{
-    azlog("sd_sdio_erase() not implemented");
-    return false;
-}
-
-bool sd_sdio_cardCMD6(sd_card_t *sd_card_p, uint32_t arg, uint8_t* status) {
-    azlog("sd_sdio_cardCMD6() not implemented");
-    return false;
-}
-
-bool sd_sdio_readSCR(sd_card_t *sd_card_p, scr_t* scr) {
-    azlog("sd_sdio_readSCR() not implemented");
-    return false;
-}
 
 /* Writing and reading */
 
@@ -313,7 +260,7 @@ bool sd_sdio_writeSector(sd_card_t *sd_card_p, uint32_t sector, const uint8_t* s
 
     if (STATE.error != SDIO_OK)
     {
-        azlog("sd_sdio_writeSector(", sector, ") failed: ", (int)STATE.error);
+        EMSG_PRINTF("sd_sdio_writeSector(%lu) failed: %d\n", sector, (int)STATE.error);
     }
 
     return STATE.error == SDIO_OK;
@@ -351,7 +298,7 @@ bool sd_sdio_writeSectors(sd_card_t *sd_card_p, uint32_t sector, const uint8_t* 
 
     if (STATE.error != SDIO_OK)
     {
-        azlog("sd_sdio_writeSectors(", sector, ",...,", (int)n, ") failed: ", (int)STATE.error);
+        EMSG_PRINTF("sd_sdio_writeSectors(,%lu,,%zu) failed: %d\n", sector, n, (int)STATE.error);
         sd_sdio_stopTransmission(sd_card_p, true);
         return false;
     }
@@ -384,9 +331,7 @@ bool sd_sdio_readSector(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst)
 
     if (STATE.error != SDIO_OK)
     {
-        // azlog("sd_sdio_readSector(", sector, ") failed: ", (int)STATE.error);
-        EMSG_PRINTF("%s,%d sd_sdio_readSector(%lu) failed: %d\n", 
-            __func__, __LINE__, sector, STATE.error);
+        EMSG_PRINTF("sd_sdio_readSector(,%lu,) failed: %d\n\n", sector, (int)STATE.error);
     }
 
     if (dst != real_dst)
@@ -427,7 +372,6 @@ bool sd_sdio_readSectors(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst, si
 
     if (STATE.error != SDIO_OK)
     {
-        // azlog("sd_sdio_readSectors(", sector, ",...,", (int)n, ") failed: ", (int)STATE.error);
         EMSG_PRINTF("sd_sdio_readSectors(%ld,...,%d)  failed: %d\n", sector, n, STATE.error);
         sd_sdio_stopTransmission(sd_card_p, true);
         return false;

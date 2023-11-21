@@ -12,16 +12,10 @@ CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 
-#include <errno.h>
 #include <limits.h>
-#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 //
-#include "pico/stdlib.h"
-//
+#include "FreeRTOS_strerror.h"
 #include "ff_utils.h"
 #include "my_debug.h"
 //
@@ -31,9 +25,6 @@ specific language governing permissions and limitations under the License.
 // Optimization:
 //  choose this to be size of an erasable sector ("smallest erasable block"):
 #define BUFFSZ (65536)  // In bytes. Should be a factor of 1 Mebibyte.
-
-typedef uint32_t DWORD;
-typedef unsigned int UINT;
 
 static void report(uint64_t size, uint64_t elapsed_us) {
     double elapsed = (double)elapsed_us / 1000 / 1000;
@@ -50,15 +41,14 @@ static void report(uint64_t size, uint64_t elapsed_us) {
 
 // Create a file of size "size" bytes filled with random data seeded with "seed"
 static bool create_big_file(const char *const pathname, uint64_t size,
-                            unsigned seed, DWORD *buff) {
-    srand(seed);  // Seed pseudo-random number generator
+                            unsigned seed, int *buff) {
 
     /* Open the file, creating the file if it does not already exist. */
     FF_Stat_t xStat;
     size_t fsz = 0;
     if (ff_stat(pathname, &xStat) == 0)
         fsz = xStat.st_size;
-    static FF_FILE *file_p;
+    FF_FILE *file_p;
     if (0 < fsz && fsz <= size) {
         // This is an attempt at optimization:
         // rewriting the file should be faster than
@@ -68,7 +58,7 @@ static bool create_big_file(const char *const pathname, uint64_t size,
         file_p = ff_fopen(pathname, "w");
     }
     if (!file_p) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return false;
     }
     ff_rewind(file_p);
@@ -78,14 +68,13 @@ static bool create_big_file(const char *const pathname, uint64_t size,
     uint64_t cum_time = 0;
 
     for (uint64_t i = 0; i < size / BUFFSZ; ++i) {
-        size_t n;
-        for (n = 0; n < BUFFSZ / sizeof(DWORD); n++) buff[n] = rand();
+        for (size_t n = 0; n < BUFFSZ / sizeof(int); n++) buff[n] = rand_r(&seed);
 
         absolute_time_t xStart = get_absolute_time();
         size_t bw = ff_fwrite(buff, 1, BUFFSZ, file_p);
         if (bw < BUFFSZ) {
             EMSG_PRINTF("ff_fwrite(%s,,%d,): only wrote %d bytes\n", pathname, BUFFSZ, bw);
-            EMSG_PRINTF("ff_fwrite: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+            EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
             ff_fclose(file_p);
             return false;
         }
@@ -94,7 +83,7 @@ static bool create_big_file(const char *const pathname, uint64_t size,
     /* Close the file */
     int rc = ff_fclose(file_p);
     if (-1 == rc) {
-        EMSG_PRINTF("ff_fclose: %s\n", strerror(stdioGET_ERRNO()));
+        EMSG_PRINTF("ff_fclose: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
         return false;
     }
     report(size, cum_time);
@@ -104,15 +93,13 @@ static bool create_big_file(const char *const pathname, uint64_t size,
 // Read a file of size "size" bytes filled with random data seeded with "seed"
 // and verify the data
 static bool check_big_file(char *pathname, uint64_t size,
-                           uint32_t seed, DWORD *buff) {
-    srand(seed);  // Seed pseudo-random number generator
+                           unsigned int seed, int *buff) {
 
     FF_FILE *file_p = ff_fopen(pathname, "r");
     if (!file_p) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return false;
     }
-    ff_rewind(file_p);
     IMSG_PRINTF("Reading...\n");
 
     uint64_t cum_time = 0;
@@ -122,7 +109,7 @@ static bool check_big_file(char *pathname, uint64_t size,
         size_t br = ff_fread(buff, 1, BUFFSZ, file_p);
         if (br < BUFFSZ) {
             EMSG_PRINTF("ff_fread(,%s,%d,):only read %u bytes\n", pathname, BUFFSZ, br);
-            EMSG_PRINTF("ff_fread: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+            EMSG_PRINTF("ff_fread: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
             ff_fclose(file_p);
             return false;
         }
@@ -130,9 +117,9 @@ static bool check_big_file(char *pathname, uint64_t size,
 
         /* Check the buffer is filled with the expected data. */
         size_t n;
-        for (n = 0; n < BUFFSZ / sizeof(DWORD); n++) {
-            unsigned int expected = rand();
-            unsigned int val = buff[n];
+        for (n = 0; n < BUFFSZ / sizeof(int); n++) {
+            int expected = rand_r(&seed);
+            int val = buff[n];
             if (val != expected) {
                 EMSG_PRINTF("Data mismatch at dword %llu: expected=0x%8x val=0x%8x\n",
                             (i * sizeof(buff)) + n, expected, val);
@@ -144,7 +131,7 @@ static bool check_big_file(char *pathname, uint64_t size,
     /* Close the file */
     int rc = ff_fclose(file_p);
     if (-1 == rc) {
-        EMSG_PRINTF("ff_fclose: %s\n", strerror(stdioGET_ERRNO()));
+        EMSG_PRINTF("ff_fclose: %s\n", FreeRTOS_strerror(stdioGET_ERRNO()));
         return false;
     }
     report(size, cum_time);
@@ -153,12 +140,13 @@ static bool check_big_file(char *pathname, uint64_t size,
 // Specify size in Mebibytes (1024x1024 bytes)
 void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
     //  /* Working buffer */
-    DWORD *buff = pvPortMalloc(BUFFSZ);
+    int *buff = pvPortMalloc(BUFFSZ);
     if (!buff) {
         EMSG_PRINTF("pvPortMalloc(%zu) failed\n", BUFFSZ);
+        return;
     }
-
     myASSERT(buff);
+    
     myASSERT(size_MiB);
     if (4095 < size_MiB) {
         EMSG_PRINTF("Warning: Maximum file size: 2^32 - 1 bytes on FAT volume\n");

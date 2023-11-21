@@ -16,6 +16,13 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.1.0
+* Symetrical Multi Processing (SMP) enabled: previously, the SMP FreeRTOS Kernel was in a separate branch, 
+which this project used. 
+Since it was merged into the main branch, 
+SMP has to be explicitly enabled by setting `configNUMBER_OF_CORES` to `2`, unlike before. 
+* Multi Task Big File Test: like Big File Test, but using multiple tasks to write multiple files
+### v2.0.0
 * 4-wire SDIO support
 * Rewritten Command Line Interface (CLI)
 
@@ -191,6 +198,24 @@ Results from a
  
   Done
   ``` 
+### Data Striping
+For high data rate applications, it is possible to obtain higher write and read speeds 
+by writing or reading to multiple SD cards simultaneously.
+
+For example, using the command 
+[mtbft 80 /sd0/bf](#appendix-b-operation-of-command_line-example) 
+to write a 80 MiB file to a single SDIO-attached SD card, I got a transfer rate of 6.46 MiB/s.
+
+Using the command 
+[mtbft 40 /sd0/bf /sd3/bf](#appendix-b-operation-of-command_line-example) 
+to write 40 MiB files on two SDIO-attached SD cards, I got a transfer rate of 12.4 MiB/s.
+
+(This test includes the time to fill or check the buffer 
+in the transfer rate calculation, 
+so the actual write or read performance is higher.)
+
+This gives a speedup of about 1.9 X for two cards vs a single card.
+
 ## Choosing the Interface Type(s)
 The main reason to use SDIO is for the much greater speed that the 4-bit wide interface gets you. 
 However, you pay for that in pins. 
@@ -265,8 +290,13 @@ Furthermore, the CMD signal must be on GPIO D0 GPIO number - 2, modulo 32. (This
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ### Pull Up Resistors and other electrical considerations
-* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector (or tristate). In the old MMC days, it was imperative to pull this up. The Pico internal gpio_pull_up is weak: around 56uA or 60kΩ. It's best to add an external pull up resistor of around 5-50 kΩ to 3.3v. However, modern SD cards use strong push pull tristateable outputs and don't seem to need this pull up. The internal gpio_pull_up can be disabled in the hardware configuration by setting the `no_miso_gpio_pull_up` attribute of the `spi_t` object.
+* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector (or tristate). In the old MMC days, it was imperative to pull this up.
+However, modern SD cards use strong push pull tristateable outputs and don't seem to need this pull up.
 On some SD cards, you can even configure the card's output drivers using the Driver Stage Register (DSR).[^4]).
+The Pico internal `gpio_pull_up` is weak: around 56uA or 60kΩ.
+If a pull up is needed, it's best to add an external pull up resistor of around 5-50 kΩ to 3.3v.
+The internal `gpio_pull_up` can be disabled in the hardware configuration by setting the `no_miso_gpio_pull_up` attribute of the `spi_t` object.
+
 * The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. This is what enables the tristate buffer for Data Out (DO), among other things. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized. It is imperative to pull it up for any devices on the bus that aren't initialized. For example, if you have two SD cards on one bus but the firmware is aware of only one card (see hw_config); you shouldn't let the CS float on the unused one. 
 * Driving the SD card directly with the GPIOs is not ideal. Take a look at the CM1624 (https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. 
 * It can be helpful to add a decoupling capacitor or three (e.g., 100 nF, 1 µF, and 10 µF) between 3.3 V and GND on the SD card. ChaN also [recommends](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug) putting a 22 µH inductor in series with the Vcc (or "Vdd") line to the SD card.
@@ -420,7 +450,9 @@ As of this writing, `SDIO_CLK_PIN_D0_OFFSET` is 30, which is -2 in mod32 arithme
 * `D1_gpio` RP2040 GPIO to use for Data Line [Bit 1]. Implicitly set to D0_gpio + 1.
 * `D2_gpio` RP2040 GPIO to use for Data Line [Bit 2]. Implicitly set to D0_gpio + 2.
 * `D3_gpio` RP2040 GPIO to use for Card Detect/Data Line [Bit 3]. Implicitly set to D0_gpio + 3.
-* `SDIO_PIO` Which PIO block to use. Defaults to `pio0`. Can be changed to avoid conflicts.
+* `SDIO_PIO` Which PIO block to use. Defaults to `pio0`. Can be changed to avoid conflicts. 
+If you try to use multiple SDIO-attached SD cards simultaneously on the same PIO block,
+contention might lead to timeouts.
 * `DMA_IRQ_num` Which IRQ to use for DMA. Defaults to DMA_IRQ_0. Set this to avoid conflicts with any exclusive DMA IRQ handlers that might be elsewhere in the system.
 * `use_exclusive_DMA_IRQ_handler` If true, the IRQ handler is added with the SDK's `irq_set_exclusive_handler`. The default is to add the handler with `irq_add_shared_handler`, so it's not exclusive. 
 * `baud_rate` The frequency of the SDIO clock in Hertz. This may be no higher than the system clock frequency divided by `CLKDIV` in `sd_driver\SDIO\rp2040_sdio.pio`, which is currently four. For example, if the system clock frequency is 125 MHz, `baud_rate` cannot exceed 31250000 (31.25 MHz). The default is 10 MHz.
@@ -552,7 +584,7 @@ is conventional in FreeRTOS-Plus-FAT:
 
   `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
   [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
-  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/  FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter   `pcName` is the Device Name; `device_name` in 
+  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter `pcName` is the Device Name; `device_name` in 
   [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
 
 A typical sequence would be:
@@ -695,7 +727,7 @@ format <device name>:
  Creates an FAT/exFAT volume on the device name.
         e.g.: format sd0
 
-mount <device name>:
+mount <device name> [device_name...]:
  Makes the specified device available at its mount point in the directory tree.
         e.g.: mount sd0
 
@@ -751,13 +783,18 @@ bench <device name>:
 big_file_test <pathname> <size in MiB> <seed>:
  Writes random data to file <pathname>.
  Specify <size in MiB> in units of mebibytes (2^20, or 1024*1024 bytes)
-        e.g.: big_file_test bf 1 1
+        e.g.: big_file_test /sd0/bf 1 1
         or: big_file_test /sd1/big3G-3 3072 3
+
+Alias for big_file_test
+
+mtbft <size in MiB> <pathname 0> [pathname 1...]
+Multi Task Big File Test
+ pathname: Absolute path to a file (must begin with '/' and end with file name)
 
 cvef:
  Create and Verify Example Files
 Expects card to be already formatted and mounted
-
 
 swcwdt:
  Stdio With CWD Test
@@ -769,10 +806,9 @@ loop_swcwdt:
 Expects card to be already formatted and mounted.
 Note: Stop with "die".
 
-mtswcwdt <path>:
+mtswcwdt:
  MultiTask Stdio With CWD Test
-Expects card to be already formatted.
-        e.g.: mtswcwdt /SysSDCrd0
+        e.g.: mtswcwdt
 
 start_logger:
  Start Data Log Demo
@@ -873,6 +909,11 @@ Obviously, you'd need to store a header or something to keep track of how much v
 
 ## Appendix E: Troubleshooting
 * **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.
+* Turn on `DBG_PRINTF`. (See #messages-from-the-sd-card-driver.) For example, in `CMakeLists.txt`, 
+  ```
+  add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
+  ```
+  You might see a clue in the messages.
 * Try lowering the SPI or SDIO baud rate (e.g., in `hw_config.c`). This will also make it easier to use things like logic analyzers.
   * For SPI, this is in the
   [spi_t](#an-instance-of-spi_t-describes-the-configuration-of-one-rp2040-spi-controller) instance.
