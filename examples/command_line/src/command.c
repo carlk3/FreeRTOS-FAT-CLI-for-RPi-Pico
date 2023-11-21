@@ -41,59 +41,27 @@ static void missing_argument_msg() {
 static void extra_argument_msg(const char *s) {
     printf("Unexpected argument: %s\n", s);
 }
-static bool extra_args() {
-    const char *extra = strtok_r(NULL, " ", &saveptr);
-    if (extra) {
-        extra_argument_msg(extra);
-        return true;
+static bool expect_argc(const size_t argc, const char * argv[], const size_t expected) {
+    if (argc < expected) {
+        missing_argument_msg();
+        return false;
     }
-    return false;
+    if (argc > expected) {
+        extra_argument_msg(argv[expected]);
+        return false;
+    }
+    return true;
 }
 
-static void run_setrtc() {
-    const char *dateStr = strtok_r(NULL, " ", &saveptr);
-    if (!dateStr) {
-        missing_argument_msg();
-        return;
-    }
-    int date = atoi(dateStr);
+static void run_setrtc(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 6)) return;
 
-    const char *monthStr = strtok_r(NULL, " ", &saveptr);
-    if (!monthStr) {
-        missing_argument_msg();
-        return;
-    }
-    int month = atoi(monthStr);
-
-    const char *yearStr = strtok_r(NULL, " ", &saveptr);
-    if (!yearStr) {
-        missing_argument_msg();
-        return;
-    }
-    int year = atoi(yearStr) + 2000;
-
-    const char *hourStr = strtok_r(NULL, " ", &saveptr);
-    if (!hourStr) {
-        missing_argument_msg();
-        return;
-    }
-    int hour = atoi(hourStr);
-
-    const char *minStr = strtok_r(NULL, " ", &saveptr);
-    if (!minStr) {
-        missing_argument_msg();
-        return;
-    };
-    int min = atoi(minStr);
-
-    const char *secStr = strtok_r(NULL, " ", &saveptr);
-    if (!secStr) {
-        missing_argument_msg();
-        return;
-    }
-    int sec = atoi(secStr);
-
-    if (extra_args()) return;
+    int date = atoi(argv[0]);
+    int month = atoi(argv[1]);
+    int year = atoi(argv[2]) + 2000;
+    int hour = atoi(argv[3]);
+    int min = atoi(argv[4]);
+    int sec = atoi(argv[5]);
 
     datetime_t t = {.year = year,
                     .month = month,
@@ -105,8 +73,8 @@ static void run_setrtc() {
     // rtc_set_datetime(&t);
     setrtc(&t);
 }
-static void run_date() {
-    if (extra_args()) return;
+static void run_date(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
 
     char buf[128] = {0};
     time_t epoch_secs = FreeRTOS_time(NULL);
@@ -119,19 +87,12 @@ static void run_date() {
                     // 001 to 366).
     printf("Day of year: %s\n", buf);
 }
-static void run_info() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1 && 1 == sd_get_num())
-        arg1 = sd_get_by_num(0)->device_name;
-    else if (!arg1) {
-        printf("Missing argument: Specify device name\n");
-        return;
-    }
-    if (extra_args()) return;
+static void run_info(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
 
-    sd_card_t *sd_card_p = sd_get_by_name(arg1);
+    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
     if (!sd_card_p) {
-        printf("Unknown device name: \"%s\"\n", arg1);
+        printf("Unknown device name: \"%s\"\n", argv[0]);
         return;
     }
     // Card IDendtification register. 128 buts wide.
@@ -144,7 +105,7 @@ static void run_info() {
     // TODO: ACMD13
 
     if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
-        printf("Drive \"%s\" is not mounted\n", arg1);
+        printf("Drive \"%s\" is not mounted\n", argv[0]);
         return;
     }
     printf("\n");
@@ -160,128 +121,92 @@ static void run_info() {
     printf("Cluster size (\"allocation unit\"): %llu sectors (%llu bytes)\n",
             spc, spc * sd_card_p->ff_disk.pxIOManager->xPartition.usBlkSize);
 }
-static void run_lliot() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
+static void run_lliot(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
 
-    sd_card_t *sd_card_p = sd_get_by_name(arg1);
+    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
     if (!sd_card_p) {
-        printf("Unknown device name: \"%s\"\n", arg1);
+        printf("Unknown device name: \"%s\"\n", argv[0]);
         return;
     }
-    low_level_io_tests(arg1);
+    low_level_io_tests(argv[0]);
 }
-static void run_format() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
+static void run_format(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
 
-    bool rc = format(arg1);
+    bool rc = format(argv[0]);
     if (!rc)
         EMSG_PRINTF("Format failed!\n");
 }
-static void run_mount() {
-    size_t argc = 0;
-    const char *args[5] = {0};
-    const char *argp;
-    do {
-        argp = strtok_r(NULL, " ", &saveptr);
-        if (argp) {
-            if (argc >= count_of(args)) {
-                extra_argument_msg(argp);
-                return;
-            }
-            args[argc++] = argp;
-        }
-    } while (argp);
+static void run_mount(const size_t argc, const char * argv[]) {
     if (argc < 1) {
         missing_argument_msg();
         return;
     }
     for (size_t i = 0; i < argc; ++i) {
-        bool rc = mount(args[i]);
+        bool rc = mount(argv[i]);
         if (!rc) EMSG_PRINTF("Mount failed!\n");
     }
 }
-static void run_unmount() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
+static void run_unmount(const size_t argc, const char * argv[]) {
+    if (argc < 1) {
         missing_argument_msg();
         return;
     }
-    if (extra_args()) return;
-
-    unmount(arg1);
-    sd_card_t *sd_card_p = sd_get_by_name(arg1);
-    assert(sd_card_p);
-    sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
+    for (size_t i = 0; i < argc; ++i) {
+        unmount(argv[i]);
+        sd_card_t *sd_card_p = sd_get_by_name(argv[i]);
+        configASSERT(sd_card_p);
+        sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
+    }
 }
-static void run_getfree() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    sd_card_t *sd_card_p = sd_get_by_name(arg1);
+static void run_getfree(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
+    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
     if (!sd_card_p) {
-        EMSG_PRINTF("Unknown device name %s\n", arg1);
+        EMSG_PRINTF("Unknown device name %s\n", argv[0]);
         return;
     }
     if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
-        printf("Drive \"%s\" is not mounted\n", arg1);
+        printf("Drive \"%s\" is not mounted\n", argv[0]);
         return;
     }
     uint64_t freeMB;
     unsigned freePct;
     getFree(&sd_card_p->ff_disk, &freeMB, &freePct);
-    printf("%s free space: %llu MB, %u %%\n", arg1, freeMB, freePct);
+    printf("%s free space: %llu MB, %u %%\n", argv[0], freeMB, freePct);
 }
-static void run_cd() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    int32_t lResult = ff_chdir(arg1);
+static void run_cd(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
+    int32_t lResult = ff_chdir(argv[0]);
     if (-1 == lResult)
-        EMSG_PRINTF("ff_chdir(\"%s\") failed: %s (%d)\n", arg1,
+        EMSG_PRINTF("ff_chdir(\"%s\") failed: %s (%d)\n", argv[0],
                     FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 }
-static void run_mkdir() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
+static void run_mkdir(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
     // int ff_mkdir( const char *pcDirectory );
-    int lResult = ff_mkdir(arg1);
+    int lResult = ff_mkdir(argv[0]);
     if (-1 == lResult)
-        EMSG_PRINTF("ff_mkdir(\"%s\") failed: %s (%d)\n", arg1,
+        EMSG_PRINTF("ff_mkdir(\"%s\") failed: %s (%d)\n", argv[0],
                     FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 }
-static void run_ls() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) arg1 = "";
-    if (extra_args()) return;
-
-    ls(arg1);
+static void run_ls(const size_t argc, const char * argv[]) {
+    if (argc > 1) {
+        extra_argument_msg(argv[1]);
+        return;
+    }
+    if (argc)
+        ls(argv[0]);
+    else
+        ls("");
 }
-static void run_pwd() {
-    if (extra_args()) return;
-
+static void run_pwd(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     char buf[512];
     char *ret = ff_getcwd(buf, sizeof buf);
     if (!ret) {
@@ -290,15 +215,10 @@ static void run_pwd() {
         printf("%s", ret);
     }
 }
-static void run_cat() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    FF_FILE *f = ff_fopen(arg1, "r");
+static void run_cat(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
+    FF_FILE *f = ff_fopen(argv[0], "r");
     if (!f) {
         EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
@@ -314,25 +234,15 @@ static void run_cat() {
         EMSG_PRINTF("ff_fclose: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
-static void run_cp() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    char *arg2 = strtok_r(NULL, " ", &saveptr);
-    if (!arg2) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    FF_FILE *sf = ff_fopen(arg1, "r");
+static void run_cp(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 2)) return;
+    
+    FF_FILE *sf = ff_fopen(argv[0], "r");
     if (!sf) {
         EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
     }
-    FF_FILE *df = ff_fopen(arg2, "w");
+    FF_FILE *df = ff_fopen(argv[1], "w");
     if (!df) {
         EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
@@ -350,118 +260,79 @@ static void run_cp() {
     ff_fclose(sf);
     ff_fclose(df);
 }
-static void run_mv() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    char *arg2 = strtok_r(NULL, " ", &saveptr);
-    if (!arg2) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    int ec = ff_rename(arg1, arg2, false);
+static void run_mv(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 2)) return;
+    
+    int ec = ff_rename(argv[0], argv[1], false);
     if (-1 == ec) {
         EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
-static void run_big_file_test() {    
-    const char *pcPathName = strtok_r(NULL, " ", &saveptr);
-    if (!pcPathName) {
-        missing_argument_msg();
-        return;
-    }
-    const char *pcSize = strtok_r(NULL, " ", &saveptr);
-    if (!pcSize) {
-        missing_argument_msg();
-        return;
-    }
-    size_t size = strtoul(pcSize, 0, 0);
-    const char *pcSeed = strtok_r(NULL, " ", &saveptr);
-    if (!pcSeed) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    uint32_t seed = atoi(pcSeed);
+static void run_big_file_test(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 3)) return;
+    
+    const char *pcPathName = argv[0];
+    size_t size = strtoul(argv[1], 0, 0);
+    uint32_t seed = atoi(argv[2]);
     big_file_test(pcPathName, size, seed);
 }
-static void run_mtbft() {
-    // breaking with Unix tradition of arg[0] being command name
-    size_t argc = 0;
-    const char *args[7] = {0};
-    const char *argp;
-    do {
-        argp = strtok_r(NULL, " ", &saveptr);
-        if (argp) {
-            if (argc >= count_of(args)) {
-                extra_argument_msg(argp);
-                return;
-            }
-            args[argc++] = argp;
-        }
-    } while (argp);
-    // "mtbft <size in MiB> <pathname 0> [pathname 1...]"
+static void run_mtbft(const size_t argc, const char * argv[]) {
     if (argc < 2) {
         missing_argument_msg();
         return;
     }
-    size_t size = strtoul(args[0], 0, 0);
+    size_t size = strtoul(argv[0], 0, 0);
     for (size_t i = 1; i < argc; ++i) {
-        if ('/' != args[i][0]) {
-            EMSG_PRINTF("<pathname> \"%s\" must be absolute\n", args[0]);
+        if ('/' != argv[i][0]) {
+            EMSG_PRINTF("<pathname> \"%s\" must be absolute\n", argv[0]);
             return;
         }
     }
-    mtbft(argc - 1,  size, &args[1]);
+    mtbft(argc - 1,  size, &argv[1]);
 }
-static void run_rm() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
+static void run_rm(const size_t argc, const char * argv[]) {
+    if (argc < 1) {
         missing_argument_msg();
         return;
+    } 
+    if (argc > 2) {
+        extra_argument_msg(argv[2]);
+        return;
     }
-    char *arg2 = strtok_r(NULL, " ", &saveptr);
-    if (extra_args()) return;
-
-    if (arg2) {
-        if (0 == strcmp("-r", arg1)) {
-            int rc = ff_deltree(arg2);
+    if (2 == argc) {
+        if (0 == strcmp("-r", argv[0])) {
+            int rc = ff_deltree(argv[1]);
             if (-1 == rc)
-                EMSG_PRINTF("ff_deltree(\"%s\") failed.\n", arg2);
-        } else if (0 == strcmp("-d", arg1)) {
-            int rc = ff_rmdir(arg2);
+                EMSG_PRINTF("ff_deltree(\"%s\") failed.\n", argv[1]);
+        } else if (0 == strcmp("-d", argv[0])) {
+            int rc = ff_rmdir(argv[1]);
             if (-1 == rc)
-                EMSG_PRINTF("ff_rmdir(\"%s\") failed: %s (%d)\n", arg1,
+                EMSG_PRINTF("ff_rmdir(\"%s\") failed: %s (%d)\n", argv[1],
                             FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         } else {
-            EMSG_PRINTF("Unknown option: %s\n", arg1);
+            EMSG_PRINTF("Unknown option: %s\n", argv[0]);
         }
     } else {
-        int rc = ff_remove(arg1);
+        int rc = ff_remove(argv[0]);
         if (-1 == rc)
-            EMSG_PRINTF("ff_remove(\"%s\") failed: %s (%d)\n", arg1,
+            EMSG_PRINTF("ff_remove(\"%s\") failed: %s (%d)\n", argv[0],
                         FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
-static void run_bench() {
-    if (extra_args()) return;
-
+static void run_bench(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     bench();
 }
-static void run_cvef() {
-    if (extra_args()) return;
-
+static void run_cvef(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     sd_card_t *sd_card_p = get_current_sd_card_p();
     if (!sd_card_p) return;
     vCreateAndVerifyExampleFiles(sd_card_p->mount_point);
 }
-static void run_swcwdt() {
-    if (extra_args()) return;
+static void run_swcwdt(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
 
     sd_card_t *sd_card_p = get_current_sd_card_p();
     if (!sd_card_p) return;
@@ -476,8 +347,8 @@ static void loop_swcwdt_task(void *arg) {
     }
     vTaskDelete(NULL);
 }
-static void run_loop_swcwdt() {
-    if (extra_args()) return;
+static void run_loop_swcwdt(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
 
     sd_card_t *sd_card_p = get_current_sd_card_p();
     if (!sd_card_p) return;
@@ -485,33 +356,33 @@ static void run_loop_swcwdt() {
     xTaskCreate(loop_swcwdt_task, "loop_swcwdt", 768,
                 sd_card_p, uxTaskPriorityGet(xTaskGetCurrentTaskHandle()) - 1, NULL);
 }
-void runMultiTaskStdioWithCWDTest() {
-    if (extra_args()) return;
-
+void runMultiTaskStdioWithCWDTest(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     sd_card_t *sd_card_p = get_current_sd_card_p();
     if (!sd_card_p) return;
 
     vCreateAndVerifyExampleFiles(sd_card_p->mount_point);
     vMultiTaskStdioWithCWDTest(sd_card_p->mount_point, 744);
 }
-static void run_start_logger() {
-    if (extra_args()) return;
-
+static void run_start_logger(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     data_log_demo();
 }
-static void run_die() {
-    if (extra_args()) return;
-
+static void run_die(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     die_now = true;
 }
-static void run_undie() {
-    if (extra_args()) return;
-
+static void run_undie(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     die_now = false;
 }
-static void run_task_stats() {
-    if (extra_args()) return;
-
+static void run_task_stats(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     printf(
         "Task          State  Priority  Stack        "
         "#\n************************************************\n");
@@ -524,9 +395,9 @@ static void run_task_stats() {
     configASSERT(0xA5 == buf[sizeof buf - 1]);
     printf("%s\n", buf);
 }
-static void run_heap_stats() {
-    if (extra_args()) return;
-
+static void run_heap_stats(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
 #if 1  // HEAP4
     printf(
         "Configured total heap size:\t%d\n"
@@ -539,9 +410,9 @@ static void run_heap_stats() {
 #endif
     // malloc_stats();
 }
-static void run_run_time_stats() {
-    if (extra_args()) return;
-
+static void run_run_time_stats(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     /* A buffer into which the execution times will be
      * written, in ASCII form.  This buffer is assumed to be large enough to
      * contain the generated report.  Approximately 40 bytes per task should
@@ -557,9 +428,9 @@ static void run_run_time_stats() {
 }
 
 /* Derived from pico-examples/clocks/hello_48MHz/hello_48MHz.c */
-static void run_measure_freqs(void) {
-    if (extra_args()) return;
-
+static void run_measure_freqs(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     uint f_pll_sys = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_SYS_CLKSRC_PRIMARY);
     uint f_pll_usb = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_PLL_USB_CLKSRC_PRIMARY);
     uint f_rosc = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_ROSC_CLKSRC);
@@ -580,21 +451,16 @@ static void run_measure_freqs(void) {
 
     // Can't measure clk_ref / xosc as it is the ref
 }
-static void run_set_sys_clock_48mhz() {
-    if (extra_args()) return;
-
+static void run_set_sys_clock_48mhz(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     set_sys_clock_48mhz();
     setup_default_uart();
 }
-static void run_set_sys_clock_khz() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    int khz = atoi(arg1);
+static void run_set_sys_clock_khz(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
+    int khz = atoi(argv[0]);
 
     bool configured = set_sys_clock_khz(khz, false);
     if (!configured) {
@@ -618,38 +484,28 @@ static void run_set_sys_clock_khz() {
     setup_default_uart();
 }
 
-static void clr() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
+static void clr(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
 
-    int gp = atoi(arg1);
+    int gp = atoi(argv[0]);
 
     gpio_init(gp);
     gpio_set_dir(gp, GPIO_OUT);
     gpio_put(gp, 0);
 }
-static void set() {
-    char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
-        missing_argument_msg();
-        return;
-    }
-    if (extra_args()) return;
-
-    int gp = atoi(arg1);
+static void set(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+    
+    int gp = atoi(argv[0]);
 
     gpio_init(gp);
     gpio_set_dir(gp, GPIO_OUT);
     gpio_put(gp, 1);
 }
 
-static void run_help();
+static void run_help(const size_t argc, const char * argv[]);
 
-typedef void (*p_fn_t)();
+typedef void (*p_fn_t)(const size_t argc, const char * argv[]);
 typedef struct {
     char const *const command;
     p_fn_t const function;
@@ -770,11 +626,43 @@ static cmd_def_t cmds[] = {
      "help:\n"
      " Shows this command help."}
 };
-static void run_help() {
-    if (extra_args()) return;
-
+static void run_help(const size_t argc, const char * argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+    
     for (size_t i = 0; i < count_of(cmds); ++i) {
         printf("%s\n\n", cmds[i].help);
+    }
+}
+
+static void process_cmd(char *cmd) {
+    char *cmdn = strtok_r(cmd, " ", &saveptr);
+    if (cmdn) {
+
+        /* Breaking with Unix tradition of arg[0] being command name,
+        arg[0] is first argument after command name */
+
+        size_t argc = 0;
+        const char *args[10] = {0}; // Arbitrary limit of 10 arguments
+        const char *argp;
+        do {
+            argp = strtok_r(NULL, " ", &saveptr);
+            if (argp) {
+                if (argc >= count_of(args)) {
+                    extra_argument_msg(argp);
+                    return;
+                }
+                args[argc++] = argp;
+            }
+        } while (argp);
+
+        size_t i;
+        for (i = 0; i < count_of(cmds); ++i) {
+            if (0 == strcmp(cmds[i].command, cmdn)) {
+                (*cmds[i].function)(argc, args);
+                break;
+            }
+        }
+        if (count_of(cmds) == i) printf("Command \"%s\" not found\n", cmdn);
     }
 }
 
@@ -797,18 +685,11 @@ void process_stdio(int cRxedChar) {
             stdio_flush();
             return;
         }
+
         /* Process the input string received prior to the newline. */
-        char *cmdn = strtok_r(cmd, " ", &saveptr);
-        if (cmdn) {
-            size_t i;
-            for (i = 0; i < count_of(cmds); ++i) {
-                if (0 == strcmp(cmds[i].command, cmdn)) {
-                    (*cmds[i].function)();
-                    break;
-                }
-            }
-            if (count_of(cmds) == i) printf("Command \"%s\" not found\n", cmdn);
-        }
+        process_cmd(cmd);
+
+        /* Reset everything for next cmd */
         ix = 0;
         memset(cmd, 0, sizeof cmd);
         printf("\n> ");
