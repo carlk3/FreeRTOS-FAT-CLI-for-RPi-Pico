@@ -25,13 +25,9 @@
 #include "my_debug.h"
 #include "util.h"
 
-// #define azdbg(Params...)DMA_CH
-// #define azlog(Params...)
-
 #define azdbg(arg1, ...) {\
     DBG_PRINTF("%s,%s:%d %s\n", __func__, __FILE__, __LINE__, arg1); \
 }
-#define azlog azdbg
 
 #define STATE sd_card_p->sdio_if_p->state
 #define SDIO_PIO sd_card_p->sdio_if_p->SDIO_PIO
@@ -421,8 +417,6 @@ static void sdio_verify_rx_checksums(sd_card_t *sd_card_p, uint32_t maxcount)
             STATE.checksum_errors++;
             if (STATE.checksum_errors == 1)
             {
-                // azlog("SDIO checksum error in reception: block ", blockidx,
-                //       " calculated ", checksum, " expected ", expected);
                 EMSG_PRINTF("%s,%d SDIO checksum error in reception: block %d calculated 0x%llx expected 0x%llx\n",
                     __func__, __LINE__, blockidx, checksum, expected);
                 dump_bytes(SDIO_WORDS_PER_BLOCK, (uint8_t *)STATE.data_buf + blockidx * SDIO_WORDS_PER_BLOCK);
@@ -606,17 +600,17 @@ sdio_status_t check_sdio_write_response(uint32_t card_response)
     }
     else if (wr_status == 5)
     {
-        azlog("SDIO card reports write CRC error, status ", card_response);
+        EMSG_PRINTF("SDIO card reports write CRC error, status %lu\n", card_response);
         return SDIO_ERR_WRITE_CRC;    
     }
     else if (wr_status == 6)
     {
-        azlog("SDIO card reports write failure, status ", card_response);
+        EMSG_PRINTF("SDIO card reports write failure, status %lu\n", card_response);
         return SDIO_ERR_WRITE_FAIL;    
     }
     else
     {
-        azlog("SDIO card reports unknown write status ", card_response);
+        EMSG_PRINTF("SDIO card reports unknown write status %lu\n", card_response);
         return SDIO_ERR_WRITE_FAIL;    
     }
 }
@@ -720,13 +714,19 @@ sdio_status_t rp2040_sdio_tx_poll(sd_card_t *sd_card_p, uint32_t *bytes_complete
         rp2040_sdio_stop(sd_card_p);
         return STATE.wr_status;
     }
-    else if (millis() - STATE.transfer_start_time >= 2000)  // CK3: doubled timeout
+    else if (millis() - STATE.transfer_start_time >= 5000)  // CK3: increased timeout
     {
-        azdbg("rp2040_sdio_tx_poll() timeout, "
-            "PIO PC: ", (int)pio_sm_get_pc(SDIO_PIO, SDIO_DATA_SM) - (int)STATE.pio_data_tx_offset,
-            " RXF: ", (int)pio_sm_get_rx_fifo_level(SDIO_PIO, SDIO_DATA_SM),
-            " TXF: ", (int)pio_sm_get_tx_fifo_level(SDIO_PIO, SDIO_DATA_SM),
-            " DMA CNT: ", dma_hw->ch[SDIO_DMA_CH].al2_transfer_count);
+        EMSG_PRINTF("rp2040_sdio_tx_poll() timeout\n");
+        DBG_PRINTF("rp2040_sdio_tx_poll() timeout, "
+            "PIO PC: %d"
+            " RXF: %d"
+            " TXF: %d"
+            " DMA CNT: %lu\n",
+            (int)pio_sm_get_pc(SDIO_PIO, SDIO_DATA_SM) - (int)STATE.pio_data_tx_offset,
+            (int)pio_sm_get_rx_fifo_level(SDIO_PIO, SDIO_DATA_SM),
+            (int)pio_sm_get_tx_fifo_level(SDIO_PIO, SDIO_DATA_SM),
+            dma_hw->ch[SDIO_DMA_CH].al2_transfer_count
+        );
         rp2040_sdio_stop(sd_card_p);
         return SDIO_ERR_DATA_TIMEOUT;
     }

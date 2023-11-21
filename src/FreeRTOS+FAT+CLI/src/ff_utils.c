@@ -16,10 +16,13 @@ specific language governing permissions and limitations under the License.
 #include "ff_sddisk.h"
 #include "ff_stdio.h"
 //
+#include "FreeRTOS_strerror.h"
 #include "SPI/sd_card_spi.h"
 #include "hw_config.h"
 //
 #include "ff_utils.h"
+#include "FreeRTOS_strerror.h"
+
 
 #define TRACE_PRINTF(fmt, args...)
 // #define TRACE_PRINTF printf
@@ -250,7 +253,7 @@ int mkdirhier(char *path) {
         if (ff_mkdir(dst) == -1) {
             if (stdioGET_ERRNO() != pdFREERTOS_ERRNO_EEXIST) {
                 int error = stdioGET_ERRNO();
-                DBG_PRINTF("%s: %s (%d)\n", __FUNCTION__, strerror(error),
+                DBG_PRINTF("%s: %s (%d)\n", __FUNCTION__, FreeRTOS_strerror(error),
                            error);
                 return -1;
             }
@@ -274,7 +277,7 @@ void ls(const char *path) {
 
     int iReturned = ff_findfirst(path ? path : "", &xFindStruct);
     if (FF_ERR_NONE != iReturned) {
-        FF_PRINTF("ff_findfirst error: %s (%d)\n", strerror(stdioGET_ERRNO()),
+        FF_PRINTF("ff_findfirst error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()),
                   -stdioGET_ERRNO());
         return;
     }

@@ -17,10 +17,6 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 //
 #include "FreeRTOS.h"
@@ -39,6 +35,10 @@ extern "C" {
 #include "util.h"
 //
 #include "SdCardInfo.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Disk Status Bits (DSTATUS) */
 enum {

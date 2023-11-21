@@ -10,7 +10,10 @@
 #include "pico/stdlib.h"
 //
 #include "FreeRTOS.h"
+
+#include <errno.h>
 //
+#include "FreeRTOS_strerror.h"
 #include "FreeRTOS_time.h"
 #include "ff_sddisk.h"
 #include "ff_stdio.h"
@@ -131,17 +134,26 @@ static void run_info() {
         printf("Unknown device name: \"%s\"\n", arg1);
         return;
     }
-    if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
-        printf("Drive \"%s\" is not mounted\n", arg1);
-        return;
-    }
     // Card IDendtification register. 128 buts wide.
     cidDmp(sd_card_p, printf);
     // Card-Specific Data register. 128 bits wide.
     csdDmp(sd_card_p, printf);
+    
+    
+    // SD Status
+    // TODO: ACMD13
 
+    if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
+        printf("Drive \"%s\" is not mounted\n", arg1);
+        return;
+    }
     printf("\n");
     FF_SDDiskShowPartition(&sd_card_p->ff_disk);
+
+    // Report Partition Starting Offset
+    uint64_t offs = sd_card_p->ff_disk.pxIOManager->xPartition.ulBeginLBA;
+    printf("Partition Starting Offset: %llu sectors (%llu bytes)\n",
+            offs, offs * sd_card_p->ff_disk.pxIOManager->xPartition.usBlkSize);
 
     // Report cluster size ("allocation unit")
     uint64_t spc = sd_card_p->ff_disk.pxIOManager->xPartition.ulSectorsPerCluster;
@@ -176,15 +188,27 @@ static void run_format() {
         EMSG_PRINTF("Format failed!\n");
 }
 static void run_mount() {
-    const char *arg1 = strtok_r(NULL, " ", &saveptr);
-    if (!arg1) {
+    size_t argc = 0;
+    const char *args[5] = {0};
+    const char *argp;
+    do {
+        argp = strtok_r(NULL, " ", &saveptr);
+        if (argp) {
+            if (argc >= count_of(args)) {
+                extra_argument_msg(argp);
+                return;
+            }
+            args[argc++] = argp;
+        }
+    } while (argp);
+    if (argc < 1) {
         missing_argument_msg();
         return;
     }
-    if (extra_args()) return;
-
-    bool rc = mount(arg1);
-    if (!rc) EMSG_PRINTF("Mount failed!\n");
+    for (size_t i = 0; i < argc; ++i) {
+        bool rc = mount(args[i]);
+        if (!rc) EMSG_PRINTF("Mount failed!\n");
+    }
 }
 static void run_unmount() {
     const char *arg1 = strtok_r(NULL, " ", &saveptr);
@@ -232,7 +256,7 @@ static void run_cd() {
     int32_t lResult = ff_chdir(arg1);
     if (-1 == lResult)
         EMSG_PRINTF("ff_chdir(\"%s\") failed: %s (%d)\n", arg1,
-                    strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+                    FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 }
 static void run_mkdir() {
     char *arg1 = strtok_r(NULL, " ", &saveptr);
@@ -246,7 +270,7 @@ static void run_mkdir() {
     int lResult = ff_mkdir(arg1);
     if (-1 == lResult)
         EMSG_PRINTF("ff_mkdir(\"%s\") failed: %s (%d)\n", arg1,
-                    strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+                    FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
 }
 static void run_ls() {
     const char *arg1 = strtok_r(NULL, " ", &saveptr);
@@ -276,7 +300,7 @@ static void run_cat() {
 
     FF_FILE *f = ff_fopen(arg1, "r");
     if (!f) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
     }
     char buf[256];
@@ -287,7 +311,7 @@ static void run_cat() {
     } while (len > 0);
     int rc = ff_fclose(f);
     if (-1 == rc) {
-        EMSG_PRINTF("ff_fclose: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fclose: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
 static void run_cp() {
@@ -305,12 +329,12 @@ static void run_cp() {
 
     FF_FILE *sf = ff_fopen(arg1, "r");
     if (!sf) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
     }
     FF_FILE *df = ff_fopen(arg2, "w");
     if (!df) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return;
     }
     uint8_t buf[1024];
@@ -319,7 +343,7 @@ static void run_cp() {
         br = ff_fread(buf, 1, sizeof buf, sf);
         size_t bw = ff_fwrite(buf, 1, br, df);
         if (br != bw) {
-            EMSG_PRINTF("ff_fwrite: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+            EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
             break;
         }
     } while (br > 0);
@@ -341,10 +365,10 @@ static void run_mv() {
 
     int ec = ff_rename(arg1, arg2, false);
     if (-1 == ec) {
-        EMSG_PRINTF("ff_fwrite: %s (%d)\n", strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
-static void run_big_file_test() {
+static void run_big_file_test() {    
     const char *pcPathName = strtok_r(NULL, " ", &saveptr);
     if (!pcPathName) {
         missing_argument_msg();
@@ -366,6 +390,35 @@ static void run_big_file_test() {
     uint32_t seed = atoi(pcSeed);
     big_file_test(pcPathName, size, seed);
 }
+static void run_mtbft() {
+    // breaking with Unix tradition of arg[0] being command name
+    size_t argc = 0;
+    const char *args[7] = {0};
+    const char *argp;
+    do {
+        argp = strtok_r(NULL, " ", &saveptr);
+        if (argp) {
+            if (argc >= count_of(args)) {
+                extra_argument_msg(argp);
+                return;
+            }
+            args[argc++] = argp;
+        }
+    } while (argp);
+    // "mtbft <size in MiB> <pathname 0> [pathname 1...]"
+    if (argc < 2) {
+        missing_argument_msg();
+        return;
+    }
+    size_t size = strtoul(args[0], 0, 0);
+    for (size_t i = 1; i < argc; ++i) {
+        if ('/' != args[i][0]) {
+            EMSG_PRINTF("<pathname> \"%s\" must be absolute\n", args[0]);
+            return;
+        }
+    }
+    mtbft(argc - 1,  size, &args[1]);
+}
 static void run_rm() {
     char *arg1 = strtok_r(NULL, " ", &saveptr);
     if (!arg1) {
@@ -384,7 +437,7 @@ static void run_rm() {
             int rc = ff_rmdir(arg2);
             if (-1 == rc)
                 EMSG_PRINTF("ff_rmdir(\"%s\") failed: %s (%d)\n", arg1,
-                            strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+                            FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         } else {
             EMSG_PRINTF("Unknown option: %s\n", arg1);
         }
@@ -392,7 +445,7 @@ static void run_rm() {
         int rc = ff_remove(arg1);
         if (-1 == rc)
             EMSG_PRINTF("ff_remove(\"%s\") failed: %s (%d)\n", arg1,
-                        strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+                        FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
 static void run_bench() {
@@ -616,7 +669,7 @@ static cmd_def_t cmds[] = {
      " Creates an FAT/exFAT volume on the device name.\n"
      "\te.g.: format sd0"},
     {"mount", run_mount,
-     "mount <device name>:\n"
+     "mount <device name> [device_name...]:\n"
      " Makes the specified device available at its mount point in the directory tree.\n"
      "\te.g.: mount sd0"},
     {"unmount", run_unmount,
@@ -667,11 +720,16 @@ static cmd_def_t cmds[] = {
      "big_file_test <pathname> <size in MiB> <seed>:\n"
      " Writes random data to file <pathname>.\n"
      " Specify <size in MiB> in units of mebibytes (2^20, or 1024*1024 bytes)\n"
-     "\te.g.: big_file_test bf 1 1\n"
+     "\te.g.: big_file_test /sd0/bf 1 1\n"
      "\tor: big_file_test /sd1/big3G-3 3072 3"},
+    {"bft", run_big_file_test, "Alias for big_file_test"},
+    {"mtbft", run_mtbft, 
+     "mtbft <size in MiB> <pathname 0> [pathname 1...]\n"
+     "Multi Task Big File Test\n"
+     " pathname: Absolute path to a file (must begin with '/' and end with file name)"},
     {"cvef", run_cvef,
      "cvef:\n Create and Verify Example Files\n"
-     "Expects card to be already formatted and mounted\n"},
+     "Expects card to be already formatted and mounted"},
     {"swcwdt", run_swcwdt,
      "swcwdt:\n Stdio With CWD Test\n"
      "Expects card to be already formatted and mounted.\n"
@@ -682,9 +740,8 @@ static cmd_def_t cmds[] = {
      "Expects card to be already formatted and mounted.\n"
      "Note: Stop with \"die\"."},
     {"mtswcwdt", runMultiTaskStdioWithCWDTest,
-     "mtswcwdt <path>:\n MultiTask Stdio With CWD Test\n"
-     "Expects card to be already formatted.\n"
-     "\te.g.: mtswcwdt /SysSDCrd0"},
+     "mtswcwdt:\n MultiTask Stdio With CWD Test\n"
+     "\te.g.: mtswcwdt"},
     {"start_logger", run_start_logger,
      "start_logger:\n"
      " Start Data Log Demo"},

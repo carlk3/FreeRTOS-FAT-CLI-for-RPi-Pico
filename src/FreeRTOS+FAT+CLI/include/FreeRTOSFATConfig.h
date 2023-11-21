@@ -83,7 +83,7 @@ specific language governing permissions and limitations under the License.
 #ifndef _FF_CONFIG_H_
 #define _FF_CONFIG_H_
 
-#include <time.h>    
+#include <time.h>   
     
 /* Must be set to either pdFREERTOS_LITTLE_ENDIAN or pdFREERTOS_BIG_ENDIAN,
 depending on the endian of the architecture on which FreeRTOS is running. */
@@ -348,5 +348,6 @@ implementation, so I have to set it to 1 here, so it is not defined. */
 conform with the coding standard, so use this function with care! */
 #define ffconfigUSE_DELTREE					1
 
+// #define ffconfigDEBUG                       1
 #endif /* _FF_CONFIG_H_ */
 
