@@ -62,8 +62,14 @@ Surprisingly (to me), I have been able to push the SPI baud rate as far as 20,83
 
 ## Dependencies:
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
-* [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
+You will need to set FREERTOS_KERNEL_PATH in "Cmake: Configure Environment setting" 
+or via `-DFREERTOS_KERNEL_PATH=/path/to/FreeRTOS-Kernel` on the `CMake` command line
+to point to the installation. 
+See [FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/](https://github.com/FreeRTOS/FreeRTOS-Kernel/tree/main/portable/ThirdParty/GCC/RP2040#using-this-port)
 
+* [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
+This will be picked up automatically as a submodule when you git clone this library if you specify the option 
+`--recurse-submodules`.
 
 ![image](https://www.raspberrypi.org/documentation/microcontrollers/images/Pico-R3-SDK11-Pinout.svg "Pinout")
 

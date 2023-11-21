@@ -16,6 +16,8 @@ specific language governing permissions and limitations under the License.
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+//
+#include "pico/stdlib.h"
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 //#include "FreeRTOSFATConfig.h" // for DBG_PRINTF
