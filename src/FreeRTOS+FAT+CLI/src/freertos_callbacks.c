@@ -32,7 +32,6 @@ void vApplicationMallocFailedHook(void) {
 /* configSUPPORT_STATIC_ALLOCATION is set to 1, so the application must provide
 an implementation of vApplicationGetIdleTaskMemory() to provide the memory that
 is used by the Idle task. */
-#if (configNUMBER_OF_CORES == 1)
 void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
                                    StackType_t **ppxIdleTaskStackBuffer,
                                    uint32_t *pulIdleTaskStackSize) {
@@ -55,8 +54,7 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
     configMINIMAL_STACK_SIZE is specified in words, not bytes. */
     *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
-#else
-void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
+void vApplicationGetPassiveIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
                                             StackType_t ** ppxIdleTaskStackBuffer,
                                             uint32_t * pulIdleTaskStackSize,
                                             BaseType_t xCoreID ) {
@@ -81,7 +79,6 @@ void vApplicationGetIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
     configMINIMAL_STACK_SIZE is specified in words, not bytes. */
     *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
-#endif 
 
 /* configSUPPORT_STATIC_ALLOCATION and configUSE_TIMERS are both set to 1, so
 the application must provide an implementation of
