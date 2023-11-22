@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico 
-# Release 2.1.0
+# Release 2.2.0
 
 ## SD Cards on the Pico
 
@@ -16,11 +16,21 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.2.0
+* `FreeRTOS-Kernel` removed as a submodule of this library. 
+It should be up to the application to manage the FreeRTOS library.
+There is some increased risk of incompatibilities with FreeRTOS versions with this change.
+See [Dependencies](#dependencies).
+* Similarly, the `FreeRTOSFATConfig.h` and `FreeRTOSFATConfig.h` configuration files 
+have been removed from this library. 
+These are for application specific customization and should be provided by the application, 
+not the library.
+However, examples are provided in the example applications in the `examples` directory.
+See [Other Application-Specific Customization](#other-application-specific-customization).
 ### v2.1.0
-* Symetrical Multi Processing (SMP) enabled: previously, the SMP FreeRTOS Kernel was in a separate branch, 
-which this project used. 
-Since it was merged into the main branch, 
-SMP has to be explicitly enabled by setting `configNUMBER_OF_CORES` to `2`, unlike before. 
+* Symetrical Multi Processing (SMP) enabled. 
+`configNUM_CORES` got renamed to `configNUMBER_OF_CORES` in FreeRTOS,
+so SMP was not working in v2.0.0.
 * Multi Task Big File Test: like Big File Test, but using multiple tasks to write multiple files
 ### v2.0.0
 * 4-wire SDIO support
@@ -315,12 +325,17 @@ or polling.
 -->
 
 ## Firmware
-Dependencies:
-These will be picked up automatically as submodules when you git clone this library.
+### Dependencies
 * [FreeRTOS-Kernel](https://github.com/FreeRTOS/FreeRTOS-Kernel)
+You will need to set FREERTOS_KERNEL_PATH in "Cmake: Configure Environment setting"
+or via `-DFREERTOS_KERNEL_PATH=/path/to/FreeRTOS-Kernel` on the `CMake` command line
+to point to the installation. 
+See [FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040/](https://github.com/FreeRTOS/FreeRTOS-Kernel/tree/main/portable/ThirdParty/GCC/RP2040#using-this-port).
 * [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT)
+This will be picked up automatically as a submodule when you git clone this library if you specify the option 
+`--recurse-submodules`.
 
-Procedure:
+### Procedure
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
   ```
@@ -578,9 +593,17 @@ In either case, the application simply provides an implementation of the functio
 for an example of dynamic configuration.
 * One advantage of static configuration is that the fantastic GNU Linker (ld) strips out anything that you don't use.
 
+## Other Application-Specific Customization
+Two other files contain definitions that should be adjusted for your particular hardware and application requirements:
+* `FreeRTOSConfig.h` FreeRTOS is customised using a configuration file called `FreeRTOSConfig.h`.
+Every FreeRTOS application must have a `FreeRTOSConfig.h` header file in its pre-processor include path. See [Customisation](https://www.freertos.org/a00110.html).
+* `FreeRTOSFATConfig.h` Applications that use FreeRTOS-Plus-FAT must provide a `FreeRTOSFATConfig.h` header file. 
+See [FreeRTOS-Plus-FAT Configuration](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Embedded_File_System_Configuration.html).
+
+For examples of these files, see `examples/commmand_line/include`.
+
 ## Using the Application Programming Interface
-In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but 
-is conventional in FreeRTOS-Plus-FAT:
+In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but is conventional in FreeRTOS-Plus-FAT:
 
   `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
   [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
@@ -626,8 +649,7 @@ If `USE_PRINTF` is defined and not zero, the weak implementations will write to 
 #### Messages from FreeRTOS-Plus-FAT
 FreeRTOS-Plus-FAT uses a macro called `FF_PRINTF`, which is defined in the 
 [FreeRTOS-Plus-FAT Configuration file](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Embedded_File_System_Configuration.html).
-See [FreeRTOSFATConfig.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/FreeRTOSFATConfig.h).
-
+See [Other Application-Specific Customization](#other-application-specific-customization).
 ## Next Steps
 * There is a simple example of using the API in the 
 [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio)
