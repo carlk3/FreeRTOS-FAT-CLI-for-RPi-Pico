@@ -24,6 +24,19 @@ extern "C" {
 #define BLOCK_SIZE_HC 512 /*!< Block size supported for SD card is 512 bytes */
 static const uint32_t _block_size = BLOCK_SIZE_HC;
 
+typedef
+enum sd_status_t {
+    SD_OK = 0,
+    SD_BUSY = 1,
+    SD_ERR_RESPONSE_TIMEOUT = 2, // Timed out waiting for response from card
+    SD_ERR_RESPONSE_CRC = 3,     // Response CRC is wrong
+    SD_ERR_RESPONSE_CODE = 4,    // Response command code does not match what was sent
+    SD_ERR_DATA_TIMEOUT = 5,     // Timed out waiting for data block
+    SD_ERR_DATA_CRC = 6,         // CRC for data packet is wrong
+    SD_ERR_WRITE_CRC = 7,        // Card reports bad CRC for write
+    SD_ERR_WRITE_FAIL = 8,       // Card reports write failure
+} sd_status_t;
+
 #define SD_BLOCK_DEVICE_ERROR_NONE 0
 #define SD_BLOCK_DEVICE_ERROR_WOULD_BLOCK -5001 /*!< operation would block */
 #define SD_BLOCK_DEVICE_ERROR_UNSUPPORTED -5002 /*!< unsupported operation */

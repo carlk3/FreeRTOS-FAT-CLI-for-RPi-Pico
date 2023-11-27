@@ -193,10 +193,6 @@ static bool crc_on = false;
 #define SPI_READ_ERROR_ECC_C (0x1 << 2) /*!< Card ECC failed */
 #define SPI_READ_ERROR_OFR (0x1 << 3)   /*!< Out of Range */
 
-// SPI Slave Select
-#define SSEL_ACTIVE (0)
-#define SSEL_INACTIVE (1)
-
 /* R1 Response Format */
 #define R1_NO_RESPONSE (0xFF)
 #define R1_RESPONSE_RECV (0x80)
@@ -584,13 +580,13 @@ static uint64_t in_sd_spi_sectors(sd_card_t *sd_card_p) {
         return 0;
     }
     // csd_structure : csd[127:126]
-    int csd_structure = ext_bits(sd_card_p->csd.csd, 127, 126);
+    int csd_structure = ext_bits16(sd_card_p->csd.csd, 127, 126);
     switch (csd_structure) {
         case 0:
-            c_size = ext_bits(sd_card_p->csd.csd, 73, 62);       // c_size        : csd[73:62]
-            c_size_mult = ext_bits(sd_card_p->csd.csd, 49, 47);  // c_size_mult   : csd[49:47]
+            c_size = ext_bits16(sd_card_p->csd.csd, 73, 62);       // c_size        : csd[73:62]
+            c_size_mult = ext_bits16(sd_card_p->csd.csd, 49, 47);  // c_size_mult   : csd[49:47]
             read_bl_len =
-                ext_bits(sd_card_p->csd.csd, 83, 80);     // read_bl_len   : csd[83:80] - the
+                ext_bits16(sd_card_p->csd.csd, 83, 80);     // read_bl_len   : csd[83:80] - the
                                            // *maximum* read block length
             block_len = 1 << read_bl_len;  // BLOCK_LEN = 2^READ_BL_LEN
             mult = 1 << (c_size_mult +
@@ -603,7 +599,7 @@ static uint64_t in_sd_spi_sectors(sd_card_t *sd_card_p) {
 
         case 1:
             hc_c_size =
-                ext_bits(sd_card_p->csd.csd, 69, 48);       // device size : C_SIZE : [69:48]
+                ext_bits16(sd_card_p->csd.csd, 69, 48);       // device size : C_SIZE : [69:48]
             blocks = (hc_c_size + 1) << 10;  // block count = C_SIZE+1) * 1K
                                              // byte (512B is block size)
             break;

@@ -228,8 +228,9 @@ void my_assert_func(const char *file, int line, const char *func,
     fflush(stdout);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
-    __BKPT(3);       // Stop in GUI as if at a breakpoint (if debugging,
-                     // otherwise loop forever)
+    for (;;)
+        __BKPT(3);  // Stop in GUI as if at a breakpoint (if debugging,
+                    // otherwise loop forever)
 }
 
 void assert_always_func(const char *file, int line, const char *func,

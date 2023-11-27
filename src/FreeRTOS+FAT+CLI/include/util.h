@@ -63,18 +63,22 @@ __attribute__((__noreturn__)) static inline void system_reset() {
 
 char const* uint_binary_str(unsigned int number);
 
-static inline uint32_t ext_bits(unsigned char const *data, int msb, int lsb) {
+static inline uint32_t ext_bits(size_t src_bytes, unsigned char const *data, int msb, int lsb) {
     uint32_t bits = 0;
     uint32_t size = 1 + msb - lsb;
     for (uint32_t i = 0; i < size; i++) {
         uint32_t position = lsb + i;
-        uint32_t byte = 15 - (position >> 3);
+        uint32_t byte = (src_bytes - 1) - (position >> 3);
         uint32_t bit = position & 0x7;
         uint32_t value = (data[byte] >> bit) & 1;
         bits |= value << i;
     }
     return bits;
 }
+static inline uint32_t ext_bits16(unsigned char const *data, int msb, int lsb) {
+    return ext_bits(16, data, msb, lsb);
+}
+
 
 #ifdef __cplusplus
 }

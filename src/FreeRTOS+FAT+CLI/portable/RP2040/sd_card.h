@@ -30,7 +30,7 @@ specific language governing permissions and limitations under the License.
 #include "ff_headers.h"
 //
 #include "SPI/spi.h"
-#include "SPI/sd_card_constants.h"
+#include "sd_card_constants.h"
 #include "SDIO/rp2040_sdio.h"
 #include "util.h"
 //
@@ -101,7 +101,7 @@ typedef struct sd_card_t sd_card_t;
 struct sd_card_t {
     const char *device_name;
     const char *mount_point; // Must be a directory off the file system's root directory and must be an absolute path that starts with a forward slash (/)
-    sd_if_t type;
+    sd_if_t type; // Interface type
     union {
         sd_spi_if_t *spi_if_p;
         sd_sdio_if_t *sdio_if_p;
@@ -145,6 +145,7 @@ bool sd_init_driver();
 bool sd_card_detect(sd_card_t *sd_card_p);
 void cidDmp(sd_card_t *sd_card_p, printer_t printer);
 void csdDmp(sd_card_t *sd_card_p, printer_t printer);
+bool sd_allocation_unit(sd_card_t *sd_card_p, size_t *au_size_bytes_p);
 sd_card_t *sd_get_by_name(const char *const name);
 sd_card_t *sd_get_by_mount_point(const char *const name);
 
