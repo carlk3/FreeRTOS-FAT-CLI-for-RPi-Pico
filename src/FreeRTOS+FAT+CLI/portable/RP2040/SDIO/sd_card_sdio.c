@@ -100,6 +100,9 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     } while (!(STATE.ocr & (1 << 31)));
 
     // Get CID
+    // CMD2 is valid only in "ready" state;
+    // Transitions to "ident" state
+    // Note: CMD10 is valid only in "stby" state
     if (!checkReturnOk(rp2040_sdio_command_R2(sd_card_p, CMD2, 0, (uint8_t *)&sd_card_p->cid)))
     {
         azdbg("SDIO failed to read CID");
@@ -107,6 +110,8 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Get relative card address
+    // Valid in "ident" or "stby" state; transitions to "stby"
+    // Transitions from "card-identification-mode" to "data-transfer-mode"
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD3, 0, &STATE.rca)))
     {
         azdbg("SDIO failed to get RCA");
@@ -114,6 +119,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Get CSD
+    // Valid in "stby" state; stays in "stby" state
     if (!checkReturnOk(rp2040_sdio_command_R2(sd_card_p, CMD9, STATE.rca, sd_card_p->csd.csd)))
     {
         azdbg("SDIO failed to read CSD");
@@ -123,6 +129,8 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     sd_card_p->sectors = CSD_capacity(&sd_card_p->csd);
 
     // Select card
+    // Valid in "stby" state; 
+    // If card is addressed, transitions to "tran" state
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD7, STATE.rca, &reply)))
     {
         azdbg("SDIO failed to select card");
@@ -130,6 +138,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Set 4-bit bus mode
+    // Valid in "tran" state; stays in "tran" state
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD55, STATE.rca, &reply)) ||
         !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, ACMD6, 2, &reply)))
     {

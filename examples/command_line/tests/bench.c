@@ -6,8 +6,7 @@
 // #include <string.h>
 
 #include "FreeRTOS_strerror.h"
-#include "SDIO/SdioCard.h"
-#include "SdCardInfo.h"
+#include "sd_card.h"
 #include "ff_utils.h"
 #include "hw_config.h"
 //

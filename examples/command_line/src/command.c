@@ -109,8 +109,8 @@ static void run_info(const size_t argc, const char *argv[]) {
     size_t au_size_bytes;
     bool ok = sd_allocation_unit(sd_card_p, &au_size_bytes);
     if (ok)
-        printf("\nSD card Allocation Unit (AU_SIZE) or \"segment\": %zu\n", 
-            au_size_bytes);
+        printf("\nSD card Allocation Unit (AU_SIZE) or \"segment\": %zu bytes (%lu sectors)\n", 
+            au_size_bytes, au_size_bytes / _block_size);
     
     if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
         printf("Drive \"%s\" is not mounted\n", argv[0]);
@@ -121,7 +121,7 @@ static void run_info(const size_t argc, const char *argv[]) {
 
     // Report Partition Starting Offset
     uint64_t offs = sd_card_p->ff_disk.pxIOManager->xPartition.ulBeginLBA;
-    printf("Partition Starting Offset: %llu sectors (%llu bytes)\n",
+    printf("\nPartition Starting Offset: %llu sectors (%llu bytes)\n",
             offs, offs * sd_card_p->ff_disk.pxIOManager->xPartition.usBlkSize);
 
     // Report cluster size ("allocation unit")
