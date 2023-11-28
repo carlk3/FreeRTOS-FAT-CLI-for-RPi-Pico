@@ -35,29 +35,20 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     case a single partition is to be created that fills all available space – so
     by clearing the xPartition structure to zero. */
     memset(&xPartition, 0x00, sizeof(xPartition));
-    xPartition.ulSectorCount = pxDisk->ulNumberOfSectors;
 
-    switch (xPartition.ulSectorCount) {
-        // For alignment:
-        // See https://www.partitionwizard.com/help/align-partition.html
-        case 15519744:  // 8GB (7.4 GiB) SD card
-            xPartition.ulHiddenSectors = 2048;
-            break;
-        case 31205376:  // 16GB (14.9 GiB) SD card
-            xPartition.ulHiddenSectors = 67584;
-            break;
-        case 62325760:  // 32GB (29.72 GiB) SD card
-            xPartition.ulHiddenSectors = 8192;
-            break;
-        case 124702720:  // 64GB (59.46 GiB) SD card
-            xPartition.ulHiddenSectors = 32768;
-            break;
-        case 249733120:  // 128GB (119.08 GiB) SD card
-            xPartition.ulHiddenSectors = 2048;
-            break;
-    }
-    //	xPartition.xPrimaryCount = PRIMARY_PARTITIONS;
-    //	xPartition.eSizeType = eSizeIsQuota;
+    /* A single partition that fills all available space on the media 
+    can be created by simply leaving the structure's 
+    xSizes and xPrimaryCount members at zero.*/    
+
+    xPartition.ulSectorCount = pxDisk->ulNumberOfSectors;
+    xPartition.xPrimaryCount = 1; // Instead of using extended partitions
+
+    /* Attempt to align partition to SD card segment */
+    size_t au_size_bytes;
+    bool ok = sd_allocation_unit(pxDisk->pvTag, &au_size_bytes);
+    if (!ok || !au_size_bytes)
+        au_size_bytes = 4194304; // Default to 4 MiB
+    xPartition.ulHiddenSectors = au_size_bytes / _block_size;
 
     /* Perform the partitioning. */
     xError = FF_Partition(pxDisk, &xPartition);
@@ -69,8 +60,7 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     if (FF_isERR(xError) == pdFALSE) {
         /* The disk was partitioned successfully.  Format the first partition.
          */
-        xError = FF_Format(pxDisk, 0, pdFALSE, pdFALSE);
-
+        xError = FF_FormatDisk(pxDisk, 0, pdFALSE, pdFALSE, "FreeRTOSFAT" );
         /* Print out the result of the format operation. */
         FF_PRINTF("FF_Format: %s\n", FF_GetErrMessage(xError));
     }

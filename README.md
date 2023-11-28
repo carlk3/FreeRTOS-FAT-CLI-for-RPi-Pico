@@ -1,5 +1,5 @@
-# FreeRTOS-FAT-CLI-for-RPi-Pico 
-# Release 2.2.0
+# FreeRTOS-FAT-CLI-for-RPi-Pico
+# Release 2.3.0
 
 ## SD Cards on the Pico
 
@@ -16,6 +16,10 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.3.0
+* `command_line` example enhancements:
+  * `info` enhanced to report SD card Allocation Unit (AU_SIZE) or "segment" (available only on SDIO-attached cards)
+  * `format` now creates a single primary partition and attempts to align this on an SD card segment.
 ### v2.2.0
 * `FreeRTOS-Kernel` removed as a submodule of this library. 
 It should be up to the application to manage the FreeRTOS library.

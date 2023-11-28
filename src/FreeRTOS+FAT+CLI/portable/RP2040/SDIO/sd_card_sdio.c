@@ -100,6 +100,9 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     } while (!(STATE.ocr & (1 << 31)));
 
     // Get CID
+    // CMD2 is valid only in "ready" state;
+    // Transitions to "ident" state
+    // Note: CMD10 is valid only in "stby" state
     if (!checkReturnOk(rp2040_sdio_command_R2(sd_card_p, CMD2, 0, (uint8_t *)&sd_card_p->cid)))
     {
         azdbg("SDIO failed to read CID");
@@ -107,6 +110,8 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Get relative card address
+    // Valid in "ident" or "stby" state; transitions to "stby"
+    // Transitions from "card-identification-mode" to "data-transfer-mode"
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD3, 0, &STATE.rca)))
     {
         azdbg("SDIO failed to get RCA");
@@ -114,6 +119,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Get CSD
+    // Valid in "stby" state; stays in "stby" state
     if (!checkReturnOk(rp2040_sdio_command_R2(sd_card_p, CMD9, STATE.rca, sd_card_p->csd.csd)))
     {
         azdbg("SDIO failed to read CSD");
@@ -123,6 +129,8 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     sd_card_p->sectors = CSD_capacity(&sd_card_p->csd);
 
     // Select card
+    // Valid in "stby" state; 
+    // If card is addressed, transitions to "tran" state
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD7, STATE.rca, &reply)))
     {
         azdbg("SDIO failed to select card");
@@ -130,6 +138,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
 
     // Set 4-bit bus mode
+    // Valid in "tran" state; stays in "tran" state
     if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD55, STATE.rca, &reply)) ||
         !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, ACMD6, 2, &reply)))
     {
@@ -143,7 +152,7 @@ bool sd_sdio_begin(sd_card_t *sd_card_p)
     }
     // Increase to high clock rate
     if (!sd_card_p->sdio_if_p->baud_rate)
-        sd_card_p->sdio_if_p->baud_rate = 10*1000*1000; // 10 MHz default
+        sd_card_p->sdio_if_p->baud_rate = 10 * 1000 * 1000;  // 10 MHz default
     if (!rp2040_sdio_init(sd_card_p, calculate_clk_div(sd_card_p->sdio_if_p->baud_rate)))
         return false; 
 
@@ -318,15 +327,14 @@ bool sd_sdio_readSector(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst)
     }
     uint32_t reply;
     if (/* !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, 16, 512, &reply)) || // SET_BLOCKLEN */
-        !checkReturnOk(rp2040_sdio_rx_start(sd_card_p, dst, 1)) || // Prepare for reception
+        !checkReturnOk(rp2040_sdio_rx_start(sd_card_p, dst, 1, SDIO_BLOCK_SIZE)) || // Prepare for reception
         !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD17, sector, &reply))) // READ_SINGLE_BLOCK
     {
         return false;
     }
 
     do {
-        uint32_t bytes_done;
-        STATE.error = rp2040_sdio_rx_poll(sd_card_p, &bytes_done);
+        STATE.error = rp2040_sdio_rx_poll(sd_card_p, SDIO_WORDS_PER_BLOCK);
     } while (STATE.error == SDIO_BUSY);
 
     if (STATE.error != SDIO_OK)
@@ -359,15 +367,14 @@ bool sd_sdio_readSectors(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst, si
 
     uint32_t reply;
     if (/* !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, 16, 512, &reply)) || // SET_BLOCKLEN */
-        !checkReturnOk(rp2040_sdio_rx_start(sd_card_p, dst, n)) || // Prepare for reception
+        !checkReturnOk(rp2040_sdio_rx_start(sd_card_p, dst, n, SDIO_BLOCK_SIZE)) || // Prepare for reception
         !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD18, sector, &reply))) // READ_MULTIPLE_BLOCK
     {
         return false;
     }
 
     do {
-        uint32_t bytes_done;
-        STATE.error = rp2040_sdio_rx_poll(sd_card_p, &bytes_done);
+        STATE.error = rp2040_sdio_rx_poll(sd_card_p, SDIO_WORDS_PER_BLOCK);
     } while (STATE.error == SDIO_BUSY);
 
     if (STATE.error != SDIO_OK)
@@ -380,6 +387,29 @@ bool sd_sdio_readSectors(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst, si
     {
         return sd_sdio_stopTransmission(sd_card_p, true);
     }
+}
+
+// Get 512 bit (64 byte) SD Status
+bool rp2040_sdio_get_sd_status(sd_card_t *sd_card_p, uint8_t response[64]) {
+    uint32_t reply;
+    if (!checkReturnOk(rp2040_sdio_rx_start(sd_card_p, response, 1, 64)) || // Prepare for reception
+        !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD55, STATE.rca, &reply)) ||  // APP_CMD
+        !checkReturnOk(rp2040_sdio_command_R1(sd_card_p, ACMD13, 0, &reply))) // SD Status
+    {
+        EMSG_PRINTF("ACMD13 failed\n");
+        return false;
+    }
+    // Read 512 bit block on DAT bus (not CMD)
+    do {
+        STATE.error = rp2040_sdio_rx_poll(sd_card_p, 64 / 4);
+    } while (STATE.error == SDIO_BUSY);
+
+    if (STATE.error != SDIO_OK)
+    {
+        EMSG_PRINTF("ACMD13 failed: %d\n", (int)STATE.error);
+    }
+    return STATE.error == SDIO_OK;
+
 }
 
 static bool sd_sdio_test_com(sd_card_t *sd_card_p) {
