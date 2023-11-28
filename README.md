@@ -18,7 +18,7 @@ It is wrapped up in a complete runnable project, with a little command line inte
 ## What's new
 ### v2.3.0
 * `command_line` example enhancements:
-  * `info` enhanced to report SD card Allocation Unit (AU_SIZE) or "segment"
+  * `info` enhanced to report SD card Allocation Unit (AU_SIZE) or "segment" (available only on SDIO-attached cards)
   * `format` now creates a single primary partition and attempts to align this on an SD card segment.
 ### v2.2.0
 * `FreeRTOS-Kernel` removed as a submodule of this library. 
