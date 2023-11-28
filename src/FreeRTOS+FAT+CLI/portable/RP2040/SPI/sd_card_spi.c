@@ -367,6 +367,72 @@ static const char *cmd2str(const cmdSupported cmd) {
 }
 #endif
 
+static int chk_CMD13_response(uint32_t response) {
+    int32_t status = 0;
+    DBG_PRINTF("R2: 0x%" PRIx32 "\n", response);
+    if (response & 0x01 << 0) {
+        DBG_PRINTF("Card is Locked\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE;
+    }
+    if (response & 0x01 << 1) {
+        DBG_PRINTF("WP Erase Skip, Lock/Unlock Cmd Failed\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE_PROTECTED;
+    }
+    if (response & 0x01 << 2) {
+        DBG_PRINTF("Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE;
+    }
+    if (response & 0x01 << 3) {
+        DBG_PRINTF("CC Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE;
+    }
+    if (response & 0x01 << 4) {
+        DBG_PRINTF("Card ECC Failed\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE;
+    }
+    if (response & 0x01 << 5) {
+        DBG_PRINTF("WP Violation\n");
+        status |= SD_BLOCK_DEVICE_ERROR_WRITE_PROTECTED;
+    }
+    if (response & 0x01 << 6) {
+        DBG_PRINTF("Erase Param\n");
+        status |= SD_BLOCK_DEVICE_ERROR_ERASE;
+    }
+    if (response & 0x01 << 7) {
+        DBG_PRINTF("Out of Range, CSD_Overwrite\n");
+        status |= SD_BLOCK_DEVICE_ERROR_PARAMETER;
+    }
+    if (response & 0x01 << 8) {
+        DBG_PRINTF("In Idle State\n");
+        status |= SD_BLOCK_DEVICE_ERROR_NONE;
+    }
+    if (response & 0x01 << 9) {
+        DBG_PRINTF("Erase Reset\n");
+        status |= SD_BLOCK_DEVICE_ERROR_ERASE;
+    }
+    if (response & 0x01 << 10) {
+        DBG_PRINTF("Illegal Command\n");
+        status |= SD_BLOCK_DEVICE_ERROR_UNSUPPORTED;
+    }
+    if (response & 0x01 << 11) {
+        DBG_PRINTF("Com CRC Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_CRC;
+    }
+    if (response & 0x01 << 12) {
+        DBG_PRINTF("Erase Sequence Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_ERASE;
+    }
+    if (response & 0x01 << 13) {
+        DBG_PRINTF("Address Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_PARAMETER;
+    }
+    if (response & 0x01 << 14) {
+        DBG_PRINTF("Parameter Error\n");
+        status |= SD_BLOCK_DEVICE_ERROR_PARAMETER;
+    }
+    return status;
+}
+
 #define SD_COMMAND_RETRIES 3 /*!< Times SPI cmd is retried when there is no response */
 #define SD_COMMAND_TIMEOUT 2000 /*!< Timeout in ms for response */
 
@@ -462,72 +528,8 @@ static int sd_cmd(sd_card_t *sd_card_p, const cmdSupported cmd, uint32_t arg,
         case CMD13_SEND_STATUS:  // Response R2
             response <<= 8;
             response |= sd_spi_write(sd_card_p, SPI_FILL_CHAR);
-            if (response) {
-                DBG_PRINTF("R2: 0x%" PRIx32 "\n", response);
-                if (response & 0x01 << 0) {
-                    DBG_PRINTF("Card is Locked\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE;
-                }
-                if (response & 0x01 << 1) {
-                    DBG_PRINTF("WP Erase Skip, Lock/Unlock Cmd Failed\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE_PROTECTED;
-                }
-                if (response & 0x01 << 2) {
-                    DBG_PRINTF("Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE;
-                }
-                if (response & 0x01 << 3) {
-                    DBG_PRINTF("CC Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE;
-                }
-                if (response & 0x01 << 4) {
-                    DBG_PRINTF("Card ECC Failed\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE;
-                }
-                if (response & 0x01 << 5) {
-                    DBG_PRINTF("WP Violation\n");
-                    status = SD_BLOCK_DEVICE_ERROR_WRITE_PROTECTED;
-                }
-                if (response & 0x01 << 6) {
-                    DBG_PRINTF("Erase Param\n");
-                    status = SD_BLOCK_DEVICE_ERROR_ERASE;
-                }
-                if (response & 0x01 << 7) {
-                    DBG_PRINTF("Out of Range, CSD_Overwrite\n");
-                    status = SD_BLOCK_DEVICE_ERROR_PARAMETER;
-                }
-                if (response & 0x01 << 8) {
-                    DBG_PRINTF("In Idle State\n");
-                    status = SD_BLOCK_DEVICE_ERROR_NONE;
-                }
-                if (response & 0x01 << 9) {
-                    DBG_PRINTF("Erase Reset\n");
-                    status = SD_BLOCK_DEVICE_ERROR_ERASE;
-                }
-                if (response & 0x01 << 10) {
-                    DBG_PRINTF("Illegal Command\n");
-                    status = SD_BLOCK_DEVICE_ERROR_UNSUPPORTED;
-                }
-                if (response & 0x01 << 11) {
-                    DBG_PRINTF("Com CRC Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_CRC;
-                }
-                if (response & 0x01 << 12) {
-                    DBG_PRINTF("Erase Sequence Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_ERASE;
-                }
-                if (response & 0x01 << 13) {
-                    DBG_PRINTF("Address Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_PARAMETER;
-                }
-                if (response & 0x01 << 14) {
-                    DBG_PRINTF("Parameter Error\n");
-                    status = SD_BLOCK_DEVICE_ERROR_PARAMETER;
-                }
-                break;
-            }
-        default:  // Response R1
-            break;
+            if (response)
+                status = chk_CMD13_response(response);
     }
     // Pass the updated response to the command
     if (NULL != resp) {
@@ -961,8 +963,6 @@ static int sd_init_medium(sd_card_t *sd_card_p) {
         size_t retries = 3;
         do {
             // Enable CRC
-            // int sd_cmd(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg, bool
-            // isAcmd, uint32_t *resp)
             status = sd_cmd(sd_card_p, CMD59_CRC_ON_OFF, 1, false, 0);
         } while (--retries && (SD_BLOCK_DEVICE_ERROR_NONE != status));
     }
@@ -1025,6 +1025,20 @@ static int sd_init_medium(sd_card_t *sd_card_p) {
         // Disable CRC
         status = sd_cmd(sd_card_p, CMD59_CRC_ON_OFF, 0, false, 0);  
     }
+
+    /* Disconnect the 50 KOhm pull-up resistor on CS (pin 1) of the card. 
+    The pull-up may be used for card detection. 
+    
+    At power up this line has a 50KOhm pull up enabled in the card. 
+    This resistor serves two functions Card detection and Mode Selection. 
+    For Mode Selection, the host can drive the line high or let it be pulled high to select SD mode. 
+    If the host wants to select SPI mode it should drive the line low. 
+    For Card detection, the host detects that the line is pulled high. 
+    This pull-up should be disconnected by the user, during regular data transfer, 
+    with SET_CLR_CARD_DETECT (ACMD42) command. */
+
+    // int sd_cmd(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg, bool isAcmd, uint32_t *resp)
+    status = sd_cmd(sd_card_p, ACMD42_SET_CLR_CARD_DETECT, 0, true, NULL);
 
     return status;
 }
@@ -1143,7 +1157,8 @@ int sd_init(sd_card_t *sd_card_p) {
         return sd_card_p->m_Status;
     }
     // CMD10, Response R2 (R1 byte + 16-byte block read)
-    if (sd_cmd(sd_card_p, CMD10_SEND_CID, 0x0, false, 0) != 0x0) {
+    if (SD_BLOCK_DEVICE_ERROR_NONE != 
+        sd_cmd(sd_card_p, CMD10_SEND_CID, 0x0, false, 0)) {
         DBG_PRINTF("Didn't get a response from the disk\n");
         sd_release(sd_card_p);
         return sd_card_p->m_Status;
@@ -1155,7 +1170,8 @@ int sd_init(sd_card_t *sd_card_p) {
     }
 
     // Set block length to 512 (CMD16)
-    if (sd_cmd(sd_card_p, CMD16_SET_BLOCKLEN, _block_size, false, 0) != 0) {
+    if (SD_BLOCK_DEVICE_ERROR_NONE !=
+        sd_cmd(sd_card_p, CMD16_SET_BLOCKLEN, _block_size, false, 0)) {
         DBG_PRINTF("Set %" PRIu32 "-byte block timed out\n", _block_size);
         sd_release(sd_card_p);
         return sd_card_p->m_Status;
