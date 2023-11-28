@@ -62,12 +62,13 @@ add_compile_definitions(USE_PRINTF)
 # add_compile_definitions(USE_LED=1)
 
 # target_compile_definitions(<TARGET> PRIVATE PARAM_ASSERTIONS_ENABLE_ALL=1)
-add_compile_definitions(PICO_MAX_SHARED_IRQ_HANDLERS=6 PARAM_ASSERTIONS_ENABLE_ALL=1 PICO_USE_STACK_GUARDS=1)
+# add_compile_definitions(PICO_MAX_SHARED_IRQ_HANDLERS=6 PARAM_ASSERTIONS_ENABLE_ALL=1 PICO_USE_STACK_GUARDS=1)
+add_compile_definitions(PICO_MAX_SHARED_IRQ_HANDLERS=6)
 
 set_property(TARGET command_line APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--print-memory-usage")
 
 pico_set_program_name(command_line "command_line")
-pico_set_program_version(command_line "0.1")
+pico_set_program_version(command_line "2.4.0")
 
 # See 4.1. Serial input and output on Raspberry Pi Pico in Getting started with Raspberry Pi Pico (https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf)
 # and 2.7.1. Standard Input/Output (stdio) Support in Raspberry Pi Pico C/C++ SDK (https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf):
