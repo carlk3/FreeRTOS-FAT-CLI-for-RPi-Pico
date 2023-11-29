@@ -1,7 +1,6 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico
-# Release 2.4.0
-
-## SD Cards on the Pico
+# v2.4.1
+## C/C++ Library for SD Cards on the Pico
 
 This project is essentially a 
 [FreeRTOS+FAT](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/index.html)
@@ -16,6 +15,8 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.4.1
+Pick up [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT) [Fix dynamic FAT variant detection](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT/pull/56) 
 ### v2.4.0
 Implement `ACMD42_SET_CLR_CARD_DETECT`: 
 At power up the CS/DAT3 line has a 50KOhm pull up enabled in the SD card. 
@@ -269,6 +270,12 @@ There are a variety of RP2040 boards on the market that provide an integrated µ
 Prerequisites:
 * Raspberry Pi Pico or some other kind of RP2040 board
 * Something like the [Adafruit Micro SD SPI or SDIO Card Breakout Board](https://www.adafruit.com/product/4682)[^3] or [SparkFun microSD Transflash Breakout](https://www.sparkfun.com/products/544)
+
+  ***Warning***: Avoid Aduino breakout boards like these: [Micro SD Storage Board Micro SD Card Modules](https://smile.amazon.com/gp/product/B07XF4Q1TT/). 
+  They are designed for 5 V Arduino signals. 
+  Many use simple resistor dividers to drop the signal voltage, and will not work properly with the 3.3 V Raspberry Pi Pico. 
+  However, see [The 5V Arduino SD modules might work with a simple trick](https://github.com/carlk3/no-OS-FatFS-SD-SPI-RPi-Pico/issues/83).
+  
 * Breadboard and wires
 * Raspberry Pi Pico C/C++ SDK
 * (Optional) A couple of ~10 kΩ - 50 kΩ resistors for pull-ups
@@ -291,8 +298,9 @@ Prerequisites:
 Please see [here](https://docs.google.com/spreadsheets/d/1BrzLWTyifongf_VQCc2IpJqXWtsrjmG7KnIbSBy-CPU/edit?usp=sharing) for an example wiring table for an SPI attached card and an SDIO attached card on the same Pico. 
 SPI and SDIO at 31.5 MHz are pretty demanding electrically. You need good, solid wiring, especially for grounds. A printed circuit board with a ground plane would be nice!
 
-
+<!--
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1473.JPG "Prototype")
+-->
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232043568.jpg "Protoboard, top")
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232026240_3.jpg "Protoboard, bottom")
 
@@ -310,13 +318,12 @@ Furthermore, the CMD signal must be on GPIO D0 GPIO number - 2, modulo 32. (This
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ### Pull Up Resistors and other electrical considerations
-* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector (or tristate). In the old MMC days, it was imperative to pull this up.
+* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector (or tristate). For [MMC](https://en.wikipedia.org/wiki/MultiMediaCard) cards, it is imperative to pull this up.
 However, modern SD cards use strong push pull tristateable outputs and don't seem to need this pull up.
 On some SD cards, you can even configure the card's output drivers using the Driver Stage Register (DSR).[^4]).
 The Pico internal `gpio_pull_up` is weak: around 56uA or 60kΩ.
 If a pull up is needed, it's best to add an external pull up resistor of around 5-50 kΩ to 3.3v.
 The internal `gpio_pull_up` can be disabled in the hardware configuration by setting the `no_miso_gpio_pull_up` attribute of the `spi_t` object.
-
 * The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. This is what enables the tristate buffer for Data Out (DO), among other things. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized. It is imperative to pull it up for any devices on the bus that aren't initialized. For example, if you have two SD cards on one bus but the firmware is aware of only one card (see hw_config); you shouldn't let the CS float on the unused one. 
 * Driving the SD card directly with the GPIOs is not ideal. Take a look at the CM1624 (https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. 
 * It can be helpful to add a decoupling capacitor or three (e.g., 100 nF, 1 µF, and 10 µF) between 3.3 V and GND on the SD card. ChaN also [recommends](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug) putting a 22 µH inductor in series with the Vcc (or "Vdd") line to the SD card.
@@ -374,10 +381,8 @@ This will be picked up automatically as a submodule when you git clone this libr
 This library can support many different hardware configurations. 
 Therefore, the hardware configuration is not defined in the library. 
 Instead, the application must provide it. 
-The configuration is defined in "objects" of type `spi_t` (see 
-[sd_driver/spi.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/SPI/spi.h)), 
-`sd_spi_if_t`, `sd_sdio_if_t`, and `sd_card_t` (see 
-[sd_driver/sd_card.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/portable/RP2040/sd_card.h)). 
+The configuration is defined in "objects" of type `spi_t` (see `sd_driver/spi.h`), 
+`sd_spi_if_t`, `sd_sdio_if_t`, and `sd_card_t` (see `sd_driver/sd_card.h`). 
 * Instances of `sd_card_t` describe the configuration of SD card sockets.
 * Each instance of `sd_card_t` is associated (one to one) with an `sd_spi_if_t` or `sd_sdio_if_t` interface object, 
 and points to it with `spi_if_p` or `sdio_if_p`[^5].
@@ -388,7 +393,7 @@ There can be multiple objects (or "instances") of all three types.
 Attributes (or "fields", or "members") of these objects specify which pins to use for what, baud rates, features like Card Detect, etc.
 * Generally, anything not specified will default to `0` or `false`. (This is the user's responsibility if using Dynamic Configuration, but in a Static Configuration 
 [see [Static vs. Dynamic Configuration](#static-vs-dynamic-configuration)], 
-below, the C runtime initializes static memory to 0.)
+the C runtime initializes static memory to 0.)
 
 ![Illustration of the configuration dev_brd.hw_config.c](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/0eedadea-f6cf-44cb-9b76-544ec74287d2)
 
@@ -569,7 +574,7 @@ typedef struct spi_t {
 * `use_exclusive_DMA_IRQ_handler` If true, the IRQ handler is added with the SDK's `irq_set_exclusive_handler`. The default is to add the handler with `irq_add_shared_handler`, so it's not exclusive. 
 * `no_miso_gpio_pull_up` According to the standard, an SD card's DO MUST be pulled up (at least for the old MMC cards). 
 However, it might be done externally. If `no_miso_gpio_pull_up` is false, the library will set the RP2040 GPIO internal pull up.
-* `set_drive_strength` Specifies whether or not to set the RP2040 GPIO pin drive strength. 
+* `set_drive_strength` Specifies whether or not to set the RP2040 GPIO pin drive strength.
 If `set_drive_strength` is false, all will be implicitly set to 4 mA. 
 If `set_drive_strength` is true, each GPIO's drive strength can be set individually. Note that if it is not explicitly set, it will default to 0, which equates to `GPIO_DRIVE_STRENGTH_2MA` (2 mA nominal drive strength).
 * `mosi_gpio_drive_strength` SPI Master Out, Slave In (MOSI) drive strength, 
@@ -639,7 +644,10 @@ Sometimes problems arise when attempting to use SD cards. At the
 [FreeRTOS-Plus-FAT API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html)
 level, it can be difficult to diagnose problems. You get an
 [error number](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/errno.html), 
-but it might just tell you `pdFREERTOS_ERRNO_EIO` ("I/O error"), for example, without telling you what you need to know in order to fix the problem. The library generates messages that might help. These are classed into Error, Informational, and Debug messages. 
+but it might just tell you `pdFREERTOS_ERRNO_EIO` ("I/O error"),
+for example, without telling you what you need to know in order to fix the problem.
+The library generates messages that might help. 
+These are classed into Error, Informational, and Debug messages. 
 
 #### Messages from the SD card driver
 Two compile definitions control how these are handled in the SD card driver (or "
@@ -651,9 +659,11 @@ these message output functions will use the Pico SDK's Standard Output (`stdout`
 `DBG_PRINTF` statements will be effectively stripped from the code.
 
 Messages are sent using `EMSG_PRINTF`, `IMSG_PRINTF`, and `DBG_PRINTF` macros, which can be redefined (see 
-[my_debug.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/my_debug.h)
-). By default, these call `error_message_printf`, `info_message_printf`, and `debug_message_printf`, 
-which are implemented as [weak](https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html) functions, meaning that they can be overridden by strongly implementing them in user code. 
+[my_debug.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/my_debug.h)).
+By default, these call `error_message_printf`, `info_message_printf`, and `debug_message_printf`, 
+which are implemented as
+[weak](https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html) functions, 
+meaning that they can be overridden by strongly implementing them in user code. 
 If `USE_PRINTF` is defined and not zero, the weak implementations will write to the Pico SDK's stdout. Otherwise, they will format the messages into strings and forward to `put_out_error_message`, `put_out_info_message`, and `put_out_debug_message`. These are implemented as weak functions that do nothing. You can override these to send the output somewhere.
 
 #### Messages from FreeRTOS-Plus-FAT
@@ -696,7 +706,9 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
 * Try multiple cards on a single SDIO bus
 * [RP2040: Enable up to 42 MHz SDIO bus speed](https://github.com/ZuluSCSI/ZuluSCSI-firmware/tree/rp2040_highspeed_sdio)
 * SD UHS Double Data Rate (DDR): clock data on both edges of the clock
-
+<!--
+![image](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/8a28782e-84c4-40c8-8757-a063a4b83292)
+-->
 ## Appendix A: Migration actions
 
 ### Migrating from Release [1.0.0](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/v1.0.0)
@@ -932,7 +944,8 @@ The `info` command in [examples/command_line](https://github.com/carlk3/FreeRTOS
 Fragmented files can result from multiple files being incrementally extended in an interleaved fashion. 
 One strategy to avoid fragmentation is to pre-allocate files to their maximum expected size, 
 then reuse these files at run time. 
-Since a flash memory erase block is typically filled with 0xFF after an erase, 
+Since a flash memory erase block is typically filled with 0xFF after an erase
+(although some cards use 0x00), 
 you could write a file full of 0xFF bytes (chosen to avoid flash memory "wear") ahead of time. 
 Then 
 [ff_fopen](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fopen.html) 
