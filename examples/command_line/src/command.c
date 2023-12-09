@@ -129,16 +129,6 @@ static void run_info(const size_t argc, const char *argv[]) {
     printf("FAT Cluster size (\"allocation unit\"): %llu sectors (%llu bytes)\n",
             spc, spc * sd_card_p->ff_disk.pxIOManager->xPartition.usBlkSize);
 }
-static void run_lliot(const size_t argc, const char *argv[]) {
-    if (!expect_argc(argc, argv, 1)) return;
-
-    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
-    if (!sd_card_p) {
-        printf("Unknown device name: \"%s\"\n", argv[0]);
-        return;
-    }
-    low_level_io_tests(argv[0]);
-}
 static void run_format(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 1)) return;
 
@@ -276,6 +266,16 @@ static void run_mv(const size_t argc, const char *argv[]) {
         EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
 }
+static void run_lliot(const size_t argc, const char *argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+
+    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
+    if (!sd_card_p) {
+        printf("Unknown device name: \"%s\"\n", argv[0]);
+        return;
+    }
+    low_level_io_tests(argv[0]);
+}
 static void run_big_file_test(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 3)) return;
     
@@ -296,7 +296,7 @@ static void run_mtbft(const size_t argc, const char *argv[]) {
             return;
         }
     }
-    mtbft(argc - 1,  size, &argv[1]);
+    mtbft(argc - 1, size, &argv[1]);
 }
 static void run_rm(const size_t argc, const char *argv[]) {
     if (argc < 1) {
@@ -491,16 +491,6 @@ static void run_set_sys_clock_khz(const size_t argc, const char *argv[]) {
 
     setup_default_uart();
 }
-
-static void clr(const size_t argc, const char *argv[]) {
-    if (!expect_argc(argc, argv, 1)) return;
-
-    int gp = atoi(argv[0]);
-
-    gpio_init(gp);
-    gpio_set_dir(gp, GPIO_OUT);
-    gpio_put(gp, 0);
-}
 static void set(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 1)) return;
     
@@ -509,6 +499,15 @@ static void set(const size_t argc, const char *argv[]) {
     gpio_init(gp);
     gpio_set_dir(gp, GPIO_OUT);
     gpio_put(gp, 1);
+}
+static void clr(const size_t argc, const char *argv[]) {
+    if (!expect_argc(argc, argv, 1)) return;
+
+    int gp = atoi(argv[0]);
+
+    gpio_init(gp);
+    gpio_set_dir(gp, GPIO_OUT);
+    gpio_put(gp, 0);
 }
 
 static void run_help(const size_t argc, const char *argv[]);
@@ -542,12 +541,9 @@ static cmd_def_t cmds[] = {
     {"info", run_info,
      "info <device name>:\n"
      " Print information about an SD card"},
-    // {"getfree", run_getfree,
-    //  "getfree <device name>:\n"
-    //  " Print the free space on drive"},
     {"cd", run_cd,
      "cd <path>:\n"
-     " Changes the current directory of the device name.\n"
+     " Changes the current directory.\n"
      " <path> Specifies the directory to be set as current directory.\n"
      "\te.g.: cd /dir1"},
     {"mkdir", run_mkdir,
@@ -688,7 +684,7 @@ void process_stdio(int cRxedChar) {
         printf("%c", '\n');
         stdio_flush();
 
-        if (!strnlen(cmd, sizeof cmd)) {  // Empty input
+        if (!cmd[0]) {  // Empty input
             printf("> ");
             stdio_flush();
             return;

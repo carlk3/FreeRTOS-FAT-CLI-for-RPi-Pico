@@ -21,8 +21,6 @@ specific language governing permissions and limitations under the License.
 #include "hw_config.h"
 //
 #include "ff_utils.h"
-#include "FreeRTOS_strerror.h"
-
 
 #define TRACE_PRINTF(fmt, args...)
 // #define TRACE_PRINTF printf
