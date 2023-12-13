@@ -18,7 +18,6 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
-
 // Only HC block size is supported. Making this a static constant reduces code
 // size.
 #define BLOCK_SIZE_HC 512 /*!< Block size supported for SD card is 512 bytes */
@@ -40,12 +39,13 @@ typedef enum {
 } block_dev_err_t;
 
 /** Represents the different SD/MMC card types  */
-// Types
-#define SDCARD_NONE 0  /**< No card is present */
-#define SDCARD_V1 1    /**< v1.x Standard Capacity */
-#define SDCARD_V2 2    /**< v2.x Standard capacity SD card */
-#define SDCARD_V2HC 3  /**< v2.x High capacity SD card */
-#define CARD_UNKNOWN 4 /**< Unknown or unsupported card */
+typedef enum {
+    SDCARD_NONE = 0, /**< No card is present */
+    SDCARD_V1 = 1,   /**< v1.x Standard Capacity */
+    SDCARD_V2 = 2,   /**< v2.x Standard capacity SD card */
+    SDCARD_V2HC = 3, /**< v2.x High capacity SD card */
+    CARD_UNKNOWN = 4 /**< Unknown or unsupported card */
+} card_type_t;
 
 // Supported SD Card Commands
 typedef enum {

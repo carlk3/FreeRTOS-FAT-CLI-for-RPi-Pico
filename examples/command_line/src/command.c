@@ -10,9 +10,6 @@
 #include "pico/stdlib.h"
 //
 #include "FreeRTOS.h"
-
-#include <errno.h>
-//
 #include "FreeRTOS_strerror.h"
 #include "FreeRTOS_time.h"
 #include "ff_sddisk.h"
@@ -22,7 +19,6 @@
 #include "my_debug.h"
 #include "sd_card.h"
 #include "tests.h"
-#include "util.h"
 //
 #include "command.h"
 
@@ -32,7 +28,7 @@ bool die_now;
 
 #pragma GCC diagnostic ignored "-Wunused-function"
 #ifdef NDEBUG
-#pragma GCC diagnostic ignored "-Wunused-variable"
+#  pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
 static void missing_argument_msg() {
@@ -158,23 +154,6 @@ static void run_unmount(const size_t argc, const char *argv[]) {
         sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
     }
 }
-static void run_getfree(const size_t argc, const char *argv[]) {
-    if (!expect_argc(argc, argv, 1)) return;
-    
-    sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
-    if (!sd_card_p) {
-        EMSG_PRINTF("Unknown device name %s\n", argv[0]);
-        return;
-    }
-    if (!sd_card_p->ff_disk.xStatus.bIsMounted) {
-        printf("Drive \"%s\" is not mounted\n", argv[0]);
-        return;
-    }
-    uint64_t freeMB;
-    unsigned freePct;
-    getFree(&sd_card_p->ff_disk, &freeMB, &freePct);
-    printf("%s free space: %llu MB, %u %%\n", argv[0], freeMB, freePct);
-}
 static void run_cd(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 1)) return;
     
@@ -243,20 +222,41 @@ static void run_cp(const size_t argc, const char *argv[]) {
     FF_FILE *df = ff_fopen(argv[1], "w");
     if (!df) {
         EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        ff_fclose(sf);
         return;
     }
-    uint8_t buf[1024];
+
+    /* File copy buffer */
+    size_t buf_sz = ff_filelength(sf);
+    if (!buf_sz) {
+        EMSG_PRINTF("ff_filelength: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        ff_fclose(df);
+        ff_fclose(sf);
+        return;
+    }
+    if (buf_sz > 32768)
+        buf_sz = 32768;
+    uint8_t *buf = pvPortMalloc(buf_sz);
+    if (!buf) {
+        printf("pvPortMalloc(%zu) failed\n", buf_sz);
+        ff_fclose(df);
+        ff_fclose(sf);
+        return;
+    }
+
     size_t br;
     do {
-        br = ff_fread(buf, 1, sizeof buf, sf);
+        br = ff_fread(buf, 1, buf_sz, sf);
         size_t bw = ff_fwrite(buf, 1, br, df);
         if (br != bw) {
             EMSG_PRINTF("ff_fwrite: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
             break;
         }
     } while (br > 0);
-    ff_fclose(sf);
+
+    vPortFree(buf);
     ff_fclose(df);
+    ff_fclose(sf);
 }
 static void run_mv(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 2)) return;
@@ -326,6 +326,11 @@ static void run_rm(const size_t argc, const char *argv[]) {
             EMSG_PRINTF("ff_remove(\"%s\") failed: %s (%d)\n", argv[0],
                         FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
     }
+}
+static void run_simple(const size_t argc, const char *argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+
+    simple();
 }
 static void run_bench(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 0)) return;
@@ -509,6 +514,13 @@ static void clr(const size_t argc, const char *argv[]) {
     gpio_set_dir(gp, GPIO_OUT);
     gpio_put(gp, 0);
 }
+static void run_test(const size_t argc, const char *argv[]) {    
+    if (!expect_argc(argc, argv, 0)) return;
+
+    // void trigger_hard_fault() {
+    void (*bad_instruction)() = (void (*)())0xE0000000;
+    bad_instruction();
+}
 
 static void run_help(const size_t argc, const char *argv[]);
 
@@ -556,8 +568,8 @@ static cmd_def_t cmds[] = {
      " Removes (deletes) a file or directory\n"
      " <pathname> Specifies the path to the file or directory to be removed\n"
      " Options:\n"
-     "  -d Remove an empty directory\n"
-     "  -r Recursively remove a directory and its contents"},
+     " -d Remove an empty directory\n"
+     " -r Recursively remove a directory and its contents"},
     {"cp", run_cp,
      "cp <source file> <dest file>:\n"
      " Copies <source file> to <dest file>"},
@@ -570,7 +582,7 @@ static cmd_def_t cmds[] = {
     {"ls", run_ls, "ls [pathname]:\n List directory"},
     // {"dir", run_ls, "dir:\n List directory"},
     {"cat", run_cat, "cat <filename>:\n Type file contents"},
-    {"simple", simple, "simple:\n Run simple FS tests"},
+    {"simple", run_simple, "simple:\n Run simple FS tests"},
     {"lliot", run_lliot,
      "lliot <device name>\n !DESTRUCTIVE! Low Level I/O Driver Test\n"
      "The SD card will need to be reformatted after this test.\n"
@@ -626,6 +638,8 @@ static cmd_def_t cmds[] = {
     //  " Count the RP2040 clock frequencies and report."},
     // {"clr", clr, "clr <gpio #>: clear a GPIO"},
     // {"set", set, "set <gpio #>: set a GPIO"},
+    // {"test", run_test, "test:\n"
+    //  " Development test"},
     {"help", run_help,
      "help:\n"
      " Shows this command help."}
@@ -638,31 +652,35 @@ static void run_help(const size_t argc, const char *argv[]) {
     }
 }
 
-static void process_cmd(char *cmd) {
+static void process_cmd(size_t cmd_sz, char *cmd) {
+    assert(cmd);
+    assert(cmd[0]);
     char *cmdn = strtok_r(cmd, " ", &saveptr);
     if (cmdn) {
+assert(cmdn < cmd + cmd_sz);
 
-        /* Breaking with Unix tradition of arg[0] being command name,
-        arg[0] is first argument after command name */
+        /* Breaking with Unix tradition of argv[0] being command name,
+        argv[0] is first argument after command name */
 
         size_t argc = 0;
-        const char *args[10] = {0}; // Arbitrary limit of 10 arguments
-        const char *argp;
+        const char *argv[10] = {0}; // Arbitrary limit of 10 arguments
+        const char *arg_p;
         do {
-            argp = strtok_r(NULL, " ", &saveptr);
-            if (argp) {
-                if (argc >= count_of(args)) {
-                    extra_argument_msg(argp);
+            arg_p = strtok_r(NULL, " ", &saveptr);
+            if (arg_p) {
+                assert(arg_p < cmd + cmd_sz);
+                if (argc >= count_of(argv)) {
+                    extra_argument_msg(arg_p);
                     return;
                 }
-                args[argc++] = argp;
+                argv[argc++] = arg_p;
             }
-        } while (argp);
+        } while (arg_p);
 
         size_t i;
         for (i = 0; i < count_of(cmds); ++i) {
             if (0 == strcmp(cmds[i].command, cmdn)) {
-                (*cmds[i].function)(argc, args);
+                (*cmds[i].function)(argc, argv);
                 break;
             }
         }
@@ -674,8 +692,10 @@ void process_stdio(int cRxedChar) {
     static char cmd[256];
     static size_t ix;
 
+if (!(0 < cRxedChar &&  cRxedChar <= 0x7F))
+        return; // Not dealing with multibyte characters
     if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
-        '\b' != cRxedChar && cRxedChar != (char)127)
+        '\b' != cRxedChar && cRxedChar != 127)
         return;
     printf("%c", cRxedChar);  // echo
     stdio_flush();
@@ -691,7 +711,7 @@ void process_stdio(int cRxedChar) {
         }
 
         /* Process the input string received prior to the newline. */
-        process_cmd(cmd);
+        process_cmd(sizeof cmd, cmd);
 
         /* Reset everything for next cmd */
         ix = 0;

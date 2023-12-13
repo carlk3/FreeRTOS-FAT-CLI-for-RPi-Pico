@@ -16,7 +16,6 @@ specific language governing permissions and limitations under the License.
 //
 #include "pico/stdlib.h"
 #include "pico/mutex.h"
-// #include "pico/sem.h"
 //
 #include "FreeRTOS.h"
 //
@@ -42,10 +41,6 @@ static void in_spi_irq_handler(const uint DMA_IRQ_num, io_rw_32 *dma_hw_ints_p) 
                 // Is the SPI's channel requesting interrupt?
                 if (*dma_hw_ints_p & (1 << spi_p->rx_dma)) {
                     *dma_hw_ints_p = 1 << spi_p->rx_dma;  // Clear it.
-                    // myASSERT(!dma_channel_is_busy(spi_p->rx_dma));
-                    // myASSERT(!sem_available(&spi_p->sem));
-                    // bool ok = sem_release(&spi_p->sem);
-                    // myASSERT(ok);
                     myASSERT(spi_p->owner);
                     myASSERT(!dma_channel_is_busy(spi_p->rx_dma));
 
@@ -270,7 +265,7 @@ bool my_spi_init(spi_t *spi_p) {
         gpio_set_function(spi_p->miso_gpio, GPIO_FUNC_SPI);
         gpio_set_function(spi_p->mosi_gpio, GPIO_FUNC_SPI);
         gpio_set_function(spi_p->sck_gpio, GPIO_FUNC_SPI);
-        // ss_gpio is initialized in sd_init_driver()
+        // ss_gpio is initialized in sd_spi_ctor()
 
         // Slew rate limiting levels for GPIO outputs.
         // enum gpio_slew_rate { GPIO_SLEW_RATE_SLOW = 0, GPIO_SLEW_RATE_FAST = 1 }

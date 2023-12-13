@@ -15,13 +15,13 @@ specific language governing permissions and limitations under the License.
 #include <string.h>
 //
 #include "pico/stdlib.h"
-//
-#include "pico/multicore.h"
+#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "FreeRTOS_time.h"
 #include "task.h"
 //
+#include "my_debug.h"
 #include "util.h"
 //
 #include "crash.h"
@@ -33,10 +33,6 @@ static volatile crash_info_ram_t *p_crash_info_ram = &crash_info_ram;
 
 static crash_info_t previous_crash_info;
 static bool _previous_crash_info_valid = false;
-
-#define __BKPT(value) __asm volatile("bkpt " #value)
-
-#ifndef BOOTLOADER_BUILD
 
 void crash_handler_init() {
     volatile crash_info_t *pCrashInfo = &p_crash_info_ram->crash_info;
@@ -58,8 +54,6 @@ void crash_handler_init() {
     memset((void *)p_crash_info_ram, 0, sizeof *p_crash_info_ram);
 }
 
-#endif
-
 const crash_info_t *crash_handler_get_info() {
     if (_previous_crash_info_valid) {
         return &previous_crash_info;
@@ -67,7 +61,6 @@ const crash_info_t *crash_handler_get_info() {
     return NULL;
 }
 
-#ifndef BOOTLOADER_BUILD
 // void vApplicationStackOverflowHook(TaskHandle_t xTask
 // __attribute__((unused)), signed char *pcTaskName){
 
@@ -89,11 +82,8 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
                            offsetof(crash_info_t, xor_checksum));
     __DSB();  // make sure all data is really written into the memory before
               // doing a reset
-
-    __BKPT(1);
-    // sleep_ms(5 * 1000);
     
-    system_reset();
+    NVIC_SystemReset();
 }
 
 __attribute__((noreturn)) void system_reset_func(char const *const func) {
@@ -108,7 +98,7 @@ __attribute__((noreturn)) void system_reset_func(char const *const func) {
     __DSB();
 
     
-    system_reset();
+    NVIC_SystemReset();
     __builtin_unreachable();
 }
 
@@ -135,28 +125,10 @@ void capture_assert(const char *file, int line, const char *func,
     p_crash_info_ram->crash_info.xor_checksum =
         calculate_checksum((uint32_t *)&p_crash_info_ram->crash_info,
                            offsetof(crash_info_t, xor_checksum));
-    __DSB();
-
-    // sleep_ms(5 * 1000);
-    
-    system_reset();
+    __DSB();   
+    NVIC_SystemReset();
 }
 
-#endif
-
-#ifdef BOOTLOADER_BUILD
-bool system_check_bootloader_request_flag(void) {
-    if (p_crash_info_ram->magic == crash_magic_bootloader_entry) {
-        uint32_t xor_checksum = calculate_checksum(
-            (uint32_t *)p_crash_info_ram, offsetof(crash_info_t, xor_checksum));
-        if (xor_checksum == p_crash_info_ram->xor_checksum) {
-            memset((void *)p_crash_info_ram, 0, sizeof(crash_info_t));
-            return true;
-        }
-    }
-    return false;
-}
-#else
 __attribute__((noreturn)) void system_request_bootloader_entry(void) {
     memset((void *)p_crash_info_ram, 0, sizeof *p_crash_info_ram);
     p_crash_info_ram->crash_info.magic = crash_magic_bootloader_entry;
@@ -165,11 +137,9 @@ __attribute__((noreturn)) void system_request_bootloader_entry(void) {
         calculate_checksum((uint32_t *)&p_crash_info_ram->crash_info,
                            offsetof(crash_info_t, xor_checksum));
     __DSB();
-
-    system_reset();
+    NVIC_SystemReset();
     __builtin_unreachable();
 }
-#endif
 
 __attribute__((used)) extern void DebugMon_HandlerC(
     uint32_t const *faultStackAddr) {
@@ -200,13 +170,10 @@ __attribute__((used)) extern void DebugMon_HandlerC(
                            offsetof(crash_info_t, xor_checksum));
     __DSB();  // make sure all data is really written into the memory before
               // doing a reset
-
-    if (DBG_Connected()) {
-        __BKPT(1);
-    }
-    // sleep_ms(5 * 1000);
-    
-    system_reset();
+    // if (DBG_Connected()) {
+    //     __BKPT(1);
+    // }
+    NVIC_SystemReset();
 }
 
 extern void DebugMon_Handler(void);
@@ -246,10 +213,7 @@ void Hardfault_HandlerC(uint32_t const *faultStackAddr) {
     __DSB();  // make sure all data is really written into the memory before
               // doing a reset
 
-    __BKPT(0);
-    // sleep_ms(5 * 1000);
-    
-    system_reset();
+    NVIC_SystemReset();
 }
 __attribute__((naked)) void isr_hardfault(void) {
     __asm volatile(
