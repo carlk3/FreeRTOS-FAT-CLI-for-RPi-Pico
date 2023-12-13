@@ -88,6 +88,7 @@ static void DemoTask(void *arg) {
     if (!mount(DEVICENAME)) goto quit;
 
     adc_init();
+    adc_set_temp_sensor_enabled(true);
 
     /* The xLastWakeTime variable needs to be initialized with the current
      tick count. Note that this is the only time the variable is written to

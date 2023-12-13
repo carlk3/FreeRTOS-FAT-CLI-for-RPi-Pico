@@ -41,7 +41,9 @@ and can be on multiple different "drives"
 // Optimization:
 //  Choose this to be the size (or at least a factor of the size)
 //  of an erasable sector ("smallest erasable block"):
-#define BUFFSZ (32768)  // In bytes. Should be a factor of 1 Mebibyte.
+// #define BUFFSZ (32768)  // In bytes. Should be a factor of 1 Mebibyte.
+// TODO: Divide, say, 64 kiB by the number of tasks.
+#define BUFFSZ (16384)  // In bytes. Should be a factor of 1 Mebibyte.
 
 typedef struct task_args_t {
     // Inputs

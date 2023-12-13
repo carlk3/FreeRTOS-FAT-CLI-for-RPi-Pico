@@ -11,9 +11,6 @@ include(FreeRTOS_Kernel_import.cmake)
 
 project(command_line C CXX ASM)
 
-set(PARAM_ASSERTIONS_ENABLE_ALL 1)
-
-##set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -ggdb")
 # add_compile_options(-Os) # Optimize for size (place before pico_sdk_init)
 
 # Initialise the Pico SDK
@@ -37,17 +34,16 @@ add_executable(command_line
     tests/ff_stdio_tests_with_cwd.c
     tests/simple.c
 )
-# Add the standard library to the build
-target_link_libraries(command_line 
-    FreeRTOS+FAT+CLI
-)
-target_include_directories(command_line PUBLIC 
-        include/ 
-)
 
 #target_compile_options(simple_example PRIVATE -save-temps)
 # target_compile_options(command_line PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
-target_compile_options(command_line PUBLIC -Wall -Wextra -Wno-unused-parameter -fanalyzer)
+target_compile_options(command_line PUBLIC 
+  -Wall 
+  -Wextra 
+  -Wno-unused-parameter 
+  -Wstack-usage=2048 
+  -fanalyzer 
+)
 
 # This program is useless without standard standard input and output.
 # add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
@@ -63,9 +59,16 @@ add_compile_definitions(USE_PRINTF)
 
 # target_compile_definitions(<TARGET> PRIVATE PARAM_ASSERTIONS_ENABLE_ALL=1)
 # add_compile_definitions(PICO_MAX_SHARED_IRQ_HANDLERS=6 PARAM_ASSERTIONS_ENABLE_ALL=1 PICO_USE_STACK_GUARDS=1)
-add_compile_definitions(PICO_MAX_SHARED_IRQ_HANDLERS=6)
+add_compile_definitions(
+  PARAM_ASSERTIONS_ENABLE_ALL=1 
+  PICO_USE_STACK_GUARDS=1
+  PICO_MALLOC_PANIC=1
+  PICO_MAX_SHARED_IRQ_HANDLERS=6
+)
 
-set_property(TARGET command_line APPEND_STRING PROPERTY LINK_FLAGS "-Wl,--print-memory-usage")
+set_property(TARGET command_line APPEND_STRING PROPERTY LINK_FLAGS 
+  "-Wl,--print-memory-usage"
+)
 
 pico_set_program_name(command_line "command_line")
 pico_set_program_version(command_line "2.4.0")
@@ -75,6 +78,9 @@ pico_set_program_version(command_line "2.4.0")
 # pico_enable_stdio_uart(command_line 1)
 pico_enable_stdio_usb(command_line 1)
 
+target_include_directories(command_line PUBLIC 
+        include/ 
+)
 target_link_libraries(command_line
     FreeRTOS+FAT+CLI
     hardware_clocks

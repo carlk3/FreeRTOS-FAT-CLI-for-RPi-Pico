@@ -14,10 +14,6 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdbool.h>
 //
 // Pico includes
@@ -26,6 +22,10 @@ extern "C" {
 #include "hardware/irq.h"
 #include "hardware/spi.h"
 #include "pico/types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 //
 #include "FreeRTOS.h"
 /* FreeRTOS includes. */
@@ -75,10 +75,6 @@ void spi_unlock(spi_t *pSPI);
 bool my_spi_init(spi_t *pSPI);
 void set_spi_dma_irq_channel(bool useChannel1, bool shared);
 
-#ifdef __cplusplus
-}
-#endif
-
 /* 
 This uses the Pico LED to show SD card activity.
 You can use it to get a rough idea of utilization.
@@ -100,6 +96,10 @@ in CMakeLists.txt, for example.
 #  define LED_ON()
 #  define LED_OFF()
 #  define LED_INIT()
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 /* [] END OF FILE */
