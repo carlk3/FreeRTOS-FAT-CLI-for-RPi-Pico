@@ -155,7 +155,9 @@ void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t len
      ulTaskNotifyTake() with the xClearCountOnExit parameter set to pdTRUE, and
      a block time of 0 (don't block). */
     uint32_t rc = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdTRUE, 0);
-    myASSERT(!rc);
+    // myASSERT(!rc); 
+    // Note: Physical removal and insertion of the card seems to 
+    // cause spurious interrupts which can show up here.
 
     // start them exactly simultaneously to avoid races (in extreme cases
     // the FIFO could overflow)

@@ -1270,7 +1270,12 @@ static void prvFileSystemAccessTask(void *pvParameters) {
         fflush(stdout);
 
         /* Create the directory used as a base by this instance of this task. */
-        ff_mkdir(pcBasePath);
+        int rc = ff_mkdir(pcBasePath);
+        if (-1 == rc) {
+            FF_PRINTF("ff_mkdir(\"%s\") failed: %s (%d)\n", pcBasePath,
+                        FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+            vTaskDelete(NULL);
+        }
 
         /* Create a few example files on the disk. */
         vCreateAndVerifyExampleFiles(pcBasePath);
