@@ -15,65 +15,47 @@ specific language governing permissions and limitations under the License.
 #include <stdbool.h>
 //
 #include "pico/stdlib.h"
+//
 #include "pico/mutex.h"
 //
 #include "FreeRTOS.h"
 //
-#include "util.h"
-#include "my_debug.h"
+#include "dma_interrupts.h"
 #include "hw_config.h"
+#include "my_debug.h"
 #include "task_config.h"
+#include "util.h"
 //
 #include "spi.h"
 
-#ifdef NDEBUG 
+#ifdef NDEBUG
 #  pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-// The RP2040 has two built in hardware SPI instances
-static spi_t *spi_ps[2];
+void spi_irq_handler(spi_t *spi_p) {
+    myASSERT(spi_p->owner);
+    myASSERT(!dma_channel_is_busy(spi_p->rx_dma));
 
-static void in_spi_irq_handler(const uint DMA_IRQ_num, io_rw_32 *dma_hw_ints_p) {
-    for (size_t i = 0; i < count_of(spi_ps); ++i) {
-        spi_t *spi_p = spi_ps[i];
-        if (spi_p) {
-            if (DMA_IRQ_num == spi_p->DMA_IRQ_num) {
-                // Is the SPI's channel requesting interrupt?
-                if (*dma_hw_ints_p & (1 << spi_p->rx_dma)) {
-                    *dma_hw_ints_p = 1 << spi_p->rx_dma;  // Clear it.
-                    myASSERT(spi_p->owner);
-                    myASSERT(!dma_channel_is_busy(spi_p->rx_dma));
+    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
+     it will get set to pdTRUE inside the interrupt safe API function if a
+     context switch is required. */
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-                    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
-                     it will get set to pdTRUE inside the interrupt safe API function if a
-                     context switch is required. */
-                    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    /* Send a notification directly to the task to which interrupt processing is
+     being deferred. */
+    vTaskNotifyGiveIndexedFromISR(
+        spi_p->owner,            // The handle of the task to which the
+                                 // notification is being sent.
+        NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
+                                 // notification values to which the notification is to be sent.
+        &xHigherPriorityTaskWoken);
 
-                    /* Send a notification directly to the task to which interrupt processing is
-                     being deferred. */
-                    vTaskNotifyGiveIndexedFromISR(
-                        spi_p->owner,            // The handle of the task to which the
-                                                 // notification is being sent.
-                        NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
-                                                 // notification values to which the notification is to be sent.
-                        &xHigherPriorityTaskWoken);
-
-                    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
-                    If xHigherPriorityTaskWoken was set to pdTRUE inside
-                     vTaskNotifyGiveFromISR() then calling portYIELD_FROM_ISR() will
-                     request a context switch. If xHigherPriorityTaskWoken is still
-                     pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
-                    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-                }
-            }
-        }
-    }
-}
-static void __not_in_flash_func(spi_irq_handler_0)() {
-    in_spi_irq_handler(DMA_IRQ_0, &dma_hw->ints0);
-}
-static void __not_in_flash_func(spi_irq_handler_1)() {
-    in_spi_irq_handler(DMA_IRQ_1, &dma_hw->ints1);
+    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
+    If xHigherPriorityTaskWoken was set to pdTRUE inside
+     vTaskNotifyGiveFromISR() then calling portYIELD_FROM_ISR() will
+     request a context switch. If xHigherPriorityTaskWoken is still
+     pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 static bool chk_spi(spi_inst_t *spi) {
@@ -102,7 +84,6 @@ static bool chk_spi(spi_inst_t *spi) {
     return rc;
 }
 
-
 void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
     myASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
     myASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
@@ -129,16 +110,16 @@ void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t len
 
     dma_channel_configure(spi_p->tx_dma, &spi_p->tx_dma_cfg,
                           &spi_get_hw(spi_p->hw_inst)->dr,  // write address
-                          tx,                              // read address
-                          length,  // element count (each element is of
-                                   // size transfer_data_size)
-                          false);  // start
+                          tx,                               // read address
+                          length,                           // element count (each element is of
+                                                            // size transfer_data_size)
+                          false);                           // start
     dma_channel_configure(spi_p->rx_dma, &spi_p->rx_dma_cfg,
-                          rx,                              // write address
+                          rx,                               // write address
                           &spi_get_hw(spi_p->hw_inst)->dr,  // read address
-                          length,  // element count (each element is of
-                                   // size transfer_data_size)
-                          false);  // start
+                          length,                           // element count (each element is of
+                                                            // size transfer_data_size)
+                          false);                           // start
 
     switch (spi_p->DMA_IRQ_num) {
         case DMA_IRQ_0:
@@ -154,9 +135,10 @@ void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t len
     /* Ensure this task does not already have a notification pending by calling
      ulTaskNotifyTake() with the xClearCountOnExit parameter set to pdTRUE, and
      a block time of 0 (don't block). */
-    uint32_t rc = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdTRUE, 0);
-    // myASSERT(!rc); 
-    // Note: Physical removal and insertion of the card seems to 
+    // uint32_t rc = 
+    ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdTRUE, 0);
+    // myASSERT(!rc);
+    // Note: Physical removal and insertion of the card seems to
     // cause spurious interrupts which can show up here.
 
     // start them exactly simultaneously to avoid races (in extreme cases
@@ -164,13 +146,13 @@ void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t len
     dma_start_channel_mask((1u << spi_p->tx_dma) | (1u << spi_p->rx_dma));
 }
 
-bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {    
+bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {
     myASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
-    /* Wait until master completes transfer or time out has occured. */    
+    /* Wait until master completes transfer or time out has occured. */
     // Wait for notification from ISR.
     uint32_t rc = ulTaskNotifyTakeIndexed(
         NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
-    if (!rc) { 
+    if (!rc) {
         // This indicates that xTaskNotifyWait() returned without the
         // calling task receiving a task notification. The calling task will
         // have been held in the Blocked state to wait for its notification
@@ -181,12 +163,12 @@ bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {
     bool spi_ok = chk_spi(spi_p->hw_inst);
     if (!rc || !spi_ok) {
 #       ifndef NDEBUG
-            // DBG_PRINTF("RX DMA control regs:\n");
-            // print_dma_ctrl(&dma_hw->ch[spi_p->rx_dma]); // pico-sdk\src\rp2_common\hardware_dma\dma.c
-            // DBG_PRINTF("\n");
-            DBG_PRINTF("DMA CTRL_TRIG: 0b%s\n", uint_binary_str(dma_hw->ch[spi_p->rx_dma].ctrl_trig));
-            DBG_PRINTF("SPI SSPCR0: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr0));
-            DBG_PRINTF("SPI SSPCR1: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr1));
+        // DBG_PRINTF("RX DMA control regs:\n");
+        // print_dma_ctrl(&dma_hw->ch[spi_p->rx_dma]); // pico-sdk\src\rp2_common\hardware_dma\dma.c
+        // DBG_PRINTF("\n");
+        DBG_PRINTF("DMA CTRL_TRIG: 0b%s\n", uint_binary_str(dma_hw->ch[spi_p->rx_dma].ctrl_trig));
+        DBG_PRINTF("SPI SSPCR0: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr0));
+        DBG_PRINTF("SPI SSPCR1: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr1));
 #       endif
         return false;
     }
@@ -212,7 +194,7 @@ bool spi_transfer(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
 void spi_lock(spi_t *spi_p) {
     myASSERT(spi_p->mutex);
     xSemaphoreTake(spi_p->mutex, portMAX_DELAY);
-    myASSERT(0 == spi_p->owner);    
+    myASSERT(0 == spi_p->owner);
     spi_p->owner = xTaskGetCurrentTaskHandle();
 }
 void spi_unlock(spi_t *spi_p) {
@@ -222,27 +204,6 @@ void spi_unlock(spi_t *spi_p) {
     xSemaphoreGive(spi_p->mutex);
 }
 
-typedef struct ih_added_rec_t {
-    uint num;
-    bool added;
-} ih_added_rec_t;
-static ih_added_rec_t ih_added_recs[] = {
-    {DMA_IRQ_0, false},
-    {DMA_IRQ_1, false}
-};
-static bool is_handler_added(const uint num) {
-    for (size_t i = 0; i < count_of(ih_added_recs); ++i)
-        if (num == ih_added_recs[i].num)
-            return ih_added_recs[i].added;
-    return false;
-}
-static void mark_handler_added(const uint num) {
-    for (size_t i = 0; i < count_of(ih_added_recs); ++i)
-        if (num == ih_added_recs[i].num) {
-            ih_added_recs[i].added = true;
-            break;
-        }
-}
 bool my_spi_init(spi_t *spi_p) {
     auto_init_mutex(my_spi_init_mutex);
     mutex_enter_blocking(&my_spi_init_mutex);
@@ -257,7 +218,7 @@ bool my_spi_init(spi_t *spi_p) {
         if (!spi_p->baud_rate)
             spi_p->baud_rate = 10 * 1000 * 1000;
         if (!spi_p->DMA_IRQ_num)
-            spi_p->DMA_IRQ_num = DMA_IRQ_0;            
+            spi_p->DMA_IRQ_num = DMA_IRQ_0;
 
         /* Configure component */
         // Enable SPI at 100 kHz and connect to GPIOs
@@ -317,41 +278,28 @@ bool my_spi_init(spi_t *spi_p) {
         /* Theory: we only need an interrupt on rx complete,
         since if rx is complete, tx must also be complete. */
 
-        /* Configure the processor to run dma_handler() when DMA IRQ 0/1 is asserted */
-
         // Tell the DMA to raise IRQ line 0/1 when the channel finishes a block
-        if (!is_handler_added(spi_p->DMA_IRQ_num)) {
-            static void (*spi_irq_handler_p)();
-            switch (spi_p->DMA_IRQ_num) {
-                case DMA_IRQ_0:
-                    spi_irq_handler_p = spi_irq_handler_0;
-                    dma_channel_set_irq0_enabled(spi_p->rx_dma, true);
-                    dma_channel_set_irq0_enabled(spi_p->tx_dma, false);
-                    break;
-                case DMA_IRQ_1:
-                    spi_irq_handler_p = spi_irq_handler_1;
-                    dma_channel_set_irq1_enabled(spi_p->rx_dma, true);
-                    dma_channel_set_irq1_enabled(spi_p->tx_dma, false);
-                    break;
-                default:
-                    myASSERT(false);
-            }
-            if (spi_p->use_exclusive_DMA_IRQ_handler) {
-                irq_set_exclusive_handler(spi_p->DMA_IRQ_num, *spi_irq_handler_p);
-            } else {
-                irq_add_shared_handler(
-                    spi_p->DMA_IRQ_num, *spi_irq_handler_p,
-                    PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
-            }
-            mark_handler_added(spi_p->DMA_IRQ_num);
+        switch (spi_p->DMA_IRQ_num) {
+            case DMA_IRQ_0:
+                // Clear any pending interrupts:
+                dma_hw->ints0 = 1 << spi_p->rx_dma;
+                dma_hw->ints0 = 1 << spi_p->tx_dma;
+                dma_channel_set_irq0_enabled(spi_p->rx_dma, true);
+                dma_channel_set_irq0_enabled(spi_p->tx_dma, false);
+                break;
+            case DMA_IRQ_1:
+                // Clear any pending interrupts:
+                dma_hw->ints1 = 1 << spi_p->rx_dma;
+                dma_hw->ints1 = 1 << spi_p->tx_dma;
+                dma_channel_set_irq1_enabled(spi_p->rx_dma, true);
+                dma_channel_set_irq1_enabled(spi_p->tx_dma, false);
+                break;
+            default:
+                myASSERT(false);
         }
-        irq_set_enabled(spi_p->DMA_IRQ_num, true);
-        LED_INIT();
+        dma_irq_add_handler(spi_p->DMA_IRQ_num, spi_p->use_exclusive_DMA_IRQ_handler);
 
-        if (spi0 == spi_p->hw_inst)
-            spi_ps[0] = spi_p;
-        else
-            spi_ps[1] = spi_p;
+        LED_INIT();
 
         spi_p->initialized = true;
         spi_unlock(spi_p);

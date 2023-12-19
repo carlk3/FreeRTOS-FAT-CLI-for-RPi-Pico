@@ -182,42 +182,6 @@ int ff_stdio_fail(const char *const func, char const *const str,
     return error;
 }
 
-/*******************************************************************************
- * Function Name: configure_fault_register
- ********************************************************************************
- * Summary:
- *  This function configures the fault registers(bus fault and usage fault). See
- *  the Arm documentation for more details on the registers.
- *
- *******************************************************************************/
-void configure_fault_register(void) {
-    /* Set SCB->SHCSR.BUSFAULTENA so that BusFault handler instead of the
-     * HardFault handler handles the BusFault.
-     */
-    //	SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA_Msk;
-
-#ifdef DEBUG_FAULT
-    /* If ACTLR.DISDEFWBUF is not set to 1, the imprecise BusFault will occur.
-     * For the imprecise BusFault, the fault stack information won't be
-     * accurate. Setting ACTLR.DISDEFWBUF bit to 1 so that bus faults will be
-     * precise. Refer Arm documentation for detailed explanation on precise and
-     * imprecise BusFault. WARNING: This will decrease the performance because
-     * any store to memory must complete before the processor can execute the
-     * next instruction. Don't enable always, if it is not necessary.
-     */
-    SCnSCB->ACTLR |= SCnSCB_ACTLR_DISDEFWBUF_Msk;
-
-    /* Enable UsageFault when processor executes an divide by 0 */
-    SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;
-
-    /* Set SCB->SHCSR.USGFAULTENA so that faults such as DIVBYZERO, UNALIGNED,
-     * UNDEFINSTR etc are handled by UsageFault handler instead of the HardFault
-     * handler.
-     */
-    SCB->SHCSR |= SCB_SHCSR_USGFAULTENA_Msk;
-#endif
-}
-
 void my_assert_func(const char *file, int line, const char *func,
                     const char *pred) {
     TRIG();  // DEBUG

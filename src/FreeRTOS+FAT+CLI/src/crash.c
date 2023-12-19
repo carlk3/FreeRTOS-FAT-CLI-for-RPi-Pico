@@ -13,6 +13,7 @@ specific language governing permissions and limitations under the License.
 */
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 //
 #include "pico/stdlib.h"
 #include "RP2040.h"
