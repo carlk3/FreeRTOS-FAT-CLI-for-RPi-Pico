@@ -222,7 +222,7 @@ void bench() {
 
     uint8_t *buf = pvPortMalloc(BUF_SIZE);
     if (!buf) {
-        EMSG_PRINTF("pvPortMalloc(%zu) failed\n", BUF_SIZE * sizeof(uint32_t));
+        EMSG_PRINTF("pvPortMalloc(%zu) failed\n", BUF_SIZE);
     }
 
     sd_card_t *sd_card_p = get_current_sd_card_p();

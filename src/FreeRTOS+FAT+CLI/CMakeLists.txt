@@ -13,6 +13,7 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         ../Lab-Project-FreeRTOS-FAT/ff_string.c
         ../Lab-Project-FreeRTOS-FAT/ff_sys.c
         ../Lab-Project-FreeRTOS-FAT/ff_time.c 
+        portable/RP2040/dma_interrupts.c
         portable/RP2040/ff_sddisk.c
         portable/RP2040/sd_card.c
         portable/RP2040/SPI/crc.c

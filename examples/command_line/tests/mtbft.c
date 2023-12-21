@@ -225,18 +225,24 @@ void killall(const size_t parallelism, task_args_t args_a[parallelism]) {
     }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstack-usage="
 // Specify size in Mebibytes (1024x1024 bytes)
 void mtbft(const size_t parallelism, const size_t size_MiB,
            const char *pathnames[parallelism]) {
     myASSERT(size_MiB);
+    myASSERT(parallelism <= 10); // Arbitrary limit
+
+    task_args_t args_a[parallelism];
+
+    memset(args_a, 0, sizeof args_a);
+
     if (4095 < size_MiB) {
         task_printf("Warning: Maximum file size: 2^32 - 1 bytes on FAT volume\n");
     }
 
     uint64_t size_B = (uint64_t)size_MiB * 1024 * 1024;
 
-    task_args_t args_a[parallelism];
-    memset(args_a, 0, sizeof args_a);
     {
         /* Declare a variable to hold the data associated with the created
         event group. */
@@ -329,5 +335,6 @@ void mtbft(const size_t parallelism, const size_t size_MiB,
     if (bytes_xfered)
         report("Summary", bytes_xfered, elapsed);
 }
+#pragma GCC diagnostic pop
 
 /* [] END OF FILE */

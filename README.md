@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico
-# v2.4.1
+# v2.4.2
 ## C/C++ Library for SD Cards on the Pico
 
 This project is essentially a 
@@ -15,6 +15,13 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.4.2 
+* Bug fix: `rp2040_sdio_tx_poll` called the DMA IRQ handler for any exception to "Verify that IRQ handler gets called even if we are in hardfault handler". 
+However, it was using a mask for *all* exceptions, including PendSV and SysTick which are normal in FreeRTOS. This occasionally caused writes to fail with a CRC error.
+* Unified DMA IRQ handling: merge SPI and SDIO DMA IRQ handling. 
+Only add IRQ handler once. 
+Fix bug where `rp2040_sdio_stop` always disabled the channel on DMA_IRQ_1.
+* `command_line` example: Use the RTOS Daemon (Timer Service) Task instead of a separate task to execute unmount request from card detect interrupt
 ### v2.4.1
 Pick up [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT) [Fix dynamic FAT variant detection](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT/pull/56) 
 ### v2.4.0
@@ -318,20 +325,23 @@ Furthermore, the CMD signal must be on GPIO D0 GPIO number - 2, modulo 32. (This
 * Wires should be kept short and direct. SPI operates at HF radio frequencies.
 
 ### Pull Up Resistors and other electrical considerations
-* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector (or tristate). For [MMC](https://en.wikipedia.org/wiki/MultiMediaCard) cards, it is imperative to pull this up.
-However, modern SD cards use strong push pull tristateable outputs and don't seem to need this pull up.
-On some SD cards, you can even configure the card's output drivers using the Driver Stage Register (DSR).[^4]).
+* The SPI MISO (**DO** on SD card, **SPI**x **RX** on Pico) is open collector or tristateable push-pull, depending on the type of card.
+[MMC](https://en.wikipedia.org/wiki/MultiMediaCard)s use an open collector bus, so it is imperative to pull this up if you want compatibility with MMCs.
+However, modern SD cards use strong push-pull tristateable outputs and shouldn't need this pull up.
+On some SD cards, you can configure the card's output drivers using the Driver Stage Register (DSR).[^4]).
 The Pico internal `gpio_pull_up` is weak: around 56uA or 60kΩ.
 If a pull up is needed, it's best to add an external pull up resistor of around 5-50 kΩ to 3.3v.
 The internal `gpio_pull_up` can be disabled in the hardware configuration by setting the `no_miso_gpio_pull_up` attribute of the `spi_t` object.
-* The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. This is what enables the tristate buffer for Data Out (DO), among other things. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized. It is imperative to pull it up for any devices on the bus that aren't initialized. For example, if you have two SD cards on one bus but the firmware is aware of only one card (see hw_config); you shouldn't let the CS float on the unused one. 
-* Driving the SD card directly with the GPIOs is not ideal. Take a look at the CM1624 (https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. 
+* The SPI Slave Select (SS), or Chip Select (CS) line enables one SPI slave of possibly multiple slaves on the bus. This is what enables the tristate buffer for Data Out (DO), among other things. It's best to pull CS up so that it doesn't float before the Pico GPIO is initialized. It is imperative to pull it up for any devices on the bus that aren't initialized. For example, if you have two SD cards on one bus but the firmware is aware of only one card (see hw_config), don't let the CS float on the unused one. At power up the CS/DAT3 line has a 50 kΩ pull up enabled in the SD card, but I wouldn't necessarily count on that. It will be disabled if the card is initialized,
+and it won't be enabled again until the card is power cycled. Also, the RP2040 defaults GPIO pins to pull down, which might override the SD card's pull up.
+* Driving the SD card directly with the GPIOs is not ideal. Take a look at the [CM1624](https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. 
+This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. Ideally, the resistance should be towards the low end for fat PCB traces, and towards the high end for flying wires, but if you have a drawer full of 47 Ω resistors they'll probably work well enough.
 * It can be helpful to add a decoupling capacitor or three (e.g., 100 nF, 1 µF, and 10 µF) between 3.3 V and GND on the SD card. ChaN also [recommends](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug) putting a 22 µH inductor in series with the Vcc (or "Vdd") line to the SD card.
 * Note: the [Adafruit Breakout Board](https://learn.adafruit.com/assets/93596) takes care of the pull ups and decoupling caps, but the Sparkfun one doesn't. And, you can never have too many decoupling caps.
 
 ## Notes about Card Detect
 * There is one case in which Card Detect can be important: when the user can hot swap the physical card while the file system is mounted. In this case, the file system might have no way of knowing that the card was swapped, and so it will continue to assume that its prior knowledge of the FATs and directories is still valid. File system corruption and data loss are the likely results.
-* If Card Detect is used, in order to detect a card swap there needs to be a way for the application to be made aware of a change in state when the card is removed. This could take the form of a GPIO interrupt (see 
+* If Card Detect is used, in order to detect a card swap there needs to be a way for the application to be made aware of a change in state when the card is removed. This could take the form of a GPIO interrupt (see
 [examples/command_line](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/783e3dce97e65d65e592eb4e7f01e8033c2ade5a/examples/command_line/src/main.cpp#L21)), 
 or polling.
 * Some workarounds for absence of Card Detect:
@@ -929,7 +939,7 @@ SD Status.
 
 > -- SD Card Association; Physical Layer Specification Version 3.01
 
-This is typically 4 MiB for a 16 or 32 GB card, for example. Of course, nobody is going to be using 4 MiB write buffers on a Pico, but the AU is still important. For good performance and wear tolerance, it is recommended that the "disk partition" be aligned to an AU boundary. [SD Memory Card Formatter](https://www.sdcard.org/downloads/formatter/) makes this happen. For my 16 GB card, it set "Partition Starting Offset	4,194,304 bytes". This accomplished by inserting "hidden sectors" between the actual start of the physical media and the start of the volume. Also, it might be helpful to have your write size be some factor or multiple of the segment size.
+This is typically 4 MiB for a 16 or 32 GB card, for example. Of course, nobody is going to be using 4 MiB write buffers on a Pico, but the AU is still important. For good performance and wear tolerance, it is recommended that the "disk partition" be aligned to an AU boundary. [SD Memory Card Formatter](https://www.sdcard.org/downloads/formatter/) makes this happen. For my 16 GB card, it set "Partition Starting Offset	4,194,304 bytes". This accomplished by inserting "hidden sectors" between the actual start of the physical media and the start of the volume. Also, it might be helpful to have your write size be some factor of the segment size.
 
 There is a controller in each SD card running all kinds of internal processes. When an amount of data to be written is smaller than a segment, the segment is read, modified in memory, and then written again. SD cards use various strategies to speed this up. Most implement a "translation layer". For any I/O operation, a translation from virtual to physical address is carried out by the controller. If data inside a segment is to be overwritten, the translation layer remaps the virtual address of the segment to another erased physical address. The old physical segment is marked dirty and queued for an erase. Later, when it is erased, it can be reused. Usually, SD cards have a cache of one or more segments for increasing the performance of read and write operations. The SD card is a "black box": much of this is invisible to the user, except as revealed in the Card-Specific Data register (CSD), SD_STATUS, and the observable performance characteristics. So, the write times are far from deterministic.
 
@@ -950,7 +960,12 @@ you could write a file full of 0xFF bytes (chosen to avoid flash memory "wear") 
 Then 
 [ff_fopen](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fopen.html) 
 it in mode "r+" at run time.
-Obviously, you'd need to store a header or something to keep track of how much valid data is in the file.
+Obviously, you will need some way to keep track of how much valid data is in the file. 
+You could use a file header.
+Alternatively, if the file contains text, you could write an End-Of-File (EOF) character. 
+In DOS, this is the character 26, which is the Control-Z character.
+Alternatively, if the file contains records, each record could contain a magic number or checksum, so you can easily tell when you've reached the end of the valid records.
+(This might be an obvious choice if you're padding the record length to a multiple of 512 bytes.)
 
 ## Appendix E: Troubleshooting
 * **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.
@@ -959,6 +974,9 @@ Obviously, you'd need to store a header or something to keep track of how much v
   add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
   ```
   You might see a clue in the messages.
+* Power cycle the SD card. Once an SD card is in SPI mode, the only way to get it back to SD mode is to power cycle it.
+At power up, an SD card's CS/DAT3 line has a 50 kΩ pull up enabled in the card, but it will be disabled if the card is initialized,
+and it won't be enabled again until the card is power cycled.
 * Try lowering the SPI or SDIO baud rate (e.g., in `hw_config.c`). This will also make it easier to use things like logic analyzers.
   * For SPI, this is in the
   [spi_t](#an-instance-of-spi_t-describes-the-configuration-of-one-rp2040-spi-controller) instance.

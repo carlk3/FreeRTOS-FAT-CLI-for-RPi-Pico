@@ -12,8 +12,7 @@ enum {
 enum {
 	NOTIFICATION_IX_reserved,
     NOTIFICATION_IX_STDIO,
-	NOTIFICATION_IX_SD_SPI,
-    NOTIFICATION_IX_UNMOUNT  
+	NOTIFICATION_IX_SD_SPI  
 };
 
 #ifdef __cplusplus

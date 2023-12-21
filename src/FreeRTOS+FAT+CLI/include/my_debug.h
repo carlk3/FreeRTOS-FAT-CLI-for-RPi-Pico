@@ -13,28 +13,19 @@ specific language governing permissions and limitations under the License.
 */
 #pragma once
 
-#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <time.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//#include "pico/stdio.h"
-
-void mark_start_time();
-time_t GLOBAL_uptime_seconds();
 
 #ifdef ANALYZER
 #  define TRIG() gpio_put(15, 1)  // DEBUG
 #else 
 #  define TRIG()
 #endif
-
-extern void vLoggingPrintf(const char *pcFormat, ...)
-    __attribute__((format(__printf__, 1, 2)));
 
 /* USE_PRINTF
 If this is defined and not zero, 

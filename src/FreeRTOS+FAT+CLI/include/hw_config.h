@@ -13,6 +13,7 @@ specific language governing permissions and limitations under the License.
 */
 #pragma once
 
+#include <stddef.h>
 #include "sd_card.h"    
     
 #ifdef __cplusplus

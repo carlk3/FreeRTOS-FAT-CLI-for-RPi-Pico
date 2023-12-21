@@ -1,5 +1,9 @@
 #include <limits.h>
+
 #include "hardware/gpio.h"
+//
+#include "FreeRTOS.h"
+#include "timers.h"
 //
 #include "ff_utils.h"
 #include "hw_config.h"
@@ -9,23 +13,35 @@
 //
 #include "unmounter.h"
 
-static TaskHandle_t th;
+static void vDeferredHandlingFunction(void *pvParameter1, uint32_t gpio) {
+    for (size_t i = 0; i < sd_get_num(); ++i) {
+        sd_card_t *sd_card_p = sd_get_by_num(i);
+        if (sd_card_p->card_detect_gpio == gpio) {
+            if (sd_card_p->ff_disk.xStatus.bIsMounted) {
+                DBG_PRINTF("(Card Detect Interrupt: unmounting %s)\n", sd_card_p->device_name);
+                unmount(sd_card_p->device_name);
+            }
+            sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
+            sd_card_detect(sd_card_p);
+        }
+    }
+}
 
 static void card_detect_callback(uint gpio, uint32_t events) {
-    myASSERT(th);
     /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
      it will get set to pdTRUE inside the interrupt safe API function if a
      context switch is required. */
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    /* Send a notification directly to the task to which interrupt processing is
-     being deferred. */
-    xTaskNotifyIndexedFromISR(th,                        // xTaskToNotify,
-                              NOTIFICATION_IX_UNMOUNT,   // uxIndexToNotify,
-                              gpio,                      // ulValue,
-                              eSetValueWithOverwrite,    // eAction,
-                              &xHigherPriorityTaskWoken  // pxHigherPriorityTaskWoken
-    );
+    /* Send a pointer to the interrupt's deferred handling function to the daemon task. */
+    BaseType_t rc =
+        xTimerPendFunctionCallFromISR(vDeferredHandlingFunction, /* Function to execute. */
+                                      NULL,                      /* Not used. */
+                                      gpio,
+                                      &xHigherPriorityTaskWoken);
+
+    configASSERT(pdPASS == rc);
+
     /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
     If xHigherPriorityTaskWoken was set to pdTRUE inside
      vTaskNotifyGiveFromISR() then calling portYIELD_FROM_ISR() will
@@ -34,8 +50,7 @@ static void card_detect_callback(uint gpio, uint32_t events) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-// If the card is physically removed, unmount the filesystem:
-static void unmounterTask(void *arg) {
+void unmounter_init() {
     // Implicitly called by disk_initialize,
     // but called here to set up the GPIOs
     // before enabling the card detect interrupt:
@@ -51,37 +66,4 @@ static void unmounterTask(void *arg) {
                 true, &card_detect_callback);
         }
     }
-    for (;;) {
-        uint32_t gpio;
-        BaseType_t ok = xTaskNotifyWaitIndexed(NOTIFICATION_IX_UNMOUNT,  // uxIndexToWaitOn,
-                                               0x00,                     // ulBitsToClearOnEntry,
-                                               ULONG_MAX,                // ulBitsToClearOnExit,
-                                               &gpio,                    // pulNotificationValue,
-                                               portMAX_DELAY             // xTicksToWait
-        );
-        if (pdTRUE != ok)
-            continue;
-
-        for (size_t i = 0; i < sd_get_num(); ++i) {
-            sd_card_t *sd_card_p = sd_get_by_num(i);
-            if (sd_card_p->card_detect_gpio == gpio) {
-                if (sd_card_p->ff_disk.xStatus.bIsMounted) {
-                    DBG_PRINTF("(Card Detect Interrupt: unmounting %s)\n", sd_card_p->device_name);
-                    unmount(sd_card_p->device_name);
-                }
-                sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
-                sd_card_detect(sd_card_p);
-            }
-        }
-    }
-}
-
-void unmounter_init() {
-    static StackType_t xStack[256];
-    static StaticTask_t xTaskBuffer;
-    th = xTaskCreateStatic(
-        unmounterTask, "Unmounter Task", sizeof xStack / sizeof xStack[0], 0,
-        1, /* Priority at which the task is created. */
-        xStack, &xTaskBuffer);
-    configASSERT(th);
 }
