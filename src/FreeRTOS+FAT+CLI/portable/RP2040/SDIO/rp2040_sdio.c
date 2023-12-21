@@ -681,7 +681,10 @@ void sdio_irq_handler(sd_card_t *sd_card_p) {
 // Check if transmission is complete
 sdio_status_t rp2040_sdio_tx_poll(sd_card_t *sd_card_p, uint32_t *bytes_complete)
 {
-    if (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)
+    // if (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)    
+    // In FreeRTOS, PendSV, SysTick, and maybe SVCall are normal!
+    // The HardFault is exception number 3 in the vector table.
+    if (3 == SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)
     {
         // Verify that IRQ handler gets called even if we are in hardfault handler
         sdio_irq_handler(sd_card_p);
