@@ -16,7 +16,12 @@ It is wrapped up in a complete runnable project, with a little command line inte
 
 ## What's new
 ### v2.4.2 
-* command_line example: Use the RTOS Daemon (Timer Service) Task instead of a separate task to execute unmount request from card detect interrupt
+* Bug fix: `rp2040_sdio_tx_poll` called the DMA IRQ handler for any exception to "Verify that IRQ handler gets called even if we are in hardfault handler". 
+However, it was using a mask for *all* exceptions, including PendSV and SysTick which are normal in FreeRTOS. This occasionally caused writes to fail with a CRC error.
+* Unified DMA IRQ handling: merge SPI and SDIO DMA IRQ handling. 
+Only add IRQ handler once. 
+Fix bug where `rp2040_sdio_stop` always disabled the channel on DMA_IRQ_1.
+* `command_line` example: Use the RTOS Daemon (Timer Service) Task instead of a separate task to execute unmount request from card detect interrupt
 ### v2.4.1
 Pick up [Lab-Project-FreeRTOS-FAT](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT) [Fix dynamic FAT variant detection](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT/pull/56) 
 ### v2.4.0
