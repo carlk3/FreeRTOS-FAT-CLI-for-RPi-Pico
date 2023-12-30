@@ -18,8 +18,6 @@ specific language governing permissions and limitations under the License.
 //
 #include "pico/mutex.h"
 //
-#include "FreeRTOS.h"
-//
 #include "dma_interrupts.h"
 #include "hw_config.h"
 #include "my_debug.h"
@@ -52,7 +50,7 @@ void spi_irq_handler(spi_t *spi_p) {
 
     /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
     If xHigherPriorityTaskWoken was set to pdTRUE inside
-     vTaskNotifyGiveFromISR() then calling portYIELD_FROM_ISR() will
+     vTaskNotifyGiveIndexedFromISR() then calling portYIELD_FROM_ISR() will
      request a context switch. If xHigherPriorityTaskWoken is still
      pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);

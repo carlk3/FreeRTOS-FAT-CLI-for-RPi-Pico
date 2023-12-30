@@ -285,8 +285,8 @@ void ls(const char *path) {
         }
         /* Create a string that includes the file name, the file size and the
          attributes string. */
-        FF_PRINTF("%s [%s] [size=%d]\n", xFindStruct.pcFileName, pcAttrib,
-                  (int)xFindStruct.ulFileSize);
+        FF_PRINTF("%s\t[%s]\t[size=%lu]\n", xFindStruct.pcFileName, pcAttrib,
+                  xFindStruct.ulFileSize);
     } while (FF_ERR_NONE == ff_findnext(&xFindStruct));
 }
 

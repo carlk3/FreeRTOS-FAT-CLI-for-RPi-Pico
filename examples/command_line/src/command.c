@@ -271,14 +271,14 @@ static void run_lliot(const size_t argc, const char *argv[]) {
 
     sd_card_t *sd_card_p = sd_get_by_name(argv[0]);
     if (!sd_card_p) {
-        printf("Unknown device name: \"%s\"\n", argv[0]);
+        EMSG_PRINTF("Unknown device name: \"%s\"\n", argv[0]);
         return;
     }
     low_level_io_tests(argv[0]);
 }
 static void run_big_file_test(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 3)) return;
-    
+
     const char *pcPathName = argv[0];
     size_t size = strtoul(argv[1], 0, 0);
     uint32_t seed = atoi(argv[2]);
