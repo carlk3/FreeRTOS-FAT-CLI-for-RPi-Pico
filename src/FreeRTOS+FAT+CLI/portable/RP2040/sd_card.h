@@ -94,6 +94,17 @@ typedef struct sd_sdio_if_t {
     sd_sdio_state_t state;
 } sd_sdio_if_t;
 
+typedef struct sd_card_state_t {    
+    int m_Status;      // Card status
+    CSD_t CSD;         // Card-Specific Data register.
+    CID_t CID;         // Card IDentification register
+    uint64_t sectors;  // Assigned dynamically
+    int card_type;     // Assigned dynamically
+    SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
+    TaskHandle_t owner;       // Assigned dynamically
+    FF_Disk_t ff_disk;  // FreeRTOS+FAT "disk" using this device
+} sd_card_state_t;
+
 typedef struct sd_card_t sd_card_t;
 
 // "Class" representing SD Cards
@@ -113,14 +124,7 @@ struct sd_card_t {
 
     /* The following fields are state variables and not part of the configuration. 
     They are dynamically assigned. */
-    int m_Status;      // Card status
-    CSD_t CSD;         // Card-Specific Data register.
-    CID_t CID;         // Card IDentification register
-    uint64_t sectors;  // Assigned dynamically
-    int card_type;     // Assigned dynamically
-    SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
-    TaskHandle_t owner;       // Assigned dynamically
-    FF_Disk_t ff_disk;  // FreeRTOS+FAT "disk" using this device
+    sd_card_state_t state;
 
     int (*init)(sd_card_t *sd_card_p);
     void (*deinit)(sd_card_t *sd_card_p);

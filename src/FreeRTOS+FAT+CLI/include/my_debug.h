@@ -154,8 +154,6 @@ void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords);
 bool compare_buffers_32(const char *s0, const uint32_t *pwords0, const char *s1,
                         const uint32_t *pwords1, const size_t nwords);
 
-bool DBG_Connected();
-
 #ifdef __cplusplus
 }
 #endif

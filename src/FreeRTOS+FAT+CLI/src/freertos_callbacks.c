@@ -1,5 +1,8 @@
 
 #include <stdio.h>
+#include <stdlib.h>
+//
+#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "task.h"
@@ -27,7 +30,7 @@ void vApplicationMallocFailedHook(void) {
     printf("\nMalloc failed! Task: %s\n", pcTaskGetName(NULL));
     __disable_irq(); /* Disable global interrupts. */
     vTaskSuspendAll();
-    __BKPT(5);
+    exit(5);
 }
 // #endif
 

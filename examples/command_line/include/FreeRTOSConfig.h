@@ -40,8 +40,11 @@ specific language governing permissions and limitations under the License.
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include "RP2040.h"
 #include "my_debug.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef portINLINE
 #  define portINLINE __inline
@@ -167,5 +170,9 @@ extern uint64_t time_us_64(void); // "hardware/timer.h"
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
 
 /* A header file that defines trace macro can be included here. */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FREERTOS_CONFIG_H */

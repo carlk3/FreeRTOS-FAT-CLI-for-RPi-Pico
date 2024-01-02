@@ -292,7 +292,7 @@ int dump_crash_info(crash_info_t const *const pCrashInfo, int next,
                 char tsbuf[32];
                 size_t n = strftime(tsbuf, sizeof tsbuf,
                                     "\n\tTime: %Y-%m-%d %H:%M:%S\n", ptm);
-                configASSERT(n);
+                myASSERT(n);
                 nwrit = snprintf(buf + nwrit, buf_sz - nwrit, "%s", tsbuf);
             }
             break;

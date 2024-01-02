@@ -14,14 +14,20 @@ specific language governing permissions and limitations under the License.
 
 #include <limits.h>
 #include <stdint.h>
+#include <string.h>
 //
+#include "FreeRTOS.h"
+#include "task.h"
 #include "FreeRTOS_strerror.h"
 #include "ff_utils.h"
 #include "my_debug.h"
 //
 #include "ff_stdio.h"
 
-#define FF_MAX_SS 512
+#ifdef NDEBUG
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 // Optimization:
 //  choose this to be size of an erasable sector ("smallest erasable block"):
 #define BUFFSZ (65536)  // In bytes. Should be a factor of 1 Mebibyte.
@@ -35,7 +41,7 @@ static void report(uint64_t size, uint64_t elapsed_us) {
                     (double)size / elapsed / 1024 / 1024,
                     (double)size / elapsed / 1000 / 1000);
     }
-    IMSG_PRINTF("%.3g KiB/s (%.3g kB/s) (%.3g kb/s)\n",
+    IMSG_PRINTF("%.3g KiB/s (%.3g kB/s) (%.3g kbit/s)\n",
                 (double)size / elapsed / 1024, (double)size / elapsed / 1000, 8.0 * size / elapsed / 1000);
 }
 
@@ -53,12 +59,13 @@ static bool create_big_file(const char *const pathname, uint64_t size,
         // This is an attempt at optimization:
         // rewriting the file should be faster than
         // writing it from scratch.
-        file_p = ff_fopen(pathname, "r+");
+        file_p = ff_fopen(pathname, "+"); // FF_MODE_READ | FF_MODE_WRITE
     } else {
-        file_p = ff_fopen(pathname, "w");
+        file_p = ff_fopen(pathname, "w"); // FF_MODE_WRITE | FF_MODE_CREATE | FF_MODE_TRUNCATE
     }
     if (!file_p) {
-        EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen(%s): %s (%d)\n", 
+            pathname, FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return false;
     }
     ff_rewind(file_p);
@@ -138,7 +145,7 @@ static bool check_big_file(char *pathname, uint64_t size,
     return true;
 }
 // Specify size in Mebibytes (1024x1024 bytes)
-void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
+static void run_big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
     //  /* Working buffer */
     int *buff = pvPortMalloc(BUFFSZ);
     if (!buff) {
@@ -158,5 +165,36 @@ void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
 
     vPortFree(buff);
 }
+typedef struct bft_args_t {
+    char cwdbuf[128];
+    char pathname[256];
+    size_t size;
+    uint32_t seed;
+} bft_args_t;
+static void big_file_test_task(void *vp) {
+    bft_args_t *args_p = vp;
+    if (args_p->cwdbuf) 
+        ff_chdir(args_p->cwdbuf);
+    run_big_file_test(args_p->pathname, args_p->size, args_p->seed);
+    vPortFree(args_p);
+    vTaskDelete(NULL);
+}
+void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
+    // Can't have the args on the stack because they might
+    // go away before the task starts
+    bft_args_t *args_p = pvPortMalloc(sizeof(bft_args_t));
+    // Each task maintains its own CWD
+    char *ret = ff_getcwd(args_p->cwdbuf, sizeof args_p->cwdbuf);
+    if (!ret) {
+        EMSG_PRINTF("ff_getcwd failed\n");
+    }
+    size_t rc = strlcpy(args_p->pathname, pathname, sizeof args_p->pathname);
+    assert(rc < sizeof args_p->pathname);
+    args_p->size = size_MiB;
+    args_p->seed = seed;
+    xTaskCreate(big_file_test_task, "big_file_test", 768, args_p,
+                uxTaskPriorityGet(xTaskGetCurrentTaskHandle()) - 1, NULL);
+}
+
 
 /* [] END OF FILE */

@@ -13,7 +13,7 @@ void bench();
 void big_file_test(const char *const pathname, size_t size,
                    uint32_t seed);
 void mtbft(const size_t size, const size_t parallelism,
-           const char *pathname[parallelism]);
+           char const *pathname[]);
 void vCreateAndVerifyExampleFiles(const char *pcMountPath);
 void vStdioWithCWDTest(const char *pcMountPath);
 void vMultiTaskStdioWithCWDTest(const char *const pcMountPath, uint16_t usStackSizeWords);
