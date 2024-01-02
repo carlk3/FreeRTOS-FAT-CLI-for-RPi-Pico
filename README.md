@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico
-# v2.4.2
+# v2.4.3
 ## C/C++ Library for SD Cards on the Pico
 
 This project is essentially a 
@@ -15,6 +15,11 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.4.3
+* Bug fix: Fix miscalculation in `get_num_sectors`.
+This error was visible in `bench` in the reported disk capacity.
+*  `command_line` example: Run `big_file_test` in separate task.
+This frees up the CLI to run commands like `run-time-stats`.
 ### v2.4.2 
 * Bug fix: `rp2040_sdio_tx_poll` called the DMA IRQ handler for any exception to "Verify that IRQ handler gets called even if we are in hardfault handler". 
 However, it was using a mask for *all* exceptions, including PendSV and SysTick which are normal in FreeRTOS. This occasionally caused writes to fail with a CRC error.
