@@ -35,9 +35,9 @@ See https://docs.google.com/spreadsheets/d/1BrzLWTyifongf_VQCc2IpJqXWtsrjmG7KnIb
 tab "Monster", for pin assignments assumed in this configuration file.
 */
 
+#include <assert.h>
 //
 #include "hw_config.h"
-#include "my_debug.h"
 
 // Hardware Configuration of SPI "objects"
 // Note: multiple SD cards can be driven by one SPI if they use different slave
@@ -52,8 +52,8 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
         .DMA_IRQ_num = DMA_IRQ_0,
-        // .use_exclusive_DMA_IRQ_handler = true,
-        .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
+        .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
+        .no_miso_gpio_pull_up = true
     },
     {   // spis[1]
         .hw_inst = spi1,  // RP2040 SPI component
@@ -61,10 +61,11 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .sck_gpio = 10,
         .mosi_gpio = 11,
         .set_drive_strength = true,
-        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-        .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+        .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
         .DMA_IRQ_num = DMA_IRQ_1,
-        .baud_rate = 12 * 1000 * 1000   // Actual frequency: 10416666.
+        .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
+        .no_miso_gpio_pull_up = true
     }
 };
 
@@ -72,21 +73,15 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
 static sd_spi_if_t spi_ifs[] = {
     {   // spi_ifs[0]
         .spi = &spis[0],  // Pointer to the SPI driving this card
-        .ss_gpio = 7,     // The SPI slave select GPIO for this SD card
-        .set_drive_strength = true,
-        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA
+        .ss_gpio = 7      // The SPI slave select GPIO for this SD card
     },
     {   // spi_ifs[1]
         .spi = &spis[1],   // Pointer to the SPI driving this card
-        .ss_gpio = 12,     // The SPI slave select GPIO for this SD card
-        .set_drive_strength = true,
-        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA
+        .ss_gpio = 12      // The SPI slave select GPIO for this SD card
     },
     {   // spi_ifs[2]
         .spi = &spis[1],   // Pointer to the SPI driving this card
-        .ss_gpio = 13,     // The SPI slave select GPIO for this SD card
-        .set_drive_strength = true,
-        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .ss_gpio = 13      // The SPI slave select GPIO for this SD card
     }
 };
 
@@ -106,16 +101,12 @@ static sd_sdio_if_t sdio_ifs[] = {
     {   // sdio_ifs[0]
         .CMD_gpio = 3,
         .D0_gpio = 4,
-        .SDIO_PIO = pio0,
-        .DMA_IRQ_num = DMA_IRQ_0,
-        .baud_rate = 15 * 1000 * 1000  // 15 MHz
+        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
     },
     {   // sdio_ifs[1]
         .CMD_gpio = 17,
         .D0_gpio = 18,
-        .SDIO_PIO = pio1,
-        .DMA_IRQ_num = DMA_IRQ_1,
-        .baud_rate = 15 * 1000 * 1000  // 15 MHz
+        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
     }
 };
 
@@ -208,7 +199,7 @@ static sd_card_t sd_cards[] = {  // One for each SD card
 size_t sd_get_num() { return count_of(sd_cards); }
 
 sd_card_t *sd_get_by_num(size_t num) {
-    myASSERT(num < sd_get_num());
+    assert(num < sd_get_num());
     if (num < sd_get_num()) {
         return &sd_cards[num];
     } else {

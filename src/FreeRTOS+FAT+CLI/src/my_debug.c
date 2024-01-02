@@ -182,7 +182,8 @@ int ff_stdio_fail(const char *const func, char const *const str,
     return error;
 }
 
-void my_assert_func(const char *file, int line, const char *func,
+void __attribute__((weak)) 
+my_assert_func(const char *file, int line, const char *func,
                     const char *pred) {
     TRIG();  // DEBUG
     // task_printf(
@@ -192,15 +193,13 @@ void my_assert_func(const char *file, int line, const char *func,
     fflush(stdout);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
-    for (;;)
-        __BKPT(3);  // Stop in GUI as if at a breakpoint (if debugging,
-                    // otherwise loop forever)
+    exit(1);
 }
 
 void assert_always_func(const char *file, int line, const char *func,
                         const char *pred) {
     TRIG();  // DEBUG
-    printf("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
+    error_message_printf_plain("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
            pred, file, line, func);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
@@ -236,14 +235,14 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
 }
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
     lock_printf();
-    printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
+    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
            pbytes, nbytes);
     fflush(stdout);
     size_t col = 0;
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
-        printf("%02hhx ", pbytes[byte_ix]);
+        IMSG_PRINTF("%02hhx ", pbytes[byte_ix]);
         if (++col > 31) {
-            printf("\n");
+            IMSG_PRINTF("\n");
             col = 0;
         }
         fflush(stdout);
@@ -253,14 +252,14 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
 // nwords is size in WORDS!
 void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     lock_printf();
-    printf("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
+    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
            pwords, nwords);
     fflush(stdout);
     size_t col = 0;
     for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {
-        printf("%08lx ", pwords[word_ix]);
+        IMSG_PRINTF("%08lx ", pwords[word_ix]);
         if (++col > 7) {
-            printf("\n");
+            IMSG_PRINTF("\n");
             col = 0;
         }
         fflush(stdout);

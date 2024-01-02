@@ -101,7 +101,7 @@ void unmount(const char *name) {
         return;
     }
     FF_FS_Remove(sd_card_p->mount_point);
-    FF_Disk_t *pxDisk = &sd_card_p->ff_disk;
+    FF_Disk_t *pxDisk = &sd_card_p->state.ff_disk;
     if (!pxDisk)
         return;
 
@@ -119,7 +119,7 @@ void eject(const char *const name) {
         return;
     }
     FF_FS_Remove(sd_card_p->mount_point);
-    FF_Disk_t *pxDisk = &sd_card_p->ff_disk;
+    FF_Disk_t *pxDisk = &sd_card_p->state.ff_disk;
     if (pxDisk) {
         if (pxDisk->xStatus.bIsMounted) {
             FF_FlushCache(pxDisk->pxIOManager);

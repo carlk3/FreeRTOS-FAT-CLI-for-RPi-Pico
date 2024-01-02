@@ -18,9 +18,6 @@ specific language governing permissions and limitations under the License.
 #include <stddef.h>    
 #include <stdint.h>
 #include <string.h>
-
-// #include "hardware/structs/scb.h"
-//
 #include "my_debug.h"
 
 #ifdef __cplusplus
@@ -44,25 +41,6 @@ __attribute__((always_inline)) static inline uint32_t calculate_checksum(uint32_
 	}
 	return checksum;
 }
-
-
-// // from Google Chromium's codebase:
-// #ifndef COUNT_OF    
-// #define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
-// #endif
-
-// // Patterned after CMSIS NVIC_SystemReset
-// __attribute__((__noreturn__)) static inline void system_reset() {
-//     __DSB(); /* Ensure all outstanding memory accesses included
-//          buffered write are completed before reset */
-//     scb_hw->aircr = ((0x5FAUL << 16U) | (1UL << 2U));
-//     __DSB(); /* Ensure completion of memory access */
-//     for (;;) {
-//         __asm volatile("nop");
-//     }
-// static inline void system_reset() {
-//     __NVIC_SystemReset();
-// }
 
 char const* uint_binary_str(unsigned int number);
 

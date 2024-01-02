@@ -152,7 +152,7 @@ static void bench_test(FF_FILE *file_p, uint8_t buf[BUF_SIZE]) {
 }
 static void bench_open_close(sd_card_t *sd_card_p, uint8_t *buf) {
     FF_PRINTF("Reading FAT and calculating Free Space\n");
-    switch (sd_card_p->ff_disk.pxIOManager->xPartition.ucType) {
+    switch (sd_card_p->state.ff_disk.pxIOManager->xPartition.ucType) {
         case FF_T_FAT12:
             IMSG_PRINTF("Type is FAT12");
             break;

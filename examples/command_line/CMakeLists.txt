@@ -21,7 +21,7 @@ add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
 # Add executable. Default name is the project name, version 0.1
 add_executable(command_line 
     config/hw_config.c
-    src/command.c
+    src/command.cpp
     src/data_log_demo.c
     src/main.cpp 
     src/stdio_cli.c

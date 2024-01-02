@@ -17,11 +17,11 @@ static void vDeferredHandlingFunction(void *pvParameter1, uint32_t gpio) {
     for (size_t i = 0; i < sd_get_num(); ++i) {
         sd_card_t *sd_card_p = sd_get_by_num(i);
         if (sd_card_p->card_detect_gpio == gpio) {
-            if (sd_card_p->ff_disk.xStatus.bIsMounted) {
+            if (sd_card_p->state.ff_disk.xStatus.bIsMounted) {
                 DBG_PRINTF("(Card Detect Interrupt: unmounting %s)\n", sd_card_p->device_name);
                 unmount(sd_card_p->device_name);
             }
-            sd_card_p->m_Status |= STA_NOINIT;  // in case medium is removed
+            sd_card_p->state.m_Status |= STA_NOINIT;  // in case medium is removed
             sd_card_detect(sd_card_p);
         }
     }

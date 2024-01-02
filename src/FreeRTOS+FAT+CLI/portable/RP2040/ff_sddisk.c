@@ -101,7 +101,7 @@ bool disk_init(sd_card_t *sd_card_p) {
     FF_CreationParameters_t xParameters;
     const uint32_t xIOManagerCacheSize = 4 * SECTOR_SIZE;
 
-    if (sd_card_p->ff_disk.xStatus.bIsInitialised == pdTRUE) {
+    if (sd_card_p->state.ff_disk.xStatus.bIsInitialised == pdTRUE) {
         // Already initialized
         return true;
     }
@@ -124,11 +124,11 @@ bool disk_init(sd_card_t *sd_card_p) {
 
     /* The pvTag member of the FF_Disk_t structure allows the structure to be
             extended to also include media specific parameters. */
-    sd_card_p->ff_disk.pvTag = sd_card_p;
+    sd_card_p->state.ff_disk.pvTag = sd_card_p;
 
     /* The number of sectors is recorded for bounds checking in the read and
      write functions. */
-    sd_card_p->ff_disk.ulNumberOfSectors = sd_card_p->sectors;
+    sd_card_p->state.ff_disk.ulNumberOfSectors = sd_card_p->state.sectors;
 
     /* Create the IO manager that will be used to control the disk –
      the FF_CreationParameters_t structure completed with the required
@@ -139,23 +139,23 @@ bool disk_init(sd_card_t *sd_card_p) {
     xParameters.ulSectorSize = SECTOR_SIZE;
     xParameters.fnWriteBlocks = prvWrite;
     xParameters.fnReadBlocks = prvRead;
-    xParameters.pxDisk = &sd_card_p->ff_disk;
+    xParameters.pxDisk = &sd_card_p->state.ff_disk;
     xParameters.pvSemaphore = (void *)xSemaphoreCreateRecursiveMutex();
     xParameters.xBlockDeviceIsReentrant = pdTRUE;
-    sd_card_p->ff_disk.pxIOManager = FF_CreateIOManger(&xParameters, &xError);
+    sd_card_p->state.ff_disk.pxIOManager = FF_CreateIOManger(&xParameters, &xError);
 
-    if ((sd_card_p->ff_disk.pxIOManager != NULL) &&
+    if ((sd_card_p->state.ff_disk.pxIOManager != NULL) &&
         (FF_isERR(xError) == pdFALSE)) {
         /* Record that the disk has been initialised. */
-        sd_card_p->ff_disk.xStatus.bIsInitialised = pdTRUE;
+        sd_card_p->state.ff_disk.xStatus.bIsInitialised = pdTRUE;
     } else {
         /* The disk structure was allocated, but the disk’s IO manager could
          not be allocated, so free the disk again. */
-        FF_SDDiskDelete(&sd_card_p->ff_disk);
+        FF_SDDiskDelete(&sd_card_p->state.ff_disk);
         FF_PRINTF("FF_SDDiskInit: FF_CreateIOManger: %s\n",
                   (const char *)FF_GetErrMessage(xError));
         configASSERT(!"disk's IO manager could not be allocated!");
-        sd_card_p->ff_disk.xStatus.bIsInitialised = pdFALSE;
+        sd_card_p->state.ff_disk.xStatus.bIsInitialised = pdFALSE;
     }
     return true;
 }
@@ -169,7 +169,7 @@ FF_Disk_t *FF_SDDiskInit(const char *pcName) {
         return NULL;
     }
     if (disk_init(sd_card_p))
-        return &sd_card_p->ff_disk;
+        return &sd_card_p->state.ff_disk;
     else
         return NULL;
 }
