@@ -87,8 +87,6 @@ specific language governing permissions and limitations under the License.
  */
 
 #include <stdio.h>
-// #include <string.h> // FreeRTOS_strerror
-//
 /* FreeRTOS+FAT headers. */
 #include "ff_headers.h"
 #include "ff_stdio.h"

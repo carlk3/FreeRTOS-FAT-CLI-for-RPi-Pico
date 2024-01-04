@@ -88,8 +88,10 @@ bool sd_init_driver() {
                 continue;
             myASSERT(sd_card_p->device_name);
             myASSERT(sd_card_p->mount_point);
+            myASSERT(sd_card_p->type);
             switch (sd_card_p->type) {
                 case SD_IF_SPI:
+                    myASSERT(sd_card_p->spi_if_p);
                     sd_spi_ctor(sd_card_p);
                     if (!my_spi_init(sd_card_p->spi_if_p->spi)) {
                         mutex_exit(&initialized_mutex);
@@ -98,6 +100,7 @@ bool sd_init_driver() {
                     myASSERT(1 == gpio_get(sd_card_p->spi_if_p->ss_gpio));
                     break;
                 case SD_IF_SDIO:
+                    myASSERT(sd_card_p->sdio_if_p);
                     sd_sdio_ctor(sd_card_p);
                     break;
             }  // switch (sd_card_p->type)

@@ -1,4 +1,5 @@
 **/build/**
 *.bak
 **/.vscode/**
+.trunk/*
 examples/simple_spi/CMakeFiles/cmake.check_cache

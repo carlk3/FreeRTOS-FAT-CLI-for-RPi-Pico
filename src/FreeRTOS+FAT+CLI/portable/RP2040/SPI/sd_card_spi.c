@@ -149,20 +149,20 @@
 #include <inttypes.h>
 //
 #include "crc.h"
+#include "ff_sddisk.h"
 #include "my_debug.h"
 #include "portability.h"
 #include "sd_card.h"
 #include "util.h"
-#include "ff_sddisk.h"
 
 #if defined(NDEBUG)
-#  pragma GCC diagnostic ignored "-Wunused-function"
-#  pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 #include "sd_spi.h"
 
 #ifndef TRACE
-#  define TRACE 0
+#define TRACE 0
 #endif
 
 #ifndef SD_CRC_ENABLED
@@ -176,7 +176,7 @@ static bool crc_on = false;
 #endif
 
 #define TRACE_PRINTF(fmt, args...)
-//#define TRACE_PRINTF printf  // task_printf
+// #define TRACE_PRINTF printf  // task_printf
 
 /* Control Tokens   */
 #define SPI_DATA_RESPONSE_MASK (0x1F)
@@ -217,8 +217,8 @@ static bool crc_on = false;
 
 #define SPI_CMD(x) (0x40 | (x & 0x3f))
 
-#ifdef NDEBUG 
-#  pragma GCC diagnostic ignored "-Wunused-variable"
+#ifdef NDEBUG
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
 static uint8_t sd_cmd_spi(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg) {
@@ -234,8 +234,7 @@ static uint8_t sd_cmd_spi(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg) 
 
     if (crc_on) {
         cmdPacket[5] = (crc7(cmdPacket, 5) << 1) | 0x01;
-    } else
-    {
+    } else {
         // CMD0 is executed in SD mode, hence should have correct CRC
         // CMD8 CRC verification is always enabled
         switch (cmd) {
@@ -279,7 +278,7 @@ static bool sd_wait_ready(sd_card_t *sd_card_p, uint32_t timeout) {
     uint32_t start = millis();
     do {
         resp = sd_spi_write(sd_card_p, 0xFF);
-    } while (resp == 0x00 && millis() - start < timeout);             
+    } while (resp == 0x00 && millis() - start < timeout);
 
     if (resp == 0x00) DBG_PRINTF("%s failed\n", __FUNCTION__);
 
@@ -287,10 +286,10 @@ static bool sd_wait_ready(sd_card_t *sd_card_p, uint32_t timeout) {
     return (resp > 0x00);
 }
 
-/* Locks the SD card and acquires its SPI 
+/* Locks the SD card and acquires its SPI
 Potential optimization: the SPI could be locked separately,
-so if there are multiple SD cards on one SPI, 
-another SD card could use the SPI during any gaps 
+so if there are multiple SD cards on one SPI,
+another SD card could use the SPI during any gaps
 in the first SD card's utilization.
 However, these gaps are generally small.
 */
@@ -435,7 +434,7 @@ static int chk_CMD13_response(uint32_t response) {
     return status;
 }
 
-#define SD_COMMAND_RETRIES 3 /*!< Times SPI cmd is retried when there is no response */
+#define SD_COMMAND_RETRIES 3    /*!< Times SPI cmd is retried when there is no response */
 #define SD_COMMAND_TIMEOUT 2000 /*!< Timeout in ms for response */
 
 static int sd_cmd(sd_card_t *sd_card_p, const cmdSupported cmd, uint32_t arg,
@@ -447,10 +446,10 @@ static int sd_cmd(sd_card_t *sd_card_p, const cmdSupported cmd, uint32_t arg,
     int32_t status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint32_t response;
 
+    myASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->spi_if_p->spi->owner);
+
     // No need to wait for card to be ready when sending the stop command
-    if (CMD12_STOP_TRANSMISSION != cmd
-        && CMD0_GO_IDLE_STATE != cmd) 
-    {
+    if (CMD12_STOP_TRANSMISSION != cmd && CMD0_GO_IDLE_STATE != cmd) {
         if (false == sd_wait_ready(sd_card_p, SD_COMMAND_TIMEOUT)) {
             DBG_PRINTF("%s:%d: Card not ready yet\n", __FILE__, __LINE__);
             return SD_BLOCK_DEVICE_ERROR_NO_RESPONSE;
@@ -541,7 +540,6 @@ static int sd_cmd(sd_card_t *sd_card_p, const cmdSupported cmd, uint32_t arg,
     return status;
 }
 
-
 /* R7 response pattern for CMD8 */
 #define CMD8_PATTERN (0xAA)
 
@@ -559,7 +557,8 @@ static int sd_cmd8(sd_card_t *sd_card_p) {
         // If check pattern is not matched, CMD8 communication is not valid
         if ((response & 0xFFF) != arg) {
             DBG_PRINTF("CMD8 Pattern mismatch 0x%" PRIx32 " : 0x%" PRIx32
-                       "\n", arg, response);
+                       "\n",
+                       arg, response);
             sd_card_p->state.card_type = CARD_UNKNOWN;
             status = SD_BLOCK_DEVICE_ERROR_UNUSABLE;
         }
@@ -598,7 +597,7 @@ static bool sd_wait_token(sd_card_t *sd_card_p, uint8_t token) {
         if (token == sd_spi_write(sd_card_p, SPI_FILL_CHAR)) {
             return true;
         }
-    } while (millis() - start < SD_COMMAND_TIMEOUT);             
+    } while (millis() - start < SD_COMMAND_TIMEOUT);
 
     DBG_PRINTF("sd_wait_token: timeout\n");
     return false;
@@ -639,7 +638,7 @@ static int sd_read_bytes(sd_card_t *sd_card_p, uint8_t *buffer, uint32_t length)
     return 0;
 }
 
-/* Transfer tx to SPI while receiving SPI to rx. 
+/* Transfer tx to SPI while receiving SPI to rx.
 tx or rx can be NULL if not important. */
 static void sd_spi_transfer_start(sd_card_t *sd_card_p, const uint8_t *tx, uint8_t *rx, size_t length) {
     return spi_transfer_start(sd_card_p->spi_if_p->spi, tx, rx, length);
@@ -650,7 +649,6 @@ static bool sd_spi_transfer_wait_complete(sd_card_t *sd_card_p, uint32_t timeout
 
 static int in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer_addr,
                              uint64_t ulSectorNumber, uint32_t ulSectorCount) {
-
     if (sd_card_p->state.m_Status & (STA_NOINIT | STA_NODISK))
         return SD_BLOCK_DEVICE_ERROR_PARAMETER;
     if (ulSectorNumber + ulSectorCount > sd_card_p->state.sectors)
@@ -668,9 +666,9 @@ static int in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer_addr,
     int status = SD_BLOCK_DEVICE_ERROR_NONE;
 
     // Write command to receive data
-    if (ulSectorCount == 1)    
+    if (ulSectorCount == 1)
         status = sd_cmd(sd_card_p, CMD17_READ_SINGLE_BLOCK, addr, false, 0);
-    else 
+    else
         status = sd_cmd(sd_card_p, CMD18_READ_MULTIPLE_BLOCK, addr, false, 0);
     if (SD_BLOCK_DEVICE_ERROR_NONE != status) {
         return status;
@@ -694,8 +692,8 @@ static int in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer_addr,
         }
         // read data
         sd_spi_transfer_start(sd_card_p, NULL, buffer_addr, _block_size);
-        
-        if (prev_buffer_addr) { 
+
+        if (prev_buffer_addr) {
             // Check previous block's CRC:
             if (!chk_crc16(prev_buffer_addr, _block_size, prev_block_crc)) {
                 DBG_PRINTF("%s: Invalid CRC received: 0x%" PRIx16 "\n", __func__, prev_block_crc);
@@ -735,13 +733,13 @@ static int sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer, uint64_t ulSect
                  ulSectorNumber, ulSectorCount);
     sd_acquire(sd_card_p);
     int status = SD_BLOCK_DEVICE_ERROR_NONE;
-    status = in_sd_read_blocks(sd_card_p, buffer, ulSectorNumber, ulSectorCount);   
+    status = in_sd_read_blocks(sd_card_p, buffer, ulSectorNumber, ulSectorCount);
     sd_release(sd_card_p);
     return status;
 }
 
 static int sd_write_block(sd_card_t *sd_card_p, const uint8_t *buffer,
-                           uint8_t token, uint32_t length) {
+                          uint8_t token, uint32_t length) {
     uint16_t crc = (~0);
     // indicate start of block
     sd_spi_write(sd_card_p, token);
@@ -750,9 +748,9 @@ static int sd_write_block(sd_card_t *sd_card_p, const uint8_t *buffer,
     sd_spi_transfer_start(sd_card_p, buffer, NULL, length);
 
     /* Optimization:
-    While the DMA is busy transfering the block data, 
+    While the DMA is busy transfering the block data,
     use the some of the wait time to calculate the CRC.
-    Typically, DMA transfer of the block data takes about 244 us, 
+    Typically, DMA transfer of the block data takes about 244 us,
     but the CRC16 calculation takes only about 66 us.
     */
 
@@ -807,7 +805,7 @@ static int in_sd_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
     if (sd_card_p->state.m_Status & (STA_NOINIT | STA_NODISK))
         return SD_BLOCK_DEVICE_ERROR_PARAMETER;
 
-    int status = SD_BLOCK_DEVICE_ERROR_NONE;    
+    int status = SD_BLOCK_DEVICE_ERROR_NONE;
     uint64_t addr;
 
     // SDSC Card (CCS=0) uses byte unit address
@@ -849,7 +847,7 @@ static int in_sd_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
          */
         sd_spi_write(sd_card_p, SPI_STOP_TRAN);
     }
-    /* 
+    /*
     Once the programming operation is completed, the
     host must check the results of the programming
     using the SEND_STATUS command (CMD13).
@@ -865,7 +863,7 @@ static int in_sd_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
     return sd_cmd(sd_card_p, CMD13_SEND_STATUS, 0, false, &stat);
 }
 static int sd_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
-                    uint64_t ulSectorNumber, uint32_t blockCnt) {
+                           uint64_t ulSectorNumber, uint32_t blockCnt) {
     sd_acquire(sd_card_p);
     TRACE_PRINTF("sd_write_blocks(0x%p, 0x%llx, 0x%lx)\n", buffer,
                  ulSectorNumber, blockCnt);
@@ -885,7 +883,7 @@ static uint32_t sd_go_idle_state(sd_card_t *sd_card_p) {
      * though there was no reset. In this scenario the first CMD0 will
      * not be interpreted as a command and get lost. For some cards retrying
      * the command overcomes this situation. */
-    for (int i = 0; i < SD_CMD0_GO_IDLE_STATE_RETRIES; i++) {   
+    for (int i = 0; i < SD_CMD0_GO_IDLE_STATE_RETRIES; i++) {
         sd_cmd(sd_card_p, CMD0_GO_IDLE_STATE, 0x0, false, &response);
         if (R1_IDLE_STATE == response) {
             break;
@@ -989,18 +987,18 @@ static int sd_init_medium(sd_card_t *sd_card_p) {
 
     if (!crc_on) {
         // Disable CRC
-        status = sd_cmd(sd_card_p, CMD59_CRC_ON_OFF, 0, false, 0);  
+        status = sd_cmd(sd_card_p, CMD59_CRC_ON_OFF, 0, false, 0);
     }
 
-    /* Disconnect the 50 KOhm pull-up resistor on CS (pin 1) of the card. 
-    The pull-up may be used for card detection. 
-    
-    At power up this line has a 50KOhm pull up enabled in the card. 
-    This resistor serves two functions Card detection and Mode Selection. 
-    For Mode Selection, the host can drive the line high or let it be pulled high to select SD mode. 
-    If the host wants to select SPI mode it should drive the line low. 
-    For Card detection, the host detects that the line is pulled high. 
-    This pull-up should be disconnected by the user, during regular data transfer, 
+    /* Disconnect the 50 KOhm pull-up resistor on CS (pin 1) of the card.
+    The pull-up may be used for card detection.
+
+    At power up this line has a 50KOhm pull up enabled in the card.
+    This resistor serves two functions Card detection and Mode Selection.
+    For Mode Selection, the host can drive the line high or let it be pulled high to select SD mode.
+    If the host wants to select SPI mode it should drive the line low.
+    For Card detection, the host detects that the line is pulled high.
+    This pull-up should be disconnected by the user, during regular data transfer,
     with SET_CLR_CARD_DETECT (ACMD42) command. */
 
     // int sd_cmd(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg, bool isAcmd, uint32_t *resp)
@@ -1116,7 +1114,7 @@ int sd_spi_init(sd_card_t *sd_card_p) {
         return sd_card_p->state.m_Status;
     }
     // CMD10, Response R2 (R1 byte + 16-byte block read)
-    if (SD_BLOCK_DEVICE_ERROR_NONE != 
+    if (SD_BLOCK_DEVICE_ERROR_NONE !=
         sd_cmd(sd_card_p, CMD10_SEND_CID, 0x0, false, 0)) {
         DBG_PRINTF("Didn't get a response from the disk\n");
         sd_release(sd_card_p);
@@ -1158,19 +1156,19 @@ static void sd_deinit(sd_card_t *sd_card_p) {
 }
 
 void sd_spi_ctor(sd_card_t *sd_card_p) {
-    myASSERT(sd_card_p->spi_if_p); // Must have an interface object
-    myASSERT(sd_card_p->spi_if_p->spi);  
-    
+    myASSERT(sd_card_p->spi_if_p);  // Must have an interface object
+    myASSERT(sd_card_p->spi_if_p->spi);
+
     // State variables:
     sd_card_p->state.m_Status = STA_NOINIT;
     sd_card_p->write_blocks = sd_write_blocks;
     sd_card_p->read_blocks = sd_read_blocks;
     sd_card_p->init = sd_spi_init;
     sd_card_p->deinit = sd_deinit;
-        sd_card_p->get_num_sectors = sd_spi_sectors;
+    sd_card_p->get_num_sectors = sd_spi_sectors;
     sd_card_p->sd_test_com = sd_spi_test_com;
 
-    // Initialize ss_gpio here to avoid conflicts 
+    // Initialize ss_gpio here to avoid conflicts
     // when multiple SD cards share an SPI bus
     // Chip select is active-low, so we'll initialise it to a
     // driven-high state.
@@ -1182,3 +1180,5 @@ void sd_spi_ctor(sd_card_t *sd_card_p) {
         gpio_set_drive_strength(sd_card_p->spi_if_p->ss_gpio, sd_card_p->spi_if_p->ss_gpio_drive_strength);
     }
 }
+
+/* [] END OF FILE */
