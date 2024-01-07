@@ -18,17 +18,26 @@ specific language governing permissions and limitations under the License.
 #include <stddef.h>    
 #include <stdint.h>
 #include <string.h>
+//
 #include "my_debug.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+// Greatest Common Divisor: Euclidian Algorithm
+// https://www.freecodecamp.org/news/euclidian-gcd-algorithm-greatest-common-divisor/
+int gcd(int a,int b);
+
+typedef int (*printer_t)(const char* format, ...);
+
 // works with negative index
 static inline int wrap_ix(int index, int n)
 {
     return ((index % n) + n) % n;
 }
+// Calculate arr indices with wrap around (+ and -)
 static inline int mod_floor(int a, int n) {
     return ((a % n) + n) % n;
 }
@@ -41,8 +50,6 @@ __attribute__((always_inline)) static inline uint32_t calculate_checksum(uint32_
 	}
 	return checksum;
 }
-
-char const* uint_binary_str(unsigned int number);
 
 static inline void ext_str(size_t const data_sz,
                            uint8_t const data[],
@@ -76,6 +83,8 @@ static inline uint32_t ext_bits16(unsigned char const *data, int msb, int lsb) {
     return ext_bits(16, data, msb, lsb);
 }
 
+char const* uint8_binary_str(uint8_t number);
+char const* uint_binary_str(unsigned int number);
 
 #ifdef __cplusplus
 }

@@ -47,6 +47,7 @@ enum {
 };
 
 typedef enum {
+    SD_IF_NONE,
     SD_IF_SPI,
     SD_IF_SDIO
 } sd_if_t;

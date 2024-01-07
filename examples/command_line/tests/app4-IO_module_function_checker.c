@@ -21,8 +21,8 @@ specific language governing permissions and limitations under the License.
 
 #include <stdio.h>
 #include <string.h>
-//#include "ff.h"         /* Declarations of sector size */
-//#include "diskio.h"     /* Declarations of disk functions */
+// #include "ff.h"         /* Declarations of sector size */
+// #include "diskio.h"     /* Declarations of disk functions */
 //
 #include "pico/mutex.h"
 //

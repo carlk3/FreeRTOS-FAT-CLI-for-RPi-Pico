@@ -45,10 +45,10 @@ specific language governing permissions and limitations under the License.
  *
  */
 
-#include "ff_sddisk.h"
-
-#include "ff_ioman.h"
+#include "ff_headers.h"
 #include "hw_config.h"
+//
+#include "ff_sddisk.h"
 
 #define HUNDRED_64_BIT 100ULL
 #define SECTOR_SIZE 512UL
@@ -98,7 +98,7 @@ BaseType_t FF_SDDiskDetect(FF_Disk_t *pxDisk) {
 
 bool disk_init(sd_card_t *sd_card_p) {
     FF_Error_t xError = 0;
-    FF_CreationParameters_t xParameters;
+    FF_CreationParameters_t xParameters = {};
     const uint32_t xIOManagerCacheSize = 4 * SECTOR_SIZE;
 
     if (sd_card_p->state.ff_disk.xStatus.bIsInitialised == pdTRUE) {
@@ -133,7 +133,6 @@ bool disk_init(sd_card_t *sd_card_p) {
     /* Create the IO manager that will be used to control the disk –
      the FF_CreationParameters_t structure completed with the required
      parameters, then passed into the FF_CreateIOManager() function. */
-    memset(&xParameters, 0, sizeof xParameters);
     xParameters.pucCacheMemory = NULL;
     xParameters.ulMemorySize = xIOManagerCacheSize;
     xParameters.ulSectorSize = SECTOR_SIZE;
@@ -276,8 +275,6 @@ BaseType_t FF_SDDiskShowPartition(FF_Disk_t *pxDisk) {
         ulTotalSizeKB = pxIOManager->xPartition.ulDataSectors / SECTORS_PER_KB;
         ulFreeSizeKB = (uint32_t)(ullFreeSectors / SECTORS_PER_KB);
 
-        /* It is better not to use the 64-bit format such as %Lu because it
-         might not be implemented. */
         FF_PRINTF("Partition Nr   %8u\n", pxDisk->xStatus.bPartitionNumber);
         FF_PRINTF("Type           %8u (%s)\n", pxIOManager->xPartition.ucType,
                   pcTypeName);

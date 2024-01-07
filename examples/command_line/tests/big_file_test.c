@@ -13,19 +13,22 @@ specific language governing permissions and limitations under the License.
 */
 
 #include <limits.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 //
 #include "FreeRTOS.h"
-#include "task.h"
 #include "FreeRTOS_strerror.h"
 #include "ff_utils.h"
 #include "my_debug.h"
+#include "task.h"
 //
 #include "ff_stdio.h"
+//
+#include "tests.h"
 
 #ifdef NDEBUG
-#  pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
 // Optimization:
@@ -48,7 +51,6 @@ static void report(uint64_t size, uint64_t elapsed_us) {
 // Create a file of size "size" bytes filled with random data seeded with "seed"
 static bool create_big_file(const char *const pathname, uint64_t size,
                             unsigned seed, int *buff) {
-
     /* Open the file, creating the file if it does not already exist. */
     FF_Stat_t xStat;
     size_t fsz = 0;
@@ -59,13 +61,13 @@ static bool create_big_file(const char *const pathname, uint64_t size,
         // This is an attempt at optimization:
         // rewriting the file should be faster than
         // writing it from scratch.
-        file_p = ff_fopen(pathname, "+"); // FF_MODE_READ | FF_MODE_WRITE
+        file_p = ff_fopen(pathname, "+");  // FF_MODE_READ | FF_MODE_WRITE
     } else {
-        file_p = ff_fopen(pathname, "w"); // FF_MODE_WRITE | FF_MODE_CREATE | FF_MODE_TRUNCATE
+        file_p = ff_fopen(pathname, "w");  // FF_MODE_WRITE | FF_MODE_CREATE | FF_MODE_TRUNCATE
     }
     if (!file_p) {
-        EMSG_PRINTF("ff_fopen(%s): %s (%d)\n", 
-            pathname, FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
+        EMSG_PRINTF("ff_fopen(%s): %s (%d)\n",
+                    pathname, FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         return false;
     }
     ff_rewind(file_p);
@@ -101,7 +103,6 @@ static bool create_big_file(const char *const pathname, uint64_t size,
 // and verify the data
 static bool check_big_file(char *pathname, uint64_t size,
                            unsigned int seed, int *buff) {
-
     FF_FILE *file_p = ff_fopen(pathname, "r");
     if (!file_p) {
         EMSG_PRINTF("ff_fopen: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
@@ -153,7 +154,7 @@ static void run_big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
         return;
     }
     myASSERT(buff);
-    
+
     myASSERT(size_MiB);
     if (4095 < size_MiB) {
         EMSG_PRINTF("Warning: Maximum file size: 2^32 - 1 bytes on FAT volume\n");
@@ -173,13 +174,13 @@ typedef struct bft_args_t {
 } bft_args_t;
 static void big_file_test_task(void *vp) {
     bft_args_t *args_p = vp;
-    if (args_p->cwdbuf) 
+    if (args_p->cwdbuf)
         ff_chdir(args_p->cwdbuf);
     run_big_file_test(args_p->pathname, args_p->size, args_p->seed);
     vPortFree(args_p);
     vTaskDelete(NULL);
 }
-void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
+void big_file_test(char const *pathname, size_t size_MiB, uint32_t seed) {
     // Can't have the args on the stack because they might
     // go away before the task starts
     bft_args_t *args_p = pvPortMalloc(sizeof(bft_args_t));
@@ -195,6 +196,5 @@ void big_file_test(char *pathname, size_t size_MiB, uint32_t seed) {
     xTaskCreate(big_file_test_task, "big_file_test", 768, args_p,
                 uxTaskPriorityGet(xTaskGetCurrentTaskHandle()) - 1, NULL);
 }
-
 
 /* [] END OF FILE */

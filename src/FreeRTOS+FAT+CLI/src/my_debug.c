@@ -20,20 +20,24 @@ specific language governing permissions and limitations under the License.
 #include "pico/stdlib.h"
 //
 #include "FreeRTOS.h"
-#include "semphr.h"
 #include "ff_stdio.h"
+#include "semphr.h"
 //
 #include <RP2040.h>
 //
 #include "FreeRTOS_strerror.h"
-#include "crash.h"
 #include "FreeRTOS_time.h"
+#include "crash.h"
 #include "my_debug.h"
 
 static time_t start_time;
 
-void mark_start_time() { start_time = FreeRTOS_time(NULL); }
-time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
+void mark_start_time() {
+    start_time = FreeRTOS_time(NULL);
+}
+time_t GLOBAL_uptime_seconds() {
+    return FreeRTOS_time(NULL) - start_time;
+}
 
 /* Function Attribute ((weak))
 The weak attribute causes a declaration of an external symbol to be emitted as a weak symbol rather than a global.
@@ -142,7 +146,7 @@ int __attribute__((weak)) debug_message_printf(const char *func, int line, const
 static SemaphoreHandle_t xSemaphore;
 static BaseType_t printf_locked;
 static void lock_printf() {
-    static StaticSemaphore_t xMutexBuffer;    
+    static StaticSemaphore_t xMutexBuffer;
     static bool initialized;
     if (!initialized) {
         xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
@@ -161,10 +165,16 @@ void task_printf(const char *pcFormat, ...) {
     va_start(xArgs, pcFormat);
     vsnprintf(pcBuffer, sizeof(pcBuffer), pcFormat, xArgs);
     va_end(xArgs);
-    // lock_printf();
-    printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
-    fflush(stdout);
-    // unlock_printf();
+    // if (xPortIsInsideInterrupt()) {
+    // if (xPortInIsrContext() {
+    if (portCHECK_IF_IN_ISR()) {
+        printf("%s", pcBuffer);
+    } else {
+        // lock_printf();
+        printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
+        fflush(stdout);
+        // unlock_printf();
+    }
 }
 
 int stdio_fail(const char *const fn, const char *const str) {
@@ -182,9 +192,9 @@ int ff_stdio_fail(const char *const func, char const *const str,
     return error;
 }
 
-void __attribute__((weak)) 
+void __attribute__((weak))
 my_assert_func(const char *file, int line, const char *func,
-                    const char *pred) {
+               const char *pred) {
     TRIG();  // DEBUG
     // task_printf(
     error_message_printf_plain(
@@ -200,7 +210,7 @@ void assert_always_func(const char *file, int line, const char *func,
                         const char *pred) {
     TRIG();  // DEBUG
     error_message_printf_plain("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
-           pred, file, line, func);
+                               pred, file, line, func);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
     __BKPT(3);       // Stop in GUI as if at a breakpoint (if debugging,
@@ -213,7 +223,6 @@ void assert_case_not_func(const char *file, int line, const char *func, int v) {
     snprintf(pred, sizeof pred, "case not %d", v);
     assert_always_func(file, line, func, pred);
 }
-
 void assert_case_is(const char *file, int line, const char *func, int v,
                     int expected) {
     TRIG();  // DEBUG
@@ -236,7 +245,7 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
     lock_printf();
     IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
-           pbytes, nbytes);
+                pbytes, nbytes);
     fflush(stdout);
     size_t col = 0;
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
@@ -253,7 +262,7 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
 void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     lock_printf();
     IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
-           pwords, nwords);
+                pwords, nwords);
     fflush(stdout);
     size_t col = 0;
     for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {

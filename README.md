@@ -342,6 +342,9 @@ and it won't be enabled again until the card is power cycled. Also, the RP2040 d
 * Driving the SD card directly with the GPIOs is not ideal. Take a look at the [CM1624](https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. 
 This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. Ideally, the resistance should be towards the low end for fat PCB traces, and towards the high end for flying wires, but if you have a drawer full of 47 Ω resistors they'll probably work well enough.
 * It can be helpful to add a decoupling capacitor or three (e.g., 100 nF, 1 µF, and 10 µF) between 3.3 V and GND on the SD card. ChaN also [recommends](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug) putting a 22 µH inductor in series with the Vcc (or "Vdd") line to the SD card.
+* If your system allows hot removal and insertion of an SD card,
+remember to allow for floating lines when the card is removed
+and inrush current when the card is inserted. See [Cosideration to Bus Floating and Hot Insertion](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug).
 * Note: the [Adafruit Breakout Board](https://learn.adafruit.com/assets/93596) takes care of the pull ups and decoupling caps, but the Sparkfun one doesn't. And, you can never have too many decoupling caps.
 
 ## Notes about Card Detect
@@ -416,7 +419,7 @@ Illustration of the configuration
 [dev_brd.hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/config/dev_brd.hw_config.c)
 
 ### An instance of `sd_card_t` describes the configuration of one SD card socket.
-```
+  ```C
 struct sd_card_t {
     const char *device_name;
     const char *mount_point; // Must be a directory off the file system's root directory and must be an absolute path that starts with a forward slash (/)
@@ -447,7 +450,7 @@ and you need a resistor to pull it one way or the other to make logic levels.
 * `card_detect_pull_hi` Ignored if not `use_card_detect`. Ignored if not `card_detect_use_pull`. Otherwise, if true, pull up; if false, pull down.
 
 ### An instance of `sd_sdio_if_t` describes the configuration of one SDIO to SD card interface.
-```
+  ```C
 typedef struct sd_sdio_if_t {
     // See sd_driver\SDIO\rp2040_sdio.pio for SDIO_CLK_PIN_D0_OFFSET
     uint CLK_gpio;  // Must be (D0_gpio + SDIO_CLK_PIN_D0_OFFSET) % 32
@@ -501,6 +504,24 @@ contention might lead to timeouts.
 * `DMA_IRQ_num` Which IRQ to use for DMA. Defaults to DMA_IRQ_0. Set this to avoid conflicts with any exclusive DMA IRQ handlers that might be elsewhere in the system.
 * `use_exclusive_DMA_IRQ_handler` If true, the IRQ handler is added with the SDK's `irq_set_exclusive_handler`. The default is to add the handler with `irq_add_shared_handler`, so it's not exclusive. 
 * `baud_rate` The frequency of the SDIO clock in Hertz. This may be no higher than the system clock frequency divided by `CLKDIV` in `sd_driver\SDIO\rp2040_sdio.pio`, which is currently four. For example, if the system clock frequency is 125 MHz, `baud_rate` cannot exceed 31250000 (31.25 MHz). The default is 10 MHz.
+This is used to divide the system clock frequency (`clk_sys`) to get a ratio to pass to the SDK's [sm_config_set_clkdiv](https://www.raspberrypi.com/documentation//pico-sdk/hardware.html#gae8c09c7a4372da95ad777faae51c5a24). As it says there, "An integer clock divisor of n will cause the state machine to run 1 cycle in every n. Note that for small n, the jitter introduced by a fractional divider (e.g. 2.5) may be unacceptable although it will depend on the use case."
+In this case, n can be as little as four (which I would consider small).
+The fractional divider essentially causes the frequency to vary in a range,
+with the average being the requested frequency.
+If the hardware is capable of running at the high end of the range,
+you might as well run at that frequency all the time.
+Therefore, I recommend choosing a baud rate that is some factor of the system clock frequency.
+For example, if the system clock frequency is the default 125 MHz:
+  ```C
+      .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
+  ```
+  or
+  ```C++
+      .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+  ```
+  The higher the baud rate, the faster the data transfer.
+  However, the hardware might limit the usable baud rate.
+  See [Pull Up Resistors and other electrical considerations](#pull-up-resistors-and-other-electrical-considerations).
 * `set_drive_strength` If true, enable explicit specification of output drive strengths on `CLK_gpio`, `CMD_gpio`, and `D0_gpio` - `D3_gpio`. 
 The GPIOs on RP2040 have four different output drive strengths, which are nominally 2, 4, 8 and 12mA modes.
 If `set_drive_strength` is false, all will be implicitly set to 4 mA.
@@ -528,7 +549,7 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
   A low drive strength generates less noise. This might be important in, say, audio applications.
 
 ### An instance of `sd_spi_if_t` describes the configuration of one SPI to SD card interface.
-```
+```C
 typedef struct sd_spi_if_t {
     spi_t *spi;
     // Slave select is here instead of in spi_t because multiple SDs can share an SPI.
@@ -555,7 +576,7 @@ If false, the GPIO's drive strength will be implicitly set to 4 mA.
   GPIO_DRIVE_STRENGTH_12MA
   ```
 ### An instance of `spi_t` describes the configuration of one RP2040 SPI controller.
-```
+```C
 typedef struct spi_t {
     spi_inst_t *hw_inst;  // SPI HW
     uint miso_gpio;  // SPI MISO GPIO number (not pin number)
@@ -585,6 +606,21 @@ typedef struct spi_t {
 * `mosi_gpio` SPI Master Out, Slave In (MOSI) (also called "COPI", or "Peripheral's SDI") GPIO number. This is connected to the SD card's Data In (DI).
 * `sck_gpio` SPI Serial Clock GPIO number. This is connected to the SD card's Serial Clock (SCK).
 * `baud_rate` Frequency of the SPI Serial Clock, in Hertz. The default is 10 MHz.
+  This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`). (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)).
+  Therefore, you might want to choose a `baud_rate` that is some factor of `clk_peri`.
+  The *Peripheral clock* typically,
+  but not necessarily, runs from `clk_sys`.
+  For example, if `clk_peri` is `clk_sys` and `clk_sys` is running at the default 125 MHz,
+  ```C
+      .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
+  ```
+  or
+  ```C
+      .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+  ```
+  The higher the baud rate, the faster the data transfer.
+  However, the hardware might limit the usable baud rate.
+  See [Pull Up Resistors and other electrical considerations](#pull-up-resistors-and-other-electrical-considerations).
 * `DMA_IRQ_num` Which IRQ to use for DMA. Defaults to DMA_IRQ_0. Set this to avoid conflicts with any exclusive DMA IRQ handlers that might be elsewhere in the system.
 * `use_exclusive_DMA_IRQ_handler` If true, the IRQ handler is added with the SDK's `irq_set_exclusive_handler`. The default is to add the handler with `irq_add_shared_handler`, so it's not exclusive. 
 * `no_miso_gpio_pull_up` According to the standard, an SD card's DO MUST be pulled up (at least for the old MMC cards). 
@@ -698,16 +734,16 @@ in files named something like `/sd0/data/2021-02-27/21.csv`.
 Use this as a starting point for your own data logging application!
 
 If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, use something like:
-  ```
+  ```Shell
   git submodule add git@github.com:carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
   ```
   or
-  ```
+  ```Shell
   git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
   ```
   
 You will need to pick up the library in CMakeLists.txt:
-```
+```CMake
 add_subdirectory(FreeRTOS-FAT-CLI-for-RPi-Pico/FreeRTOS+FAT+CLI build)
 target_link_libraries(_my_app_ FreeRTOS+FAT+CLI)
 ```  
@@ -741,7 +777,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
  section.
  
  For example, if you were using a `hw_config.c` containing 
- ```
+ ```C
  static sd_card_t sd_cards[] = {  // One for each SD card
      {
          .pcName = "sd0",   // Name used to mount device
@@ -749,7 +785,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
          .ss_gpio = 17,    // The SPI slave select GPIO for this SD card//...
  ```        
  that would now become
- ```
+ ```C
  static sd_spi_if_t spi_ifs[] = {
      { 
          .spi = &spis[0],          // Pointer to the SPI driving this card
@@ -922,7 +958,11 @@ or
 [sd_spi_if_t](#an-instance-of-sd_spi_if_t-describes-the-configuration-of-one-spi-to-sd-card-interface).
 
 ## Appendix D: Performance Tuning Tips
-Obviously, set the baud rate as high as you can.
+Obviously, if possible, use 4-bit SDIO instead of 1-bit SPI.
+(See [Choosing the Interface Type(s)](#choosing-the-interface-types)).
+
+Obviously, set the baud rate as high as you can. (See
+[Customizing for the Hardware Configuration](#customizing-for-the-hardware-configuration)).
 
 TL;DR: In general, it is much faster to transfer a given number of bytes in one large write (or read) 
 than to transfer the same number of bytes in multiple smaller writes (or reads). 
@@ -962,6 +1002,7 @@ then reuse these files at run time.
 Since a flash memory erase block is typically filled with 0xFF after an erase
 (although some cards use 0x00), 
 you could write a file full of 0xFF bytes (chosen to avoid flash memory "wear") ahead of time. 
+(Also, see [FAT Volume Image Creator](http://elm-chan.org/fsw/ff/res/mkfatimg.zip) (Pre-creating built-in FAT volume).)
 Then 
 [ff_fopen](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fopen.html) 
 it in mode "r+" at run time.
@@ -975,7 +1016,7 @@ Alternatively, if the file contains records, each record could contain a magic n
 ## Appendix E: Troubleshooting
 * **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.
 * Turn on `DBG_PRINTF`. (See #messages-from-the-sd-card-driver.) For example, in `CMakeLists.txt`, 
-  ```
+  ```CMake
   add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
   ```
   You might see a clue in the messages.
@@ -992,7 +1033,7 @@ and it won't be enabled again until the card is power cycled.
   * Hint: If you are powering a Pico with a PicoProbe, try adding a USB cable to a wall charger to the Pico under test.
 * Try another brand of SD card. Some handle the SPI interface better than others. (Most consumer devices like cameras or PCs use the SDIO interface.) I have had good luck with SanDisk, PNY, and  Silicon Power.
 * Tracing: Most of the source files have a couple of lines near the top of the file like:
-```
+```C
 #define TRACE_PRINTF(fmt, args...) // Disable tracing
 //#define TRACE_PRINTF printf // Trace with printf
 ```

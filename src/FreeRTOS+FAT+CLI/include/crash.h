@@ -22,7 +22,6 @@ specific language governing permissions and limitations under the License.
 #include <time.h>
 
 #include "FreeRTOS.h"  // configMAX_TASK_NAME_LEN
-
 //
 #include "pico/stdlib.h"
 
@@ -66,13 +65,13 @@ typedef struct {
 } __attribute__((packed)) cy_stc_fault_frame_t;
 
 typedef enum {
-    crash_magic_none = 0,
-    crash_magic_bootloader_entry = 0xB000B000,
-    crash_magic_hard_fault = 0xCAFEBABE,
-    crash_magic_debug_mon = 0x01020304,
-    crash_magic_reboot_requested = 0x0ABCDEF,
-    crash_magic_stack_overflow = 0xBADBEEF,
-    crash_magic_assert = 0xDEBDEBDE
+	crash_magic_none = 0,
+	crash_magic_bootloader_entry = 0xB000B000,
+	crash_magic_hard_fault       = 0xCAFEBABE,
+	crash_magic_debug_mon        = 0x01020304,
+	crash_magic_reboot_requested = 0x0ABCDEF,
+	crash_magic_stack_overflow   = 0xBADBEEF,
+	crash_magic_assert           = 0xDEBDEBDE
 } crash_magic_t;
 
 typedef struct {
@@ -107,7 +106,7 @@ _Static_assert(sizeof(crash_info_ram_t) == CRASH_INFO_SECTION_LENGTH,
 // warning: initialization of 'char (*)[132]' from 'int' makes ...
 
 void crash_handler_init();
-const crash_info_t *crash_handler_get_info(void);
+const crash_info_t *crash_handler_get_info();
 volatile const crash_info_t *crash_handler_get_info_flash();
 
 #define SYSTEM_RESET() system_reset_func(__FUNCTION__)
@@ -118,14 +117,11 @@ bool system_check_bootloader_request_flag(void);
 __attribute__((noreturn)) void system_request_bootloader_entry(void);
 #endif
 
-void capture_assert(const char *file, int line, const char *func,
-                    const char *pred);
-void capture_assert_case_not(const char *file, int line, const char *func,
-                             int v);
+void capture_assert(const char *file, int line, const char *func, const char *pred);
+void capture_assert_case_not(const char *file, int line, const char *func, int v);
 
-int dump_crash_info(crash_info_t const *const pCrashInfo, int next,
-                    char *const buf, size_t const buf_sz);
 
+int dump_crash_info(crash_info_t const * const pCrashInfo, int next, char * const buf, size_t const buf_sz);
 
 #ifdef __cplusplus
 }

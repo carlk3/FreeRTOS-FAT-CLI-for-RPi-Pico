@@ -29,8 +29,6 @@ specific language governing permissions and limitations under the License.
 #define TRACE_PRINTF(fmt, args...)
 // #define TRACE_PRINTF printf
 
-extern void ls(const char *dir);
-
 void simple() {
     int err = 0;
 
@@ -101,7 +99,7 @@ void simple() {
         ff_fprintf(f, "    %d\n", (int)number);
 
         // Flush between write and read on same file
-        // f_sync(&f);
+        //         ff_fflush(f);
     }
     IMSG_PRINTF("\rIncrementing numbers (%d/%d)... OK\n", 10, 10);
 
@@ -118,6 +116,7 @@ void simple() {
     ls("");
 
     // Display the numbers file
+    IMSG_PRINTF("Opening \"numbers.txt\"... ");
     f = ff_fopen("numbers.txt", "r");
     IMSG_PRINTF("%s\n", (!f ? "Fail :(" : "OK"));
     if (!f) {
