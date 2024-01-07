@@ -32,7 +32,7 @@ There should be one element of the sd_cards[] array for each SD card slot.
 See https://oshwlab.com/carlk3/rp2040-sd-card-dev
 
 See https://docs.google.com/spreadsheets/d/1BrzLWTyifongf_VQCc2IpJqXWtsrjmG7KnIbSBy-CPU/edit?usp=sharing,
-tab "Monster", for pin assignments assumed in this configuration file.
+tab "Dev Brd", for pin assignments assumed in this configuration file.
 */
 
 #include <assert.h>
@@ -137,7 +137,7 @@ static sd_card_t sd_cards[] = {  // One for each SD card
 		// "mount_point" must be a directory off the file system's root directory and must be an absolute path:
         .mount_point = "/sd0",
         .type = SD_IF_SDIO,
-        .sdio_if_p = &sdio_ifs[0],  // Pointer to the SPI interface driving this card
+        .sdio_if_p = &sdio_ifs[0],  // Pointer to the interface driving this card
         // SD Card detect:
         .use_card_detect = true,
         .card_detect_gpio = 9,  
@@ -183,7 +183,7 @@ static sd_card_t sd_cards[] = {  // One for each SD card
         // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
 		.mount_point = "/sd3",
         .type = SD_IF_SDIO,
-        .sdio_if_p = &sdio_ifs[1],
+        .sdio_if_p = &sdio_ifs[1], // Pointer to the interface driving this card
         // SD Card detect:
         .use_card_detect = true,
         .card_detect_gpio = 22,  
