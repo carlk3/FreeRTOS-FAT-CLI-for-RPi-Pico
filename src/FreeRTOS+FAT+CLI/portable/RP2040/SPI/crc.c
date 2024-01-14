@@ -96,6 +96,7 @@ char crc7(const char* data, int length)
 	return crc;
 }
 
+__attribute__((optimize("O3")))
 unsigned short crc16(const char* data, int length)
 {
 	//Calculate the CRC16 checksum for the specified data block
