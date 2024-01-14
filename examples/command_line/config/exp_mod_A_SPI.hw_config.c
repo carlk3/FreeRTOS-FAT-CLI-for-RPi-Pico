@@ -27,9 +27,7 @@ See https://oshwlab.com/carlk3/rpi-pico-sd-card-expansion-module-1
 
 #include "hw_config.h"
 
-// Hardware Configuration of SPI "objects"
-// Note: multiple SD cards can be driven by one SPI if they use different slave
-// selects.
+// Hardware Configuration of SPI "object"
 static spi_t spi  = {  // One for each RP2040 SPI component used
     .hw_inst = spi0,  // SPI component
     .sck_gpio = 2,  // GPIO number (not Pico pin number)
@@ -44,7 +42,7 @@ static spi_t spi  = {  // One for each RP2040 SPI component used
     .baud_rate = 125 * 1000 * 1000 / 4,  // 31250000 Hz 
 };
 
-/* SPI Interfaces */
+/* SPI Interface */
 static sd_spi_if_t spi_if = {
         .spi = &spi,  // Pointer to the SPI driving this card
         .ss_gpio = 7,     // The SPI slave select GPIO for this SD card
@@ -52,10 +50,8 @@ static sd_spi_if_t spi_if = {
         .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA
 };
 
-// Hardware Configuration of the SD Card "objects"
+// Hardware Configuration of the SD Card "object"
 static sd_card_t sd_card = {
-    /* pcName is the FatFs "logical drive" identifier.
-    (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
     .device_name = "sd0",
     .mount_point = "/sd0",
     .type = SD_IF_SPI,

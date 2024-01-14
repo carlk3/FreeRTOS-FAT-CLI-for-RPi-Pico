@@ -103,6 +103,8 @@ bool sd_init_driver() {
                     myASSERT(sd_card_p->sdio_if_p);
                     sd_sdio_ctor(sd_card_p);
                     break;
+                default:
+                    myASSERT(false);
             }  // switch (sd_card_p->type)
             // Set up Card Detect
             if (sd_card_p->use_card_detect) {

@@ -12,7 +12,6 @@ include(FreeRTOS_Kernel_import.cmake)
 project(command_line C CXX ASM)
 
 # add_compile_options(-Os) # Optimize for size (place before pico_sdk_init)
-set(PARAM_ASSERTIONS_ENABLE_ALL 1)
 
 # Initialise the Pico SDK
 pico_sdk_init()
@@ -23,13 +22,29 @@ add_executable(picow_freertos_iperf_server_sys
         picow_freertos_iperf.c
         hw_config.c
         )
-target_compile_definitions(picow_freertos_iperf_server_sys PRIVATE
+target_compile_options(picow_freertos_iperf_server_sys PUBLIC 
+        -Wall 
+        -Wextra 
+        -Wno-unused-parameter 
+        -Wstack-usage=2048 
+        -fanalyzer 
+      )
+      target_compile_definitions(picow_freertos_iperf_server_sys PRIVATE
         WIFI_SSID=\"$ENV{WIFI_SSID}\"
         WIFI_PASSWORD=\"$ENV{WIFI_PASSWORD}\"
         NO_SYS=0            # don't want NO_SYS (generally this would be in your lwipopts.h)
+
         USE_PRINTF
         USE_DBG_PRINTF
+        # USE_SPI_INTERFACE
+
+        PARAM_ASSERTIONS_ENABLE_ALL=1 
+        PICO_USE_STACK_GUARDS=1
+        PICO_MALLOC_PANIC=1
         )
+set_property(TARGET picow_freertos_iperf_server_sys APPEND_STRING PROPERTY LINK_FLAGS 
+        "-Wl,--print-memory-usage"
+      )
 target_include_directories(picow_freertos_iperf_server_sys PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}
         )
