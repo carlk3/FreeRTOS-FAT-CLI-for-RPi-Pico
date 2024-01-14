@@ -373,7 +373,7 @@ This will be picked up automatically as a submodule when you git clone this libr
 ### Procedure
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
-  ```
+  ```Shell
   git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI
   ```
 * Customize:
