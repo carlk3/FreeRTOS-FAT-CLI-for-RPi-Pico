@@ -130,7 +130,7 @@ extern "C" {
 #define configNUMBER_OF_CORES                   2
 #define configNUM_CORES                         configNUMBER_OF_CORES
 #define configTICK_CORE                         0
-#define configRUN_MULTIPLE_PRIORITIES           0
+#define configRUN_MULTIPLE_PRIORITIES           1
 
 /* SMP Related config. */
 #define configUSE_PASSIVE_IDLE_HOOK             0

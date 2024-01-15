@@ -76,8 +76,8 @@ static sd_sdio_if_t sdio_if = {
     .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
     .SDIO_PIO = pio1,
     .DMA_IRQ_num = DMA_IRQ_1,
-    // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
-    .baud_rate = 125 * 1000 * 1000 / 8
+    .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 8
 };
 
 // Hardware Configuration of the SD Card socket "object"

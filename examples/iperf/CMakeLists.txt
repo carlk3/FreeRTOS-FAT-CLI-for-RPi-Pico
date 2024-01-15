@@ -30,14 +30,15 @@ target_compile_options(picow_freertos_iperf_server_sys PUBLIC
         -fanalyzer 
       )
       target_compile_definitions(picow_freertos_iperf_server_sys PRIVATE
+        # lwip
         WIFI_SSID=\"$ENV{WIFI_SSID}\"
         WIFI_PASSWORD=\"$ENV{WIFI_PASSWORD}\"
         NO_SYS=0            # don't want NO_SYS (generally this would be in your lwipopts.h)
-
+        # FreeRTOS+FAT+CLI
         USE_PRINTF
         USE_DBG_PRINTF
-        # USE_SPI_INTERFACE
-
+#        USE_SPI_INTERFACE
+        # pico-sdk
         PARAM_ASSERTIONS_ENABLE_ALL=1 
         PICO_USE_STACK_GUARDS=1
         PICO_MALLOC_PANIC=1

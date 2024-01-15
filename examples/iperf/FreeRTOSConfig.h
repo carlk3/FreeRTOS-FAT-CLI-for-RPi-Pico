@@ -37,6 +37,7 @@ extern "C" {
 #ifndef portINLINE
 #  define portINLINE __inline
 #endif
+
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
@@ -61,8 +62,8 @@ extern "C" {
 #define configMAX_PRIORITIES                    32
 #define configMINIMAL_STACK_SIZE                ( configSTACK_DEPTH_TYPE ) 256
 #define configMAX_TASK_NAME_LEN                 16
-// #define configUSE_16_BIT_TICKS                  0
-#define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
+#define configUSE_16_BIT_TICKS                  0
+// #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
 #define configIDLE_SHOULD_YIELD                 1
 
 /* Synchronization Related */

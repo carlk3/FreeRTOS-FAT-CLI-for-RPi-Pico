@@ -92,11 +92,12 @@ void blink_task(__unused void *params) {
 void main_task(__unused void *params) {
     
     FF_Disk_t *pxDisk = FF_SDDiskInit("sd0");
-    configASSERT(pxDisk);
+    if (!pxDisk)
+        return;
     FF_Error_t e = FF_Mount(pxDisk, 0);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Mount error: %s\n", FF_GetErrMessage(e));
-        exit(1);
+        return;
     }
     FF_FS_Add("/sd0", pxDisk);
 
