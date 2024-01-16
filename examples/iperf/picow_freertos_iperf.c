@@ -19,6 +19,8 @@
 #include "ff_stdio.h"
 #include "ff_utils.h"
 
+#include "crash.h"
+
 #ifndef RUN_FREERTOS_ON_CORE
 #define RUN_FREERTOS_ON_CORE 0
 #endif
@@ -93,17 +95,17 @@ void main_task(__unused void *params) {
     
     FF_Disk_t *pxDisk = FF_SDDiskInit("sd0");
     if (!pxDisk)
-        return;
+        exit(1);
     FF_Error_t e = FF_Mount(pxDisk, 0);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Mount error: %s\n", FF_GetErrMessage(e));
-        return;
+        exit(1);
     }
     FF_FS_Add("/sd0", pxDisk);
 
     if (cyw43_arch_init()) {
         printf("failed to initialise\n");
-        return;
+        exit(1);
     }
     cyw43_arch_enable_sta_mode();
     printf("Connecting to %s...\n", WIFI_SSID);
@@ -114,7 +116,7 @@ void main_task(__unused void *params) {
         printf("Connected.\n");
     }
 
-    xTaskCreate(blink_task, "BlinkThread", configMINIMAL_STACK_SIZE, NULL, BLINK_TASK_PRIORITY, NULL);
+    xTaskCreate(blink_task, "BlinkThread", 512, NULL, BLINK_TASK_PRIORITY, NULL);
 
     cyw43_arch_lwip_begin();
 #if CLIENT_TEST
@@ -138,7 +140,7 @@ void main_task(__unused void *params) {
 
 void vLaunch( void) {
     TaskHandle_t task;
-    xTaskCreate(main_task, "TestMainThread", configMINIMAL_STACK_SIZE, NULL, TEST_TASK_PRIORITY, &task);
+    xTaskCreate(main_task, "TestMainThread", 1024, NULL, TEST_TASK_PRIORITY, &task);
 
 #if NO_SYS && configUSE_CORE_AFFINITY && configNUM_CORES > 1
     // we must bind the main task to one core (well at least while the init is called)
@@ -153,7 +155,20 @@ void vLaunch( void) {
 
 int main( void )
 {
+    crash_handler_init();
     stdio_init_all();
+
+    // Check fault capture from RAM:
+    crash_info_t const *const pCrashInfo = crash_handler_get_info();
+    if (pCrashInfo) {
+        printf("*** Fault Capture Analysis (RAM): ***\n");
+        int n = 0;
+        do {
+            char buf[256] = {0};
+            n = dump_crash_info(pCrashInfo, n, buf, sizeof(buf));
+            if (buf[0]) printf("\t%s", buf);
+        } while (n != 0);
+    }
 
     /* Configure the hardware ready to run the demo. */
     const char *rtos_name;
