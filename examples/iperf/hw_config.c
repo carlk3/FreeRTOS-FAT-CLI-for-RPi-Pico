@@ -36,13 +36,14 @@ static spi_t spi  = {  // One for each RP2040 SPI component used
     .mosi_gpio = 3,
     .miso_gpio = 4,
     .set_drive_strength = true,
-    .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+    .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+    .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
     .no_miso_gpio_pull_up = true,
     .DMA_IRQ_num = DMA_IRQ_0,
     .use_exclusive_DMA_IRQ_handler = true,
-    // .baud_rate = 125 * 1000 * 1000 / 4,  // 31250000 Hz 
     .baud_rate = 125 * 1000 * 1000 / 8
+    // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
 };
 
 /* SPI Interface */
@@ -50,7 +51,7 @@ static sd_spi_if_t spi_if = {
         .spi = &spi,  // Pointer to the SPI driving this card
         .ss_gpio = 7,     // The SPI slave select GPIO for this SD card
         .set_drive_strength = true,
-        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA
+        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA
 };
 
 /* SDIO Interface */
@@ -76,8 +77,11 @@ static sd_sdio_if_t sdio_if = {
     .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
     .SDIO_PIO = pio1,
     .DMA_IRQ_num = DMA_IRQ_1,
+    // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 5  // 25000000 Hz
     .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
-    // .baud_rate = 125 * 1000 * 1000 / 8
 };
 
 // Hardware Configuration of the SD Card socket "object"
