@@ -48,7 +48,8 @@ target_compile_options(command_line PUBLIC
 
 add_compile_definitions(
   USE_PRINTF
-  # USE_DBG_PRINTF
+  USE_DBG_PRINTF
+  USE_SPI_INTERFACE
 )
 
 # Disable CRC checking for SPI-attached cards.

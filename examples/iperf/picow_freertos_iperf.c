@@ -46,22 +46,16 @@ static void run_task_stats() {
     printf("\n%s\n", buf);
 }
 
-int log_printf(const char *fmt, ...) {
-    char buf[256] = {0};
-    va_list args;
-    va_start(args, fmt);
-    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-
-    printf("%s", buf);
-
+int sd_add_record(size_t len, char const *buf) {
     FF_FILE *pxFile = ff_fopen("/sd0/filename.txt", "a");
     if (!pxFile) {
         FF_PRINTF("ff_fopen failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
         exit(1);
     }
-    if (ff_fprintf(pxFile, "%s", buf) < 0) {
+    // size_t ff_fwrite( const void *pvBuffer, size_t xSize, size_t xItems, FF_FILE * pxStream );
+    size_t items_written = ff_fwrite(buf, 1, len, pxFile);
+    if (items_written < len) {
         FF_PRINTF("ff_fprintf failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
         exit(1);
@@ -70,6 +64,25 @@ int log_printf(const char *fmt, ...) {
         FF_PRINTF("ff_fclose failed: %s (%d)\n", strerror(stdioGET_ERRNO()),
                   stdioGET_ERRNO());
         exit(1);
+    }
+    return items_written;
+}
+
+int log_printf(const char *fmt, ...) {
+    char buf[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    int cw = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    if (cw < 0) {
+        perror("vsnprintf");
+    } else if (0 < cw) {
+        printf("%s", buf);
+
+        cyw43_arch_lwip_begin();
+        sd_add_record(cw, buf);
+        cyw43_arch_lwip_end();
     }
     return cw;
 }
@@ -107,8 +120,7 @@ void blink_task(__unused void *params) {
     }
 }
 
-void main_task(__unused void *params) {
-    
+static void sd_init_mount() {
     FF_Disk_t *pxDisk = FF_SDDiskInit("sd0");
     if (!pxDisk)
         exit(1);
@@ -118,6 +130,11 @@ void main_task(__unused void *params) {
         exit(1);
     }
     FF_FS_Add("/sd0", pxDisk);
+}
+
+void main_task(__unused void *params) {
+    
+    sd_init_mount();
 
     if (cyw43_arch_init()) {
         printf("failed to initialise\n");
