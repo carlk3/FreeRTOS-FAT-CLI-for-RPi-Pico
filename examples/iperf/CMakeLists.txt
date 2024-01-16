@@ -21,6 +21,7 @@ add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
 add_executable(picow_freertos_iperf_server_sys
         picow_freertos_iperf.c
         hw_config.c
+        ../../src/FreeRTOS+FAT+CLI/src/crash.c
         )
 target_compile_options(picow_freertos_iperf_server_sys PUBLIC 
         -Wall 

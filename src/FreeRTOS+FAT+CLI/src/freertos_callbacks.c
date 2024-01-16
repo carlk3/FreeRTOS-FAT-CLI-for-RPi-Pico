@@ -7,30 +7,25 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
-#if 0
-    void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName ) {
-	/* The stack space has been exceeded for a task, considering allocating more. */
-	printf("\nOut of stack space!\n");
-	printf(pcTaskGetName(NULL));
-	printf("\n");
-	log_printf("\nOut of stack space! Task: %p %s\n", xTask, pcTaskName);
-	__disable_irq(); /* Disable global interrupts. */
-	vTaskSuspendAll();
-//	while(1) { __asm("bkpt #0"); }; // Stop in GUI as if at a breakpoint (if debugging, otherwise loop forever)    
-	while(1);
+void __attribute__((weak))
+vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    /* The stack space has been exceeded for a task, considering allocating more. */
+    printf("\nOut of stack space!\n");
+    printf(pcTaskGetName(NULL));
+    printf("\n");
+    exit(1);
 }
-#endif
 
 // #ifndef NDEBUG
 //  Note: All pvPortMallocs should be checked individually,
 //  but we don't expect any to fail,
 //  so this can help flag problems in Debug builds.
-void vApplicationMallocFailedHook(void) {
+void __attribute__((weak))
+vApplicationMallocFailedHook(void) {
     printf("\nMalloc failed!\n");
-    printf("\nMalloc failed! Task: %s\n", pcTaskGetName(NULL));
-    __disable_irq(); /* Disable global interrupts. */
-    vTaskSuspendAll();
-    exit(5);
+    printf(pcTaskGetName(NULL));
+    printf("\n");
+    exit(2);
 }
 // #endif
 
@@ -59,10 +54,10 @@ void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
     configMINIMAL_STACK_SIZE is specified in words, not bytes. */
     *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
 }
-void vApplicationGetPassiveIdleTaskMemory( StaticTask_t ** ppxIdleTaskTCBBuffer,
-                                            StackType_t ** ppxIdleTaskStackBuffer,
-                                            uint32_t * pulIdleTaskStackSize,
-                                            BaseType_t xCoreID ) {
+void vApplicationGetPassiveIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
+                                          StackType_t **ppxIdleTaskStackBuffer,
+                                          uint32_t *pulIdleTaskStackSize,
+                                          BaseType_t xCoreID) {
     /* If the buffers to be provided to the Idle task are declared inside this
     function then they must be declared static – otherwise they will be
     allocated on the stack and so not exists after this function exits. */

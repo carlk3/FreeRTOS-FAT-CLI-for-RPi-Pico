@@ -33,6 +33,7 @@ add_executable(command_line
     tests/CreateAndVerifyExampleFiles.c
     tests/ff_stdio_tests_with_cwd.c
     tests/simple.c
+    ../../src/FreeRTOS+FAT+CLI/src/crash.c
 )
 
 #target_compile_options(simple_example PRIVATE -save-temps)
