@@ -32,6 +32,20 @@
 #error IPERF_SERVER_IP not defined
 #endif
 
+static void run_task_stats() {    
+    printf(
+        "Task          State  Priority  Stack        "
+        "#\n************************************************\n");
+    /* NOTE - for simplicity, this example assumes the
+     write buffer length is adequate, so does not check for buffer overflows. */
+    char buf[1024] = {0};
+    buf[sizeof buf - 1] = 0xA5;  // Crude overflow guard
+    /* Generate a table of task stats. */
+    vTaskList(buf);
+    configASSERT(0xA5 == buf[sizeof buf - 1]);
+    printf("\n%s\n", buf);
+}
+
 int log_printf(const char *fmt, ...) {
     char buf[256] = {0};
     va_list args;
@@ -72,6 +86,8 @@ static void iperf_report(void *arg, enum lwiperf_report_type report_type,
 
     log_printf("Completed iperf transfer of %d MBytes @ %.1f Mbits/sec\n", mbytes, mbits);
     log_printf("Total iperf megabytes since start %d Mbytes\n", total_iperf_megabytes);
+    
+    run_task_stats();
 }
 
 void blink_task(__unused void *params) {
