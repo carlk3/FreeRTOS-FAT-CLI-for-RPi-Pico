@@ -34,8 +34,8 @@
 
 static void run_task_stats() {    
     printf(
-        "Task          State  Priority  Stack        "
-        "#\n************************************************\n");
+        "\nTask                  State   Priority Stack    # CoreAffinityMask\n"
+        "******************************************************************");
     /* NOTE - for simplicity, this example assumes the
      write buffer length is adequate, so does not check for buffer overflows. */
     char buf[1024] = {0};

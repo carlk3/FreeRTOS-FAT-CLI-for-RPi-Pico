@@ -61,7 +61,7 @@ extern "C" {
 #define portTICK_RATE_MS                        ( ( TickType_t ) 1000 / configTICK_RATE_HZ )
 #define configMAX_PRIORITIES                    32
 #define configMINIMAL_STACK_SIZE                ( configSTACK_DEPTH_TYPE ) 256
-#define configMAX_TASK_NAME_LEN                 16
+#define configMAX_TASK_NAME_LEN                 20
 #define configUSE_16_BIT_TICKS                  0
 // #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
 #define configIDLE_SHOULD_YIELD                 1
@@ -75,7 +75,7 @@ extern "C" {
 #define configUSE_COUNTING_SEMAPHORES           1
 #define configQUEUE_REGISTRY_SIZE               10
 #define configUSE_QUEUE_SETS                    1
-#define configUSE_TIME_SLICING                  1
+#define configUSE_TIME_SLICING                  0
 #define configUSE_NEWLIB_REENTRANT              1   // Necessary if any floating point printfs are used!
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 5
