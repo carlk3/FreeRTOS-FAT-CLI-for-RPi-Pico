@@ -23,37 +23,40 @@ add_executable(${PROGRAM_NAME}
         picow_freertos_iperf.c
         hw_config.c
         ../../../src/FreeRTOS+FAT+CLI/src/crash.c
-        )
-target_compile_options(${PROGRAM_NAME} PUBLIC 
-        -Wall 
-        -Wextra 
-        -Wno-unused-parameter 
-        -Wstack-usage=2048 
-        -fanalyzer 
-      )
+)
+target_compile_options(${PROGRAM_NAME} PUBLIC
+        -Wall
+        -Wextra
+        -Wno-unused-parameter
+        -Wstack-usage=2048
+        -fanalyzer
+)
 target_compile_definitions(${PROGRAM_NAME} PRIVATE
+
         # lwip
         WIFI_SSID=\"$ENV{WIFI_SSID}\"
         WIFI_PASSWORD=\"$ENV{WIFI_PASSWORD}\"
-        NO_SYS=0            # don't want NO_SYS (generally this would be in your lwipopts.h)
+        NO_SYS=0 # don't want NO_SYS (generally this would be in your lwipopts.h)
+
         # FreeRTOS+FAT+CLI
         USE_PRINTF
         USE_DBG_PRINTF
-#        USE_SPI_INTERFACE
+
+        # USE_SPI_INTERFACE
         # pico-sdk
-        PARAM_ASSERTIONS_ENABLE_ALL=1 
+        PARAM_ASSERTIONS_ENABLE_ALL=1
         PICO_USE_STACK_GUARDS=1
         PICO_MALLOC_PANIC=1
-        )
-set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS 
+)
+set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS
         "-Wl,--print-memory-usage"
-      )
+)
 target_include_directories(${PROGRAM_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}
-        )
+)
 target_link_libraries(${PROGRAM_NAME}
         FreeRTOS+FAT+CLI
         pico_cyw43_arch_lwip_sys_freertos
         pico_lwip_iperf
-        )
+)
 pico_add_extra_outputs(${PROGRAM_NAME})

@@ -4,13 +4,15 @@
 #include "lwipopts.h"
 #include "ssi.h"
 #include "cgi.h"
+//
+#include "FreeRTOS.h"
+#include "task.h"
 
 // // WIFI Credentials - take care if pushing to github!
 // const char WIFI_SSID[] = "XXX";
 // const char WIFI_PASSWORD[] = "XXX";
 
-int main() {
-    stdio_init_all();
+void MainTask(__unused void *params) {
 
     cyw43_arch_init();
 
@@ -24,7 +26,9 @@ int main() {
     printf("Connected! \n");
     
     // Initialise web server
+    cyw43_arch_lwip_begin();
     httpd_init();
+    cyw43_arch_lwip_end();
     printf("Http server initialised\n");
 
     // Configure SSI and CGI handler
@@ -35,6 +39,11 @@ int main() {
 
     printf("\nListening at %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
     
-    // Infinite loop
-    while(1);
+    vTaskDelete(NULL);
+}
+
+int main() {
+    stdio_init_all();
+    xTaskCreate(MainTask, "TestMainThread", 1024, NULL, tskIDLE_PRIORITY + 1, NULL);
+    vTaskStartScheduler();
 }
