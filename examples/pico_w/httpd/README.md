@@ -1,3 +1,3 @@
-# pico-w-webserver-template
+# httpd
 
-Originally from [pico-w-webserver-template](https://github.com/LearnEmbeddedSystems/pico-w-webserver-template)
+This example demonstrates a WiFi web server that serves files from an SD card.

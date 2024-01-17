@@ -606,10 +606,10 @@ typedef struct spi_t {
 * `mosi_gpio` SPI Master Out, Slave In (MOSI) (also called "COPI", or "Peripheral's SDI") GPIO number. This is connected to the SD card's Data In (DI).
 * `sck_gpio` SPI Serial Clock GPIO number. This is connected to the SD card's Serial Clock (SCK).
 * `baud_rate` Frequency of the SPI Serial Clock, in Hertz. The default is 10 MHz.
-  This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`). (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)).
-  Therefore, you might want to choose a `baud_rate` that is some factor of `clk_peri`.
+  This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`) (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)). 
   The *Peripheral clock* typically,
   but not necessarily, runs from `clk_sys`.
+  Practically, the hardware limits the choices for the SPI frequency to `clk_peri` divided by an even number.
   For example, if `clk_peri` is `clk_sys` and `clk_sys` is running at the default 125 MHz,
   ```C
       .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
@@ -618,6 +618,8 @@ typedef struct spi_t {
   ```C
       .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
   ```
+  If you ask for 14000000, you'll actually get 12500000 Hz.
+  The actual baud rate will be printed out if `USE_DBG_PRINTF` (see [Messages from the SD card driver](#messages-from-the-sd-card-driver)) is defined at compile time.
   The higher the baud rate, the faster the data transfer.
   However, the hardware might limit the usable baud rate.
   See [Pull Up Resistors and other electrical considerations](#pull-up-resistors-and-other-electrical-considerations).
