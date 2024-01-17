@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+set(PROGRAM_NAME picow_freertos_iperf_server_sys)
 
 # Pull in Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -16,21 +17,21 @@ project(command_line C CXX ASM)
 # Initialise the Pico SDK
 pico_sdk_init()
 
-add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
+add_subdirectory(../../../src/FreeRTOS+FAT+CLI build)
 
-add_executable(picow_freertos_iperf_server_sys
+add_executable(${PROGRAM_NAME}
         picow_freertos_iperf.c
         hw_config.c
-        ../../src/FreeRTOS+FAT+CLI/src/crash.c
+        ../../../src/FreeRTOS+FAT+CLI/src/crash.c
         )
-target_compile_options(picow_freertos_iperf_server_sys PUBLIC 
+target_compile_options(${PROGRAM_NAME} PUBLIC 
         -Wall 
         -Wextra 
         -Wno-unused-parameter 
         -Wstack-usage=2048 
         -fanalyzer 
       )
-      target_compile_definitions(picow_freertos_iperf_server_sys PRIVATE
+target_compile_definitions(${PROGRAM_NAME} PRIVATE
         # lwip
         WIFI_SSID=\"$ENV{WIFI_SSID}\"
         WIFI_PASSWORD=\"$ENV{WIFI_PASSWORD}\"
@@ -44,15 +45,15 @@ target_compile_options(picow_freertos_iperf_server_sys PUBLIC
         PICO_USE_STACK_GUARDS=1
         PICO_MALLOC_PANIC=1
         )
-set_property(TARGET picow_freertos_iperf_server_sys APPEND_STRING PROPERTY LINK_FLAGS 
+set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS 
         "-Wl,--print-memory-usage"
       )
-target_include_directories(picow_freertos_iperf_server_sys PUBLIC
+target_include_directories(${PROGRAM_NAME} PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}
         )
-target_link_libraries(picow_freertos_iperf_server_sys
+target_link_libraries(${PROGRAM_NAME}
         FreeRTOS+FAT+CLI
         pico_cyw43_arch_lwip_sys_freertos
         pico_lwip_iperf
         )
-pico_add_extra_outputs(picow_freertos_iperf_server_sys)
+pico_add_extra_outputs(${PROGRAM_NAME})

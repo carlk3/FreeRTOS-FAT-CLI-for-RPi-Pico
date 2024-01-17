@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+    <head> 
+        <title>PicoW Webserver</title> 
+    </head>
+    <body> <h1>PicoW Webserver Tutorial</h1>
+        <br>
+        <h2>This bit is SSI:</h2>
+        <p>Voltage: <!--#volt--></p>
+        <p>Temp: <!--#temp--> C</p>
+        <p>LED is: <!--#led--></p>
+        <br>
+        <h2>This bit is CGI:</h2>
+        <a href="/led.cgi?led=1"><button>LED ON</button></a>
+        <a href="/led.cgi?led=0"><button>LED OFF</button></a>
+        <br>
+        <br>
+        <a href="/index.shtml">Refresh</a>
+   </body>
+</html>

@@ -63,7 +63,7 @@ For required migration actions, see [Appendix A: Migration actions](#appendix-a-
 
 *Note:* Release 1 remains available on the [v1.0.0 branch](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/v1.0.0).
 
-## Features:
+## Features
 * Supports multiple SD cards, all in a common file system
 * Supports desktop compatible SD card formats
 * Supports 4-bit wide SDIO by PIO, or SPI using built in SPI controllers, or both
@@ -76,7 +76,7 @@ For required migration actions, see [Appendix A: Migration actions](#appendix-a-
 * Plus all the neat features provided by
 [FreeRTOS+FAT](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/index.html)
 
-## Limitations:
+## Limitations
 * exFAT is not supported. Generally, if an SD card is formatted for exFAT you can reformat for FAT32. This library has the 
 [facilities to do that](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/native_API/FF_Format.html), 
 or you can use something like 
@@ -269,7 +269,7 @@ A similar strategy that I have used: SDIO for fast, interactive use, and SPI to 
 * [Pico Stackable, Plug & Play SD Card Expansion Module](https://forums.raspberrypi.com/viewtopic.php?t=356864)
 ![PXL_20230926_212422091](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/7edfea8c-59b0-491c-8321-45487bce9693)
 
-### Prewired boards with SD card sockets:
+### Prewired boards with SD card sockets
 There are a variety of RP2040 boards on the market that provide an integrated µSD socket. As far as I know, most are useable with this library.
 * [Maker Pi Pico](https://www.cytron.io/p-maker-pi-pico) works on SPI1. Looks fine for 4-bit wide SDIO.
 * I don't think the [Pimoroni Pico VGA Demo Base](https://shop.pimoroni.com/products/pimoroni-pico-vga-demo-base) can work with a built in RP2040 SPI controller. It looks like RP20040 SPI0 SCK needs to be on GPIO 2, 6, or 18 (pin 4, 9, or 24, respectively), but Pimoroni wired it to GPIO 5 (pin 7). SDIO? For sure it could work with one bit SDIO, but I don't know about 4-bit. It looks like it *can* work, depending on what other functions you need on the board.
@@ -316,7 +316,7 @@ SPI and SDIO at 31.5 MHz are pretty demanding electrically. You need good, solid
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232043568.jpg "Protoboard, top")
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232026240_3.jpg "Protoboard, bottom")
 
-### Construction:
+### Construction
 * The wiring is so simple that I didn't bother with a schematic. 
 I just referred to the table above, wiring point-to-point from the Pin column on the Pico to the MicroSD 0 column on the Transflash.
 * Card Detect is optional. Some SD card sockets have no provision for it. 
@@ -382,7 +382,7 @@ This will be picked up automatically as a submodule when you git clone this libr
   * Customize `pico_enable_stdio_uart` and `pico_enable_stdio_usb` in CMakeLists.txt as you prefer. 
 (See *4.1. Serial input and output on Raspberry Pi Pico* in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) and *2.7.1. Standard Input/Output (stdio) Support* in [Raspberry Pi Pico C/C++ SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf).) 
 * Build:
-```  
+```shell
    cd FreeRTOS+FAT+CLI/examples/command_line
    mkdir build
    cd build
@@ -418,7 +418,7 @@ the C runtime initializes static memory to 0.)
 Illustration of the configuration 
 [dev_brd.hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/config/dev_brd.hw_config.c)
 
-### An instance of `sd_card_t` describes the configuration of one SD card socket.
+### An instance of `sd_card_t` describes the configuration of one SD card socket
   ```C
 struct sd_card_t {
     const char *device_name;
@@ -643,7 +643,7 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
   Then, a higher drive strength might allow operation at higher baud rates.
   A low drive strength generates less noise. This might be important in, say, audio applications.
 
-### You must provide a definition for the functions declared in `sd_driver/hw_config.h`:  
+### You must provide a definition for the functions declared in `sd_driver/hw_config.h`
 `size_t sd_get_num()` Returns the number of SD cards  
 `sd_card_t *sd_get_by_num(size_t num)` Returns a pointer to the SD card "object" at the given (zero origin) index.  
 
@@ -801,7 +801,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
  ```
 
 
-## Appendix B: Operation of `command_line` example:
+## Appendix B: Operation of `command_line` example
 * Connect a terminal. [PuTTY](https://www.putty.org/) or `tio` work OK. For example:
   * `tio -m ODELBS /master/ttyACM0`
 * Press Enter to start the CLI. You should see a prompt like:
@@ -947,9 +947,9 @@ CD0||22|29|||CD|
 GND|||18, 23|||GND|GND
 3v3|||36|||3v3|3v3
 
-### Wiring: 
+### Wiring
 As you can see from the table above, the only new signals are CD1 and CS1. Otherwise, the new card is wired in parallel with the first card.
-### Firmware:
+### Firmware
 * [The hardware configuration](#customizing-for-the-hardware-configuration) must be edited to add a new instance of 
 [sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket)
 and its interface
