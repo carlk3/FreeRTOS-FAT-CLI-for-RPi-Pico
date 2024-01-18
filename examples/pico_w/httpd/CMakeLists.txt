@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(PROGRAM_NAME pico_w_webserver)
+set(PROGRAM_NAME httpd)
 set(PICO_BOARD pico_w)
 
 # Pull in Pico SDK (must be before project)
@@ -9,7 +9,7 @@ include(pico_sdk_import.cmake)
 # Pull in FreeRTOS
 include(FreeRTOS_Kernel_import.cmake)
 
-project(pico_w_webserver)
+project(${PROGRAM_NAME})
 
 # Initialise the Pico SDK
 pico_sdk_init()

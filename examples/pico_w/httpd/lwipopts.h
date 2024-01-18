@@ -2,6 +2,8 @@
 
 // See https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details
 
+#define NO_SYS 0
+
 // allow override in some examples
 #ifndef LWIP_SOCKET
 #define LWIP_SOCKET                 0
@@ -80,7 +82,6 @@
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
 
-#define NO_SYS 0
 #define TCPIP_THREAD_STACKSIZE 1024
 #define DEFAULT_THREAD_STACKSIZE 1024
 #define DEFAULT_RAW_RECVMBOX_SIZE 8
@@ -104,15 +105,20 @@
 
 #define LWIP_HTTPD_DYNAMIC_HEADERS 1
 #define LWIP_HTTPD_SUPPORT_EXTSTATUS 1
+#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 1
+#define HTTPD_LIMIT_SENDING_TO_2MSS 0
 #define LWIP_HTTPD_FILE_EXTENSION 1
+
 #define LWIP_HTTPD_CUSTOM_FILES 1
 // Set this to 1 and provide the functions:
 // "int fs_open_custom(struct fs_file *file, const char *name)"
 // Called first for every opened file to allow opening files that are not included in fsdata(_custom).c
 // "void fs_close_custom(struct fs_file *file)"
 // Called to free resources allocated by fs_open_custom().
+
 #define LWIP_HTTPD_DYNAMIC_FILE_READ 1
 // Set this to 1 to support fs_read() to dynamically read file data.
 // Without this (default=off), only one-block files are supported, and the contents must be ready after fs_open().
+
 #define HTTPD_DEBUG LWIP_DBG_ON
 

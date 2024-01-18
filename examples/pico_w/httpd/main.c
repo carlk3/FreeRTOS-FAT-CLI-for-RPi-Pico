@@ -18,7 +18,7 @@ void MainTask(__unused void *params) {
 
     // Connect to the WiFI network - loop until connected
     while(cyw43_arch_wifi_connect_timeout_ms(WIFI_SSID, WIFI_PASSWORD, CYW43_AUTH_WPA2_AES_PSK, 30000) != 0){
-        printf("Attempting to connect...\n");
+        printf("Attempting to connect to %s...\n", WIFI_SSID);
     }
     // Print a success message once connected
     printf("Connected! \n");
@@ -28,12 +28,6 @@ void MainTask(__unused void *params) {
     httpd_init();
     cyw43_arch_lwip_end();
     printf("Http server initialised\n");
-
-    // // Configure SSI and CGI handler
-    // ssi_init(); 
-    // printf("SSI Handler initialised\n");
-    // cgi_init();
-    // printf("CGI Handler initialised\n");
 
     printf("\nListening at %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
     
