@@ -84,6 +84,7 @@
 
 #define TCPIP_THREAD_STACKSIZE 1024
 #define DEFAULT_THREAD_STACKSIZE 1024
+#define TCPIP_THREAD_PRIO 4
 #define DEFAULT_RAW_RECVMBOX_SIZE 8
 #define TCPIP_MBOX_SIZE 8
 #define LWIP_TIMEVAL_PRIVATE 0
@@ -120,5 +121,5 @@
 // Set this to 1 to support fs_read() to dynamically read file data.
 // Without this (default=off), only one-block files are supported, and the contents must be ready after fs_open().
 
-#define HTTPD_DEBUG LWIP_DBG_ON
+#define HTTPD_DEBUG LWIP_DBG_OFF
 

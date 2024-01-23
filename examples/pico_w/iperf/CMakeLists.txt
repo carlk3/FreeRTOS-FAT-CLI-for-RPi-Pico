@@ -10,7 +10,7 @@ include(pico_sdk_import.cmake)
 # Pull in FreeRTOS
 include(FreeRTOS_Kernel_import.cmake)
 
-project(command_line C CXX ASM)
+project(${PROGRAM_NAME} C CXX ASM)
 
 # add_compile_options(-Os) # Optimize for size (place before pico_sdk_init)
 
@@ -41,8 +41,8 @@ target_compile_definitions(${PROGRAM_NAME} PRIVATE
         # FreeRTOS+FAT+CLI
         USE_PRINTF
         USE_DBG_PRINTF
-
         # USE_SPI_INTERFACE
+
         # pico-sdk
         PARAM_ASSERTIONS_ENABLE_ALL=1
         PICO_USE_STACK_GUARDS=1

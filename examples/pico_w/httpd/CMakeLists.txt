@@ -33,6 +33,7 @@ target_link_libraries(${PROGRAM_NAME}
 )
 
 target_compile_definitions(${PROGRAM_NAME} PRIVATE
+    # ANALYZE
 
     # lwip
     WIFI_SSID=\"$ENV{WIFI_SSID}\"
