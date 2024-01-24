@@ -86,6 +86,18 @@ static inline void sd_spi_release(sd_card_t *sd_card_p) {
     sd_spi_unlock(sd_card_p);
 }
 
+/* Transfer tx to SPI while receiving SPI to rx.
+tx or rx can be NULL if not important. */
+static inline void sd_spi_transfer_start(sd_card_t *sd_card_p, const uint8_t *tx, uint8_t *rx, size_t length) {
+    return spi_transfer_start(sd_card_p->spi_if_p->spi, tx, rx, length);
+}
+static inline bool sd_spi_transfer_wait_complete(sd_card_t *sd_card_p, uint32_t timeout_ms) {
+    return spi_transfer_wait_complete(sd_card_p->spi_if_p->spi, timeout_ms);
+}
+static inline bool sd_spi_transfer(sd_card_t *sd_card_p, const uint8_t *tx, uint8_t *rx, size_t length) {
+	return spi_transfer(sd_card_p->spi_if_p->spi, tx, rx, length);
+}
+
 #ifdef __cplusplus
 }
 #endif

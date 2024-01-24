@@ -12,13 +12,20 @@ CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
 
+#include <stddef.h>
+#include <string.h>
+#include <stdint.h>
+//
+#include "FreeRTOS.h"
 #include "ff_headers.h"
-#include "ff_sddisk.h"
 #include "ff_stdio.h"
+#include "ff_sddisk.h"
 //
 #include "FreeRTOS_strerror.h"
 #include "SPI/sd_card_spi.h"
 #include "hw_config.h"
+#include "my_debug.h"
+#include "sd_card_constants.h"
 //
 #include "ff_utils.h"
 
@@ -46,13 +53,13 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     bool ok = sd_allocation_unit(pxDisk->pvTag, &au_size_bytes);
     if (!ok || !au_size_bytes)
         au_size_bytes = 4194304; // Default to 4 MiB
-    xPartition.ulHiddenSectors = au_size_bytes / _block_size;
+    xPartition.ulHiddenSectors = au_size_bytes / sd_block_size;
 
     /* Perform the partitioning. */
     xError = FF_Partition(pxDisk, &xPartition);
 
     /* Print out the result of the partition operation. */
-    FF_PRINTF("FF_Partition: %s\n", FF_GetErrMessage(xError));
+    IMSG_PRINTF("FF_Partition: %s\n", FF_GetErrMessage(xError));
 
     /* Was the disk partitioned successfully? */
     if (FF_isERR(xError) == pdFALSE) {
@@ -123,9 +130,9 @@ void eject(const char *const name) {
     if (pxDisk) {
         if (pxDisk->xStatus.bIsMounted) {
             FF_FlushCache(pxDisk->pxIOManager);
-            FF_PRINTF("Invalidating %s\n", name);
+			IMSG_PRINTF("Invalidating %s\n", name);
             FF_Invalidate(pxDisk->pxIOManager);
-            FF_PRINTF("Unmounting %s\n", name);
+			IMSG_PRINTF("Unmounting %s\n", name);
             FF_Unmount(pxDisk);
             pxDisk->xStatus.bIsMounted = pdFALSE;
         }
@@ -261,7 +268,7 @@ void ls(const char *path) {
 
     if (!path)
         ff_getcwd(pcWriteBuffer, sizeof(pcWriteBuffer));
-    FF_PRINTF("Directory Listing: %s\n", path ? path : pcWriteBuffer);
+    IMSG_PRINTF("Directory Listing: %s\n", path ? path : pcWriteBuffer);
 
     int iReturned = ff_findfirst(path ? path : "", &xFindStruct);
     if (FF_ERR_NONE != iReturned) {
@@ -285,7 +292,7 @@ void ls(const char *path) {
         }
         /* Create a string that includes the file name, the file size and the
          attributes string. */
-        FF_PRINTF("%s\t[%s]\t[size=%lu]\n", xFindStruct.pcFileName, pcAttrib,
+        IMSG_PRINTF("%s\t[%s]\t[size=%lu]\n", xFindStruct.pcFileName, pcAttrib,
                   xFindStruct.ulFileSize);
     } while (FF_ERR_NONE == ff_findnext(&xFindStruct));
 }
@@ -298,7 +305,7 @@ sd_card_t *get_current_sd_card_p() {
         FF_PRINTF("ff_getcwd failed\n");
         return NULL;
     }
-    FF_PRINTF("Working directory: %s\n", buf);
+    IMSG_PRINTF("Working directory: %s\n", buf);
     if (strlen(buf) < 2) {
         FF_PRINTF("Can't write to current working directory: %s\n", buf);
         return NULL;       

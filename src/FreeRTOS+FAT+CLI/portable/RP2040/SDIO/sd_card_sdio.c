@@ -504,7 +504,7 @@ static void gpio_conf(uint gpio, enum gpio_function fn, bool pullup, bool pulldo
     }
 }
 
-static int sd_sdio_init(sd_card_t *sd_card_p) {
+static DSTATUS sd_sdio_init(sd_card_t *sd_card_p) {
     if (!sd_card_p->state.mutex)
         sd_card_p->state.mutex = xSemaphoreCreateMutex();
     sd_lock(sd_card_p);
@@ -563,8 +563,8 @@ uint64_t sd_sdio_sectorCount(sd_card_t *sd_card_p) {
     return CSD_sectors(sd_card_p->state.CSD);
 }
 
-static int sd_sdio_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
-                                uint64_t ulSectorNumber, uint32_t blockCnt) {
+static block_dev_err_t sd_sdio_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
+                                uint32_t ulSectorNumber, uint32_t blockCnt) {
     // bool sd_sdio_writeSectors(sd_card_t *sd_card_p, uint32_t sector, const uint8_t* src, size_t ns);
     bool ok;
 
@@ -582,7 +582,7 @@ static int sd_sdio_write_blocks(sd_card_t *sd_card_p, const uint8_t *buffer,
     else
         return SD_BLOCK_DEVICE_ERROR_WRITE;                                    
 }
-static int sd_sdio_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer, uint64_t ulSectorNumber,
+static block_dev_err_t sd_sdio_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer, uint32_t ulSectorNumber,
                                uint32_t ulSectorCount) {
     // bool sd_sdio_readSectors(sd_card_t *sd_card_p, uint32_t sector, uint8_t* dst, size_t n)
     bool ok;
