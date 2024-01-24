@@ -17,7 +17,7 @@ It is wrapped up in a complete runnable project, with a little command line inte
 
 ## What's new
 ### v2.5.0 
-Added new example: [examples/pico_w/httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates an WiFi web server serving files from an SD card.
+Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
 ### v2.4.3
 * Bug fix: Fix miscalculation in `get_num_sectors`.
 This error was visible in `bench` in the reported disk capacity.

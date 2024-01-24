@@ -14,7 +14,7 @@ project(${PROGRAM_NAME})
 # Initialise the Pico SDK
 pico_sdk_init()
 
-add_subdirectory(../../../src/FreeRTOS+FAT+CLI build)
+add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
 
 add_executable(${PROGRAM_NAME}
     main.c

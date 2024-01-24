@@ -1,14 +1,26 @@
-#ifndef _LWIPOPTS_EXAMPLE_COMMONH_H
-#define _LWIPOPTS_EXAMPLE_COMMONH_H
+#pragma once
 
+// See https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details.
+// Also, see https://gitlab.com/slimhazard/picow_http/-/wikis/Configuring-lwipopts.h
 
-// Common settings used in most of the pico_w examples
-// (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
+#define NO_SYS 0
 
-// allow override in some examples
-#ifndef NO_SYS
-#define NO_SYS                      1
+/*
+ * The default for MAX_CONCURRENT_CX_HINT is a conservative value, so that
+ * the default memory footprint of picow-http is small.
+ *
+ * This is a common value among most browsers for the maximum number of
+ * client connections to a single server IP address. It should usually be
+ * sufficient if a single client application connects to the server.
+ *
+ * Increase this value if more concurrent client connections are required.
+ */
+#ifndef MAX_CONCURRENT_CX_HINT
+#define MAX_CONCURRENT_CX_HINT      6
 #endif
+
+#define NUM_SERVER_HINT             1
+
 // allow override in some examples
 #ifndef LWIP_SOCKET
 #define LWIP_SOCKET                 0
@@ -20,18 +32,22 @@
 #define MEM_LIBC_MALLOC             0
 #endif
 #define MEM_ALIGNMENT               4
-#define MEM_SIZE                    4000
-#define MEMP_NUM_TCP_SEG            32
+#define MEM_SIZE                    (MAX_CONCURRENT_CX_HINT * TCP_MSS)
 #define MEMP_NUM_ARP_QUEUE          10
 #define PBUF_POOL_SIZE              24
 #define LWIP_ARP                    1
 #define LWIP_ETHERNET               1
 #define LWIP_ICMP                   1
 #define LWIP_RAW                    1
-#define TCP_WND                     (8 * TCP_MSS)
 #define TCP_MSS                     1460
-#define TCP_SND_BUF                 (8 * TCP_MSS)
+# define TCP_WND                    (MAX_CONCURRENT_CX_HINT * TCP_MSS)
+#define TCP_SND_BUF                 (MAX_CONCURRENT_CX_HINT * TCP_MSS)
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
+#define TCP_LISTEN_BACKLOG          1
+# define MEMP_NUM_TCP_SEG           32
+#define MEMP_NUM_TCP_PCB            (MAX_CONCURRENT_CX_HINT)
+#define MEMP_NUM_TCP_PCB_LISTEN     (NUM_SERVER_HINT)
+
 #define LWIP_NETIF_STATUS_CALLBACK  1
 #define LWIP_NETIF_LINK_CALLBACK    1
 #define LWIP_NETIF_HOSTNAME         1
@@ -87,4 +103,43 @@
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
 
-#endif /* __LWIPOPTS_H__ */
+#define TCPIP_THREAD_STACKSIZE 1024
+#define DEFAULT_THREAD_STACKSIZE 1024
+#define TCPIP_THREAD_PRIO 4
+#define DEFAULT_RAW_RECVMBOX_SIZE 8
+#define TCPIP_MBOX_SIZE 8
+#define LWIP_TIMEVAL_PRIVATE 0
+
+// not necessary, can be done either way
+#define LWIP_TCPIP_CORE_LOCKING_INPUT 1
+
+// ping_thread sets socket receive timeout, so enable this feature
+#define LWIP_SO_RCVTIMEO 1
+
+// This section enables HTTPD server with SSI, SGI
+// and tells server which converted HTML files to use.
+// See: https://www.nongnu.org/lwip/2_0_x/group__httpd__opts.html
+#define LWIP_HTTPD 1
+#define LWIP_HTTPD_SSI 0
+#define LWIP_HTTPD_CGI 0
+#define LWIP_HTTPD_SSI_INCLUDE_TAG 0
+// #define HTTPD_FSDATA_FILE "htmldata.c"
+
+#define LWIP_HTTPD_DYNAMIC_HEADERS 1
+#define LWIP_HTTPD_SUPPORT_EXTSTATUS 1
+#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 1
+#define HTTPD_LIMIT_SENDING_TO_2MSS 0
+#define LWIP_HTTPD_FILE_EXTENSION 1
+
+#define LWIP_HTTPD_CUSTOM_FILES 1
+// Set this to 1 and provide the functions:
+// "int fs_open_custom(struct fs_file *file, const char *name)"
+// Called first for every opened file to allow opening files that are not included in fsdata(_custom).c
+// "void fs_close_custom(struct fs_file *file)"
+// Called to free resources allocated by fs_open_custom().
+
+#define LWIP_HTTPD_DYNAMIC_FILE_READ 1
+// Set this to 1 to support fs_read() to dynamically read file data.
+// Without this (default=off), only one-block files are supported, and the contents must be ready after fs_open().
+
+#define HTTPD_DEBUG LWIP_DBG_OFF
