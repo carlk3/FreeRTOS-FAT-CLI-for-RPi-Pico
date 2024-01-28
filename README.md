@@ -17,7 +17,8 @@ It is wrapped up in a complete runnable project, with a little command line inte
 
 ## What's new
 ### v2.5.0 
-Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
+* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
+* Substantial (~15%) performance improvement for writing large contiguous blocks of data to SDIO-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
 ### v2.4.3
 * Bug fix: Fix miscalculation in `get_num_sectors`.
 This error was visible in `bench` in the reported disk capacity.
@@ -136,12 +137,12 @@ at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` 
 [big_file_test bf 200 7](#appendix-b-operation-of-command_line-example):
 
 * SDIO:
-  * Writing
-    * Elapsed seconds 25.3 
-    * Transfer rate 7.92 MiB/s (8.30 MB/s), or 8110 KiB/s (8304 kB/s) (66435 kb/s) 
-  * Reading
-    * Elapsed seconds 15.5
-    * Transfer rate 12.9 MiB/s (13.6 MB/s), or 13246 KiB/s (13564 kB/s) (108512 kb/s)
+  * Writing...
+    * Elapsed seconds 20.7
+    * Transfer rate 9.68 MiB/s (10.1 MB/s), or 9910 KiB/s (10148 kB/s) (81183 kbit/s)
+  * Reading...
+    * Elapsed seconds 16.0
+    * Transfer rate 12.5 MiB/s (13.1 MB/s), or 12784 KiB/s (13091 kB/s) (104729 kbit/s)
 
 * SPI:
   * Writing
@@ -162,37 +163,36 @@ Results from a
   Reading FAT and calculating Free Space
   Type is FAT32
   Manufacturer ID: 0x0
-  OEM ID:
-  Product: USD
+  OEM ID: Product: USD
   Revision: 1.0
   Serial number: 0x302c
   Manufacturing date: 8/2022
-  
+
   SDHC/SDXC Card: hc_c_size: 60947
   Sectors: 62410752
   Capacity: 30474 MiB (31954 MB)
   ERASE_BLK_EN: units of 512 bytes
   SECTOR_SIZE (size of an erasable sector): 128 (65536 bytes)
-  
+
   FILE_SIZE_MB = 5
   BUF_SIZE = 65536
-  
+
   Starting write test, please wait.
-  
+
   write speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  9673.2,12107,6542,6778
-  9781.5,9493,6530,6691
-  
+  10922.7,12672,5723,5992
+  11397.6,6009,5704,5752
+
   Starting read test, please wait.
-  
+
   read speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  13760.8,4813,4741,4757
-  13760.8,4814,4744,4753
-  
+  13273.1,4964,4907,4932
+  13306.8,4940,4907,4918
+
   Done
   ```
 * SPI:
@@ -1017,6 +1017,22 @@ Alternatively, if the file contains text, you could write an End-Of-File (EOF) c
 In DOS, this is the character 26, which is the Control-Z character.
 Alternatively, if the file contains records, each record could contain a magic number or checksum, so you can easily tell when you've reached the end of the valid records.
 (This might be an obvious choice if you're padding the record length to a multiple of 512 bytes.)
+
+For SDIO-attached cards, alignment of the read or write buffer is quite important for performance.
+This library uses DMA with `DMA_SIZE_32`, and the read and write addresses must always be aligned to the current transfer size,
+i.e., four bytes.
+(For example, you could specify that the buffer has [\_\_attribute\_\_ ((aligned (4))](https://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Type-Attributes.html).)
+If the buffer address is not aligned, the library copies each block into a temporary buffer that is aligned and then writes it out, one block at a time.
+(The SPI driver uses `DMA_SIZE_8` so the alignment isn't important.)
+
+For a logging type of application, opening and closing a file for each update is hugely inefficient,
+but if you can afford the time it can be a good way to minimize data loss in the event
+of an unexpected power loss or that kind of thing.
+You can also try to find a middle ground by periodically closing
+and reopening a file, or switching to a new file.
+A well designed directory structure can act as a sort of
+hierarchical database for rapid retrieval of records
+distributed across many small files.
 
 ## Appendix E: Troubleshooting
 * **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.

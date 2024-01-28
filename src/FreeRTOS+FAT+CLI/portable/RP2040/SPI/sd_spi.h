@@ -17,6 +17,10 @@ specific language governing permissions and limitations under the License.
 #include <stdint.h>
 #include "sd_card.h"
 
+#ifdef NDEBUG
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

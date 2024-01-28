@@ -187,6 +187,8 @@ BaseType_t FF_SDDiskReinit(FF_Disk_t *pxDisk) {
 BaseType_t FF_SDDiskUnmount(FF_Disk_t *pDisk) {
     if (!pDisk->xStatus.bIsMounted)
         return FF_ERR_NONE;
+    sd_card_t *sd_card_p = pDisk->pvTag;
+    sd_card_p->sync(sd_card_p);
     FF_Error_t e = FF_Unmount(pDisk);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Unmount error: %s\n", FF_GetErrMessage(e));

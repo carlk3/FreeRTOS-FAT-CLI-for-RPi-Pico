@@ -48,8 +48,9 @@ target_compile_options(command_line PUBLIC
 
 add_compile_definitions(
   USE_PRINTF
-  # USE_DBG_PRINTF
-  # USE_SPI_INTERFACE
+  #USE_DBG_PRINTF
+
+  #SPI_SD0
 )
 
 # Disable CRC checking for SPI-attached cards.
@@ -91,4 +92,3 @@ target_link_libraries(command_line
 )
 
 pico_add_extra_outputs(command_line)
-

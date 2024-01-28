@@ -102,7 +102,7 @@ typedef struct sd_card_state_t {
 	FF_Disk_t ff_disk; // FreeRTOS+FAT "disk" using this device
     CSD_t CSD;         // Card-Specific Data register.
     CID_t CID;         // Card IDentification register
-    uint64_t sectors;  // Assigned dynamically
+    uint32_t sectors;  // Assigned dynamically
 } sd_card_state_t;
 
 typedef struct sd_card_t sd_card_t;
@@ -127,15 +127,12 @@ struct sd_card_t {
     They are dynamically assigned. */
     sd_card_state_t state;
 
-	DSTATUS (*init)(sd_card_t *sd_card_p);
+    DSTATUS (*init)(sd_card_t *sd_card_p);
     void (*deinit)(sd_card_t *sd_card_p);
-
-	block_dev_err_t (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer,
-			uint32_t ulSectorNumber, uint32_t blockCnt);
-	block_dev_err_t (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer,
-			uint32_t ulSectorNumber, uint32_t ulSectorCount);
-
-    uint64_t (*get_num_sectors)(sd_card_t *sd_card_p);
+    block_dev_err_t (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer, uint32_t ulSectorNumber, uint32_t blockCnt);
+    block_dev_err_t (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer, uint32_t ulSectorNumber, uint32_t ulSectorCount);
+    block_dev_err_t (*sync)(sd_card_t *sd_card_p);
+    uint32_t (*get_num_sectors)(sd_card_t *sd_card_p);
 
     // Useful when use_card_detect is false - call periodically to check for presence of SD card
     // Returns true if and only if SD card was sensed on the bus

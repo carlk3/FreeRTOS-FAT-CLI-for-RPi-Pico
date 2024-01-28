@@ -422,8 +422,8 @@ static void sdio_verify_rx_checksums(sd_card_t *sd_card_p, uint32_t maxcount, si
             STATE.checksum_errors++;
             if (STATE.checksum_errors == 1)
             {
-                EMSG_PRINTF("%s,%d SDIO checksum error in reception: block %d calculated 0x%llx expected 0x%llx\n",
-                    __func__, __LINE__, blockidx, checksum, expected);
+                EMSG_PRINTF("SDIO checksum error in reception: block %d calculated 0x%llx expected 0x%llx\n",
+                    blockidx, checksum, expected);
                 dump_bytes(block_size_words, (uint8_t *)STATE.data_buf + blockidx * block_size_words);
             }
         }
