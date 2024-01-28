@@ -1,5 +1,6 @@
-# FreeRTOS-FAT-CLI-for-RPi-Pico
-# v2.4.3
+FreeRTOS-FAT-CLI-for-RPi-Pico  
+v2.5.0
+=============================
 ## C/C++ Library for SD Cards on the Pico
 
 This project is essentially a 
@@ -15,6 +16,9 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.5.0 
+* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
+* Substantial (~15%) performance improvement for writing large contiguous blocks of data to SDIO-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
 ### v2.4.3
 * Bug fix: Fix miscalculation in `get_num_sectors`.
 This error was visible in `bench` in the reported disk capacity.
@@ -63,7 +67,7 @@ For required migration actions, see [Appendix A: Migration actions](#appendix-a-
 
 *Note:* Release 1 remains available on the [v1.0.0 branch](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/v1.0.0).
 
-## Features:
+## Features
 * Supports multiple SD cards, all in a common file system
 * Supports desktop compatible SD card formats
 * Supports 4-bit wide SDIO by PIO, or SPI using built in SPI controllers, or both
@@ -76,7 +80,7 @@ For required migration actions, see [Appendix A: Migration actions](#appendix-a-
 * Plus all the neat features provided by
 [FreeRTOS+FAT](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/index.html)
 
-## Limitations:
+## Limitations
 * exFAT is not supported. Generally, if an SD card is formatted for exFAT you can reformat for FAT32. This library has the 
 [facilities to do that](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/native_API/FF_Format.html), 
 or you can use something like 
@@ -133,12 +137,12 @@ at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` 
 [big_file_test bf 200 7](#appendix-b-operation-of-command_line-example):
 
 * SDIO:
-  * Writing
-    * Elapsed seconds 25.3 
-    * Transfer rate 7.92 MiB/s (8.30 MB/s), or 8110 KiB/s (8304 kB/s) (66435 kb/s) 
-  * Reading
-    * Elapsed seconds 15.5
-    * Transfer rate 12.9 MiB/s (13.6 MB/s), or 13246 KiB/s (13564 kB/s) (108512 kb/s)
+  * Writing...
+    * Elapsed seconds 20.7
+    * Transfer rate 9.68 MiB/s (10.1 MB/s), or 9910 KiB/s (10148 kB/s) (81183 kbit/s)
+  * Reading...
+    * Elapsed seconds 16.0
+    * Transfer rate 12.5 MiB/s (13.1 MB/s), or 12784 KiB/s (13091 kB/s) (104729 kbit/s)
 
 * SPI:
   * Writing
@@ -159,37 +163,36 @@ Results from a
   Reading FAT and calculating Free Space
   Type is FAT32
   Manufacturer ID: 0x0
-  OEM ID:
-  Product: USD
+  OEM ID: Product: USD
   Revision: 1.0
   Serial number: 0x302c
   Manufacturing date: 8/2022
-  
+
   SDHC/SDXC Card: hc_c_size: 60947
   Sectors: 62410752
   Capacity: 30474 MiB (31954 MB)
   ERASE_BLK_EN: units of 512 bytes
   SECTOR_SIZE (size of an erasable sector): 128 (65536 bytes)
-  
+
   FILE_SIZE_MB = 5
   BUF_SIZE = 65536
-  
+
   Starting write test, please wait.
-  
+
   write speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  9673.2,12107,6542,6778
-  9781.5,9493,6530,6691
-  
+  10922.7,12672,5723,5992
+  11397.6,6009,5704,5752
+
   Starting read test, please wait.
-  
+
   read speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  13760.8,4813,4741,4757
-  13760.8,4814,4744,4753
-  
+  13273.1,4964,4907,4932
+  13306.8,4940,4907,4918
+
   Done
   ```
 * SPI:
@@ -269,7 +272,7 @@ A similar strategy that I have used: SDIO for fast, interactive use, and SPI to 
 * [Pico Stackable, Plug & Play SD Card Expansion Module](https://forums.raspberrypi.com/viewtopic.php?t=356864)
 ![PXL_20230926_212422091](https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/assets/50121841/7edfea8c-59b0-491c-8321-45487bce9693)
 
-### Prewired boards with SD card sockets:
+### Prewired boards with SD card sockets
 There are a variety of RP2040 boards on the market that provide an integrated µSD socket. As far as I know, most are useable with this library.
 * [Maker Pi Pico](https://www.cytron.io/p-maker-pi-pico) works on SPI1. Looks fine for 4-bit wide SDIO.
 * I don't think the [Pimoroni Pico VGA Demo Base](https://shop.pimoroni.com/products/pimoroni-pico-vga-demo-base) can work with a built in RP2040 SPI controller. It looks like RP20040 SPI0 SCK needs to be on GPIO 2, 6, or 18 (pin 4, 9, or 24, respectively), but Pimoroni wired it to GPIO 5 (pin 7). SDIO? For sure it could work with one bit SDIO, but I don't know about 4-bit. It looks like it *can* work, depending on what other functions you need on the board.
@@ -316,7 +319,7 @@ SPI and SDIO at 31.5 MHz are pretty demanding electrically. You need good, solid
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232043568.jpg "Protoboard, top")
 ![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/PXL_20230201_232026240_3.jpg "Protoboard, bottom")
 
-### Construction:
+### Construction
 * The wiring is so simple that I didn't bother with a schematic. 
 I just referred to the table above, wiring point-to-point from the Pin column on the Pico to the MicroSD 0 column on the Transflash.
 * Card Detect is optional. Some SD card sockets have no provision for it. 
@@ -373,7 +376,7 @@ This will be picked up automatically as a submodule when you git clone this libr
 ### Procedure
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
-  ```
+  ```Shell
   git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI
   ```
 * Customize:
@@ -382,7 +385,7 @@ This will be picked up automatically as a submodule when you git clone this libr
   * Customize `pico_enable_stdio_uart` and `pico_enable_stdio_usb` in CMakeLists.txt as you prefer. 
 (See *4.1. Serial input and output on Raspberry Pi Pico* in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) and *2.7.1. Standard Input/Output (stdio) Support* in [Raspberry Pi Pico C/C++ SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf).) 
 * Build:
-```  
+```shell
    cd FreeRTOS+FAT+CLI/examples/command_line
    mkdir build
    cd build
@@ -418,7 +421,7 @@ the C runtime initializes static memory to 0.)
 Illustration of the configuration 
 [dev_brd.hw_config.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/config/dev_brd.hw_config.c)
 
-### An instance of `sd_card_t` describes the configuration of one SD card socket.
+### An instance of `sd_card_t` describes the configuration of one SD card socket
   ```C
 struct sd_card_t {
     const char *device_name;
@@ -606,10 +609,10 @@ typedef struct spi_t {
 * `mosi_gpio` SPI Master Out, Slave In (MOSI) (also called "COPI", or "Peripheral's SDI") GPIO number. This is connected to the SD card's Data In (DI).
 * `sck_gpio` SPI Serial Clock GPIO number. This is connected to the SD card's Serial Clock (SCK).
 * `baud_rate` Frequency of the SPI Serial Clock, in Hertz. The default is 10 MHz.
-  This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`). (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)).
-  Therefore, you might want to choose a `baud_rate` that is some factor of `clk_peri`.
+  This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`) (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)). 
   The *Peripheral clock* typically,
   but not necessarily, runs from `clk_sys`.
+  Practically, the hardware limits the choices for the SPI frequency to `clk_peri` divided by an even number.
   For example, if `clk_peri` is `clk_sys` and `clk_sys` is running at the default 125 MHz,
   ```C
       .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
@@ -618,6 +621,8 @@ typedef struct spi_t {
   ```C
       .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
   ```
+  If you ask for 14000000, you'll actually get 12500000 Hz.
+  The actual baud rate will be printed out if `USE_DBG_PRINTF` (see [Messages from the SD card driver](#messages-from-the-sd-card-driver)) is defined at compile time.
   The higher the baud rate, the faster the data transfer.
   However, the hardware might limit the usable baud rate.
   See [Pull Up Resistors and other electrical considerations](#pull-up-resistors-and-other-electrical-considerations).
@@ -643,7 +648,7 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
   Then, a higher drive strength might allow operation at higher baud rates.
   A low drive strength generates less noise. This might be important in, say, audio applications.
 
-### You must provide a definition for the functions declared in `sd_driver/hw_config.h`:  
+### You must provide a definition for the functions declared in `sd_driver/hw_config.h`
 `size_t sd_get_num()` Returns the number of SD cards  
 `sd_card_t *sd_get_by_num(size_t num)` Returns a pointer to the SD card "object" at the given (zero origin) index.  
 
@@ -801,7 +806,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
  ```
 
 
-## Appendix B: Operation of `command_line` example:
+## Appendix B: Operation of `command_line` example
 * Connect a terminal. [PuTTY](https://www.putty.org/) or `tio` work OK. For example:
   * `tio -m ODELBS /master/ttyACM0`
 * Press Enter to start the CLI. You should see a prompt like:
@@ -947,9 +952,9 @@ CD0||22|29|||CD|
 GND|||18, 23|||GND|GND
 3v3|||36|||3v3|3v3
 
-### Wiring: 
+### Wiring
 As you can see from the table above, the only new signals are CD1 and CS1. Otherwise, the new card is wired in parallel with the first card.
-### Firmware:
+### Firmware
 * [The hardware configuration](#customizing-for-the-hardware-configuration) must be edited to add a new instance of 
 [sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket)
 and its interface
@@ -1012,6 +1017,22 @@ Alternatively, if the file contains text, you could write an End-Of-File (EOF) c
 In DOS, this is the character 26, which is the Control-Z character.
 Alternatively, if the file contains records, each record could contain a magic number or checksum, so you can easily tell when you've reached the end of the valid records.
 (This might be an obvious choice if you're padding the record length to a multiple of 512 bytes.)
+
+For SDIO-attached cards, alignment of the read or write buffer is quite important for performance.
+This library uses DMA with `DMA_SIZE_32`, and the read and write addresses must always be aligned to the current transfer size,
+i.e., four bytes.
+(For example, you could specify that the buffer has [\_\_attribute\_\_ ((aligned (4))](https://gcc.gnu.org/onlinedocs/gcc-3.1.1/gcc/Type-Attributes.html).)
+If the buffer address is not aligned, the library copies each block into a temporary buffer that is aligned and then writes it out, one block at a time.
+(The SPI driver uses `DMA_SIZE_8` so the alignment isn't important.)
+
+For a logging type of application, opening and closing a file for each update is hugely inefficient,
+but if you can afford the time it can be a good way to minimize data loss in the event
+of an unexpected power loss or that kind of thing.
+You can also try to find a middle ground by periodically closing
+and reopening a file, or switching to a new file.
+A well designed directory structure can act as a sort of
+hierarchical database for rapid retrieval of records
+distributed across many small files.
 
 ## Appendix E: Troubleshooting
 * **Check your grounds!** Maybe add some more if you were skimpy with them. The Pico has six of them.

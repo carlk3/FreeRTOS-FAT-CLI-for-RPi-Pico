@@ -107,8 +107,8 @@ static void run_info(const size_t argc, const char *argv[]) {
     size_t au_size_bytes;
     bool ok = sd_allocation_unit(sd_card_p, &au_size_bytes);
     if (ok)
-        printf("\nSD card Allocation Unit (AU_SIZE) or \"segment\": %zu bytes (%lu sectors)\n", 
-            au_size_bytes, au_size_bytes / _block_size);
+        printf("\nSD card Allocation Unit (AU_SIZE) or \"segment\": %zu bytes (%zu sectors)\n", 
+            au_size_bytes, au_size_bytes / sd_block_size);
     
     if (!sd_card_p->state.ff_disk.xStatus.bIsMounted) {
         printf("Drive \"%s\" is not mounted\n", argv[0]);

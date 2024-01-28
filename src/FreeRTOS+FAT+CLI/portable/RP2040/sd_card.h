@@ -17,21 +17,22 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
-//
-#include "FreeRTOS.h"
-/* FreeRTOS includes. */
-#include <semphr.h>
+#include <sys/types.h>
 //
 #include "hardware/gpio.h"
 #include <hardware/pio.h>
 #include "pico/mutex.h"
 //
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "semphr.h"
 #include "ff_headers.h"
 //
-#include "SPI/spi.h"
-#include "sd_card_constants.h"
 #include "sd_regs.h"
+#include "sd_card_constants.h"
+#include "SPI/spi.h"
 #include "SDIO/rp2040_sdio.h"
 #include "util.h"
 
@@ -39,12 +40,9 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
-/* Disk Status Bits (DSTATUS) */
-enum {
-    STA_NOINIT = 0x01, /* Drive not initialized */
-    STA_NODISK = 0x02, /* No medium in the drive */
-    STA_PROTECT = 0x04 /* Write protected */
-};
+typedef uint8_t BYTE;
+/* Status of Disk Functions */
+typedef BYTE	DSTATUS;
 
 typedef enum {
     SD_IF_NONE,
@@ -96,14 +94,15 @@ typedef struct sd_sdio_if_t {
 } sd_sdio_if_t;
 
 typedef struct sd_card_state_t {    
-    int m_Status;      // Card status
+	SemaphoreHandle_t mutex; // Guard semaphore, assigned dynamically
+	StaticSemaphore_t mutex_buffer; // Guard semaphore storage, assigned dynamically
+	DSTATUS m_Status; // Card status
+	card_type_t card_type; // Assigned dynamically
+	TaskHandle_t owner; // Assigned dynamically
+	FF_Disk_t ff_disk; // FreeRTOS+FAT "disk" using this device
     CSD_t CSD;         // Card-Specific Data register.
     CID_t CID;         // Card IDentification register
-    uint64_t sectors;  // Assigned dynamically
-    int card_type;     // Assigned dynamically
-    SemaphoreHandle_t mutex;  // Guard semaphore, assigned dynamically
-    TaskHandle_t owner;       // Assigned dynamically
-    FF_Disk_t ff_disk;  // FreeRTOS+FAT "disk" using this device
+    uint32_t sectors;  // Assigned dynamically
 } sd_card_state_t;
 
 typedef struct sd_card_t sd_card_t;
@@ -119,22 +118,21 @@ struct sd_card_t {
     };
     bool use_card_detect;
     uint card_detect_gpio;    // Card detect; ignored if !use_card_detect
-    uint card_detected_true;  // Varies with card socket; ignored if !use_card_detect
+    bool card_detected_true; // Varies with card socket; ignored if !use_card_detect
     bool card_detect_use_pull;
     bool card_detect_pull_hi;
+	size_t cache_sectors;
 
     /* The following fields are state variables and not part of the configuration. 
     They are dynamically assigned. */
     sd_card_state_t state;
 
-    int (*init)(sd_card_t *sd_card_p);
+    DSTATUS (*init)(sd_card_t *sd_card_p);
     void (*deinit)(sd_card_t *sd_card_p);
-
-    int (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer,
-                        uint64_t ulSectorNumber, uint32_t blockCnt);
-    int (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer, uint64_t ulSectorNumber,
-                       uint32_t ulSectorCount);
-    uint64_t (*get_num_sectors)(sd_card_t *sd_card_p);
+    block_dev_err_t (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer, uint32_t ulSectorNumber, uint32_t blockCnt);
+    block_dev_err_t (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer, uint32_t ulSectorNumber, uint32_t ulSectorCount);
+    block_dev_err_t (*sync)(sd_card_t *sd_card_p);
+    uint32_t (*get_num_sectors)(sd_card_t *sd_card_p);
 
     // Useful when use_card_detect is false - call periodically to check for presence of SD card
     // Returns true if and only if SD card was sensed on the bus

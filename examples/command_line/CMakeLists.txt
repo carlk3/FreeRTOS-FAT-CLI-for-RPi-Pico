@@ -33,6 +33,7 @@ add_executable(command_line
     tests/CreateAndVerifyExampleFiles.c
     tests/ff_stdio_tests_with_cwd.c
     tests/simple.c
+    ../../src/FreeRTOS+FAT+CLI/src/crash.c
 )
 
 #target_compile_options(simple_example PRIVATE -save-temps)
@@ -45,9 +46,12 @@ target_compile_options(command_line PUBLIC
   -fanalyzer 
 )
 
-# This program is useless without standard standard input and output.
-# add_compile_definitions(USE_PRINTF USE_DBG_PRINTF)
-add_compile_definitions(USE_PRINTF)
+add_compile_definitions(
+  USE_PRINTF
+  #USE_DBG_PRINTF
+
+  #SPI_SD0
+)
 
 # Disable CRC checking for SPI-attached cards.
 # add_compile_definitions(SD_CRC_ENABLED=0)
@@ -88,4 +92,3 @@ target_link_libraries(command_line
 )
 
 pico_add_extra_outputs(command_line)
-

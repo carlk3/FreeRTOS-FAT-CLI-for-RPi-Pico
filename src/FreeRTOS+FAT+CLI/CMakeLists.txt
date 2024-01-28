@@ -22,7 +22,6 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         portable/RP2040/SPI/spi.c
         portable/RP2040/SDIO/sd_card_sdio.c
         portable/RP2040/SDIO/rp2040_sdio.c
-        src/crash.c
         src/ff_utils.c
         src/freertos_callbacks.c
         src/FreeRTOS_strerror.c

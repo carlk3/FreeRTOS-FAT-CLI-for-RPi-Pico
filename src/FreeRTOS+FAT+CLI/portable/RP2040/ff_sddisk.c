@@ -47,6 +47,7 @@ specific language governing permissions and limitations under the License.
 
 #include "ff_headers.h"
 #include "hw_config.h"
+#include "sd_card_constants.h"
 //
 #include "ff_sddisk.h"
 
@@ -99,7 +100,11 @@ BaseType_t FF_SDDiskDetect(FF_Disk_t *pxDisk) {
 bool disk_init(sd_card_t *sd_card_p) {
     FF_Error_t xError = 0;
     FF_CreationParameters_t xParameters = {};
-    const uint32_t xIOManagerCacheSize = 4 * SECTOR_SIZE;
+    uint32_t xIOManagerCacheSize;
+    if (sd_card_p->cache_sectors)
+    	xIOManagerCacheSize = sd_card_p->cache_sectors * SECTOR_SIZE;
+    else
+    	xIOManagerCacheSize = 4 * SECTOR_SIZE;
 
     if (sd_card_p->state.ff_disk.xStatus.bIsInitialised == pdTRUE) {
         // Already initialized
@@ -182,6 +187,8 @@ BaseType_t FF_SDDiskReinit(FF_Disk_t *pxDisk) {
 BaseType_t FF_SDDiskUnmount(FF_Disk_t *pDisk) {
     if (!pDisk->xStatus.bIsMounted)
         return FF_ERR_NONE;
+    sd_card_t *sd_card_p = pDisk->pvTag;
+    sd_card_p->sync(sd_card_p);
     FF_Error_t e = FF_Unmount(pDisk);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Unmount error: %s\n", FF_GetErrMessage(e));

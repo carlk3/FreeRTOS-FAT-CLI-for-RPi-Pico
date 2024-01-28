@@ -25,6 +25,8 @@ See
 See https://oshwlab.com/carlk3/rpi-pico-sd-card-expansion-module-1
 */
 
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 #include "hw_config.h"
 
 // Hardware Configuration of SPI "object"
@@ -34,13 +36,13 @@ static spi_t spi  = {  // One for each RP2040 SPI component used
     .mosi_gpio = 3,
     .miso_gpio = 4,
     .set_drive_strength = true,
-    .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+    .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+    .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
     .no_miso_gpio_pull_up = true,
     .DMA_IRQ_num = DMA_IRQ_0,
     .use_exclusive_DMA_IRQ_handler = true,
-    // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-    .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+    .baud_rate = 125 * 1000 * 1000 / 8
+    // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
     // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
 };
 
@@ -49,10 +51,41 @@ static sd_spi_if_t spi_if = {
         .spi = &spi,  // Pointer to the SPI driving this card
         .ss_gpio = 7,     // The SPI slave select GPIO for this SD card
         .set_drive_strength = true,
-        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA
+        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA
 };
 
-// Hardware Configuration of the SD Card "object"
+/* SDIO Interface */
+static sd_sdio_if_t sdio_if = {
+    /*
+    Pins CLK_gpio, D1_gpio, D2_gpio, and D3_gpio are at offsets from pin D0_gpio.
+    The offsets are determined by sd_driver\SDIO\rp2040_sdio.pio.
+        CLK_gpio = (D0_gpio + SDIO_CLK_PIN_D0_OFFSET) % 32;
+        As of this writing, SDIO_CLK_PIN_D0_OFFSET is 30,
+            which is -2 in mod32 arithmetic, so:
+        CLK_gpio = D0_gpio -2.
+        D1_gpio = D0_gpio + 1;
+        D2_gpio = D0_gpio + 2;
+        D3_gpio = D0_gpio + 3;
+    */
+    .CMD_gpio = 3,
+    .D0_gpio = 4,
+    .CLK_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .CMD_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .D0_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+    .SDIO_PIO = pio1,
+    .DMA_IRQ_num = DMA_IRQ_1,
+    // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+    // .baud_rate = 125 * 1000 * 1000 / 5  // 25000000 Hz
+    .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+};
+
+// Hardware Configuration of the SD Card socket "object"
+#if USE_SPI_INTERFACE
 static sd_card_t sd_card = {
     .device_name = "sd0",
     .mount_point = "/sd0",
@@ -64,16 +97,28 @@ static sd_card_t sd_card = {
     .card_detect_gpio = 9,  
     .card_detected_true = 0, // What the GPIO read returns when a card is present.
 };
+#else
+static sd_card_t sd_card = {    
+    .device_name = "sd0",
+    .mount_point = "/sd0",
+    .type = SD_IF_SDIO,
+    .sdio_if_p = &sdio_if,
+    // SD Card detect:
+    .use_card_detect = true,
+    .card_detect_gpio = 9,  
+    .card_detected_true = 0  // What the GPIO read returns when a card is present.
+};
+#endif
 
 /* ********************************************************************** */
 
 size_t sd_get_num() { return 1; }
 
 sd_card_t *sd_get_by_num(size_t num) {
-    if (0 == num) {
+    if (0 == num)
         return &sd_card;
-    } else {
+    else
         return NULL;
-    }
 }
+
 /* [] END OF FILE */

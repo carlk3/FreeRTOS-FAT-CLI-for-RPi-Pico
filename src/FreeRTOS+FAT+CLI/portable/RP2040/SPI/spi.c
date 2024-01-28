@@ -232,6 +232,7 @@ bool my_spi_init(spi_t *spi_p) {
         // enum gpio_slew_rate { GPIO_SLEW_RATE_SLOW = 0, GPIO_SLEW_RATE_FAST = 1 }
         // void gpio_set_slew_rate (uint gpio,enum gpio_slew_rate slew)
         // Default appears to be GPIO_SLEW_RATE_SLOW.
+        gpio_set_slew_rate (spi_p->sck_gpio, GPIO_SLEW_RATE_FAST);
 
         // Drive strength levels for GPIO outputs.
         // enum gpio_drive_strength { GPIO_DRIVE_STRENGTH_2MA = 0, GPIO_DRIVE_STRENGTH_4MA = 1, GPIO_DRIVE_STRENGTH_8MA = 2,
@@ -245,6 +246,8 @@ bool my_spi_init(spi_t *spi_p) {
         // SD cards' DO MUST be pulled up. However, it might be done externally.
         if (!spi_p->no_miso_gpio_pull_up)
             gpio_pull_up(spi_p->miso_gpio);
+
+        gpio_set_input_hysteresis_enabled(spi_p->miso_gpio, false);
 
         // Grab some unused dma channels
         spi_p->tx_dma = dma_claim_unused_channel(true);

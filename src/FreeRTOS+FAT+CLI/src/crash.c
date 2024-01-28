@@ -180,16 +180,16 @@ __attribute__((used)) extern void DebugMon_HandlerC(
 extern void DebugMon_Handler(void);
 __attribute__((naked)) void DebugMon_Handler(void) {
     __asm volatile(
-        " movs r0,#4       \n"
-        " movs r1, lr      \n"
-        " tst r0, r1       \n"
-        " beq _MSP2         \n"
-        " mrs r0, psp      \n"
-        " b _HALT2          \n"
-        "_MSP2:               \n"
-        " mrs r0, msp      \n"
-        "_HALT2:              \n"
-        " ldr r1,[r0,#20]  \n"
+        " movs r0,#4 \n"
+        " movs r1, lr \n"
+        " tst r0, r1 \n"
+        " beq _MSP2 \n"
+        " mrs r0, psp \n"
+        " b _HALT2 \n"
+        "_MSP2: \n"
+        " mrs r0, msp \n"
+        "_HALT2: \n"
+        " ldr r1,[r0,#20] \n"
         " b DebugMon_HandlerC \n");
 }
 
@@ -218,16 +218,16 @@ void Hardfault_HandlerC(uint32_t const *faultStackAddr) {
 }
 __attribute__((naked)) void isr_hardfault(void) {
     __asm volatile(
-        " movs r0,#4       \n"
-        " movs r1, lr      \n"
-        " tst r0, r1       \n"
-        " beq _MSP3         \n"
-        " mrs r0, psp      \n"
-        " b _HALT3          \n"
-        "_MSP3:               \n"
-        " mrs r0, msp      \n"
-        "_HALT3:              \n"
-        " ldr r1,[r0,#20]  \n"
+        " movs r0,#4 \n"
+        " movs r1, lr \n"
+        " tst r0, r1 \n"
+        " beq _MSP3 \n"
+        " mrs r0, psp \n"
+        " b _HALT3 \n"
+        "_MSP3: \n"
+        " mrs r0, msp \n"
+        "_HALT3: \n"
+        " ldr r1,[r0,#20] \n"
         " b Hardfault_HandlerC \n");
 }
 

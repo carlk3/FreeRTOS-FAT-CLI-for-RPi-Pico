@@ -18,10 +18,9 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
-// Only HC block size is supported. Making this a static constant reduces code
-// size.
-#define BLOCK_SIZE_HC 512 /*!< Block size supported for SD card is 512 bytes */
-static const uint32_t _block_size = BLOCK_SIZE_HC;
+/*!< Block size supported for SD card is 512 bytes */
+// Only HC block size is supported.
+static const size_t sd_block_size = 512;
 
 typedef enum {
     SD_BLOCK_DEVICE_ERROR_NONE = 0,
@@ -35,7 +34,7 @@ typedef enum {
     SD_BLOCK_DEVICE_ERROR_NO_RESPONSE = 1 << 7,     /*!< No response from device */
     SD_BLOCK_DEVICE_ERROR_CRC = 1 << 8,             /*!< CRC error */
     SD_BLOCK_DEVICE_ERROR_ERASE = 1 << 9,           /*!< Erase error: reset/sequence */
-    SD_BLOCK_DEVICE_ERROR_WRITE = 1 << 10           /*!< SPI Write error: !SPI_DATA_ACCEPTED */
+    SD_BLOCK_DEVICE_ERROR_WRITE = 1 << 10           /*!< Write error: !SPI_DATA_ACCEPTED */
 } block_dev_err_t;
 
 /** Represents the different SD/MMC card types  */
@@ -89,13 +88,11 @@ typedef enum {
 } cmdSupported;
 //------------------------------------------------------------------------------
 
-///* Disk Status Bits (DSTATUS) */
+/* Disk Status Bits (DSTATUS) */
 // See diskio.h.
-// enum {
-//    STA_NOINIT = 0x01, /* Drive not initialized */
-//    STA_NODISK = 0x02, /* No medium in the drive */
-//    STA_PROTECT = 0x04 /* Write protected */
-//};
+#define STA_NOINIT		0x01	/* Drive not initialized */
+#define STA_NODISK		0x02	/* No medium in the drive */
+#define STA_PROTECT		0x04	/* Write protected */
 
 #ifdef __cplusplus
 }
