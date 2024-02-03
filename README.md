@@ -20,7 +20,7 @@ It is wrapped up in a complete runnable project, with a little command line inte
 * Fixed locking bug in `sd_sync`. 
 * Performance tweaks.
 ### v2.5.0 
-* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
+* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/wifi_httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
 * Substantial (~15%) performance improvement for writing large contiguous blocks of data to SDIO-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
 ### v2.4.3
 * Bug fix: Fix miscalculation in `get_num_sectors`.
