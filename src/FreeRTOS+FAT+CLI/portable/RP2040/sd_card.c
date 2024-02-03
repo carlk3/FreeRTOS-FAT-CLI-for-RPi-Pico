@@ -13,7 +13,10 @@ specific language governing permissions and limitations under the License.
 */
 
 /* Standard includes. */
+#include <ctype.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 //
 #include "pico/mutex.h"
@@ -78,38 +81,36 @@ bool sd_card_detect(sd_card_t *sd_card_p) {
 }
 
 bool sd_init_driver() {
-	static SemaphoreHandle_t xSemaphore;
-	static bool once;
-	while (!once) {
-		// bool __atomic_test_and_set (void *ptr, int memorder)
-		// This built-in function performs an atomic test-and-set operation on the byte at *ptr.
-		// The byte is set to some implementation defined nonzero “set” value
-		// and the return value is true if and only if the previous contents were “set”.
-		if (!__atomic_test_and_set(&once, __ATOMIC_SEQ_CST)) {
-			static StaticSemaphore_t xMutexBuffer;
-			xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
-		}
-	}
-	configASSERT(xSemaphore);
-	xSemaphoreTake(xSemaphore, portMAX_DELAY);
-	bool ok = true;
+    static SemaphoreHandle_t xSemaphore;
+    static bool once;
+    while (!once) {
+        // bool __atomic_test_and_set (void *ptr, int memorder)
+        // This built-in function performs an atomic test-and-set operation on the byte at *ptr.
+        // The byte is set to some implementation defined nonzero “set” value
+        // and the return value is true if and only if the previous contents were “set”.
+        if (!__atomic_test_and_set(&once, __ATOMIC_SEQ_CST)) {
+            static StaticSemaphore_t xMutexBuffer;
+            xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
+        }
+    }
+    configASSERT(xSemaphore);
+    xSemaphoreTake(xSemaphore, portMAX_DELAY);
+    bool ok = true;
     if (!driver_initialized) {
         myASSERT(sd_get_num());
         for (size_t i = 0; i < sd_get_num(); ++i) {
             sd_card_t *sd_card_p = sd_get_by_num(i);
-            if (!sd_card_p)
-                continue;
+            if (!sd_card_p) continue;
 
             myASSERT(sd_card_p->device_name);
             myASSERT(sd_card_p->mount_point);
             myASSERT(sd_card_p->type);
 
-			myASSERT(!sd_card_p->state.mutex);
-			sd_card_p->state.mutex = xSemaphoreCreateMutexStatic(
-					&sd_card_p->state.mutex_buffer);
-			myASSERT(sd_card_p->state.mutex);
+            if (!sd_card_p->state.mutex)
+                sd_card_p->state.mutex = xSemaphoreCreateMutexStatic(&sd_card_p->state.mutex_buffer);
+            myASSERT(sd_card_p->state.mutex);
 
-			sd_card_p->state.m_Status = STA_NOINIT;
+            sd_card_p->state.m_Status = STA_NOINIT;
 
             // Set up Card Detect
             if (sd_card_p->use_card_detect) {
@@ -122,16 +123,17 @@ bool sd_init_driver() {
                 }
                 gpio_init(sd_card_p->card_detect_gpio);
             }
+
             switch (sd_card_p->type) {
-			case SD_IF_NONE:
-				myASSERT(false);
-				break;
+                case SD_IF_NONE:
+                    myASSERT(false);
+                    break;
                 case SD_IF_SPI:
-			    myASSERT(sd_card_p->spi_if_p);  // Must have an interface object
-			    myASSERT(sd_card_p->spi_if_p->spi);
+                    myASSERT(sd_card_p->spi_if_p);  // Must have an interface object
+                    myASSERT(sd_card_p->spi_if_p->spi);
                     sd_spi_ctor(sd_card_p);
                     if (!my_spi_init(sd_card_p->spi_if_p->spi)) {
-					ok = false;
+                        ok = false;
                     }
                     myASSERT(1 == gpio_get(sd_card_p->spi_if_p->ss_gpio));
                     break;
@@ -142,12 +144,12 @@ bool sd_init_driver() {
                 default:
                     myASSERT(false);
             }  // switch (sd_card_p->type)
-        }  // for
+        }      // for
 
-		driver_initialized = true;
-	}
-	xSemaphoreGive(xSemaphore);
-	return ok;
+        driver_initialized = true;
+    }
+    xSemaphoreGive(xSemaphore);
+    return ok;
 }
 
 void cidDmp(sd_card_t *sd_card_p, printer_t printer) {
@@ -213,28 +215,23 @@ void csdDmp(sd_card_t *sd_card_p, printer_t printer) {
         case 0:
             c_size = ext_bits16(sd_card_p->state.CSD, 73, 62);       // c_size        : CSD[73:62]
             c_size_mult = ext_bits16(sd_card_p->state.CSD, 49, 47);  // c_size_mult   : CSD[49:47]
-            read_bl_len =
-                ext_bits16(sd_card_p->state.CSD, 83, 80);  // read_bl_len   : CSD[83:80] - the
-                                                           // *maximum* read block length
-            block_len = 1 << read_bl_len;                  // BLOCK_LEN = 2^READ_BL_LEN
-            mult = 1 << (c_size_mult +
-                         2);                // MULT = 2^C_SIZE_MULT+2 (C_SIZE_MULT < 8)
-            blocknr = (c_size + 1) * mult;  // BLOCKNR = (C_SIZE+1) * MULT
-            capacity = (uint64_t)blocknr *
-                       block_len;  // memory capacity = BLOCKNR * BLOCK_LEN
+            read_bl_len = ext_bits16(sd_card_p->state.CSD, 83, 80);  // read_bl_len   : CSD[83:80] - the
+                                                                     // *maximum* read block length
+            block_len = 1 << read_bl_len;                            // BLOCK_LEN = 2^READ_BL_LEN
+            mult = 1 << (c_size_mult + 2);                           // MULT = 2^C_SIZE_MULT+2 (C_SIZE_MULT < 8)
+            blocknr = (c_size + 1) * mult;                           // BLOCKNR = (C_SIZE+1) * MULT
+            capacity = (uint64_t)blocknr * block_len;                // memory capacity = BLOCKNR * BLOCK_LEN
             blocks = capacity / sd_block_size;
 
             (*printer)("Standard Capacity: c_size: %" PRIu32 "\r\n", c_size);
             (*printer)("Sectors: 0x%llx : %llu\r\n", blocks, blocks);
-            (*printer)("Capacity: 0x%llx : %llu MiB\r\n", capacity,
-                       (capacity / (1024U * 1024U)));
+            (*printer)("Capacity: 0x%llx : %llu MiB\r\n", capacity, (capacity / (1024U * 1024U)));
             break;
 
         case 1:
-            hc_c_size =
-                ext_bits16(sd_card_p->state.CSD, 69, 48);  // device size : C_SIZE : [69:48]
-            blocks = (hc_c_size + 1) << 10;                // block count = C_SIZE+1) * 1K
-                                                           // byte (512B is block size)
+            hc_c_size = ext_bits16(sd_card_p->state.CSD, 69, 48);  // device size : C_SIZE : [69:48]
+            blocks = (hc_c_size + 1) << 10;                        // block count = C_SIZE+1) * 1K
+                                                                   // byte (512B is block size)
 
             /* ERASE_BLK_EN
             The ERASE_BLK_EN defines the granularity of the unit size of the data to be erased. The erase
@@ -255,8 +252,8 @@ void csdDmp(sd_card_t *sd_card_p, printer_t printer) {
             (*printer)("Sectors: %llu\r\n", blocks);
             (*printer)("Capacity: %llu MiB (%llu MB)\r\n", blocks / 2048, blocks * sd_block_size / 1000000);
             (*printer)("ERASE_BLK_EN: %s\r\n", erase_single_block_enable ? "units of 512 bytes" : "units of SECTOR_SIZE");
-            (*printer)("SECTOR_SIZE (size of an erasable sector): %d (%lu bytes)\r\n",
-                       erase_sector_size, (uint32_t)(erase_sector_size ? 512 : 1) * erase_sector_size);
+            (*printer)("SECTOR_SIZE (size of an erasable sector): %d (%lu bytes)\r\n", erase_sector_size,
+                       (uint32_t)(erase_sector_size ? 512 : 1) * erase_sector_size);
             break;
 
         default:
@@ -271,13 +268,11 @@ void csdDmp(sd_card_t *sd_card_p, printer_t printer) {
 is a physical boundary of the card and consists of one or more blocks and its
 size depends on each card. */
 bool sd_allocation_unit(sd_card_t *sd_card_p, size_t *au_size_bytes_p) {
-    if (SD_IF_SPI == sd_card_p->type)
-        return false;  // SPI can't do full SD Status
+    if (SD_IF_SPI == sd_card_p->type) return false;  // SPI can't do full SD Status
 
     uint8_t status[64] = {0};
     bool ok = rp2040_sdio_get_sd_status(sd_card_p, status);
-    if (!ok)
-        return false;
+    if (!ok) return false;
     // 431:428 AU_SIZE
     uint8_t au_size = ext_bits(64, status, 431, 428);
     switch (au_size) {

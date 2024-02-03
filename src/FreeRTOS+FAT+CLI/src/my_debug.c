@@ -32,17 +32,13 @@ specific language governing permissions and limitations under the License.
 
 static time_t start_time;
 
-void mark_start_time() {
-    start_time = FreeRTOS_time(NULL);
-}
-time_t GLOBAL_uptime_seconds() {
-    return FreeRTOS_time(NULL) - start_time;
-}
+void mark_start_time() { start_time = FreeRTOS_time(NULL); }
+time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
 
 /* Function Attribute ((weak))
 The weak attribute causes a declaration of an external symbol to be emitted as a weak symbol rather than a global.
-This is primarily useful in defining library functions that can be overridden in user code, though it can also be used with non-function declarations.
-The overriding symbol must have the same type as the weak symbol.
+This is primarily useful in defining library functions that can be overridden in user code, though it can also be used with
+non-function declarations. The overriding symbol must have the same type as the weak symbol.
 https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 
 You can override these functions in your application to redirect "stdout"-type messages.
@@ -50,15 +46,9 @@ You can override these functions in your application to redirect "stdout"-type m
 
 /* Single string output callbacks */
 
-void __attribute__((weak)) put_out_error_message(const char *s) {
-    (void)s;
-}
-void __attribute__((weak)) put_out_info_message(const char *s) {
-    (void)s;
-}
-void __attribute__((weak)) put_out_debug_message(const char *s) {
-    (void)s;
-}
+void __attribute__((weak)) put_out_error_message(const char *s) { (void)s; }
+void __attribute__((weak)) put_out_info_message(const char *s) { (void)s; }
+void __attribute__((weak)) put_out_debug_message(const char *s) { (void)s; }
 
 /* "printf"-style output callbacks */
 
@@ -179,42 +169,33 @@ void task_printf(const char *pcFormat, ...) {
 
 int stdio_fail(const char *const fn, const char *const str) {
     int error = stdioGET_ERRNO();
-    FF_PRINTF("%s: %s: %s: %s (%d)\n", pcTaskGetName(NULL), fn, str,
-              FreeRTOS_strerror(error), error);
+    FF_PRINTF("%s: %s: %s: %s (%d)\n", pcTaskGetName(NULL), fn, str, FreeRTOS_strerror(error), error);
     return error;
 }
 
-int ff_stdio_fail(const char *const func, char const *const str,
-                  char const *const filename) {
+int ff_stdio_fail(const char *const func, char const *const str, char const *const filename) {
     int error = stdioGET_ERRNO();
-    FF_PRINTF("%s: %s: %s(%s): %s (%d)\n", pcTaskGetName(NULL), func, str,
-              filename, FreeRTOS_strerror(error), error);
+    FF_PRINTF("%s: %s: %s(%s): %s (%d)\n", pcTaskGetName(NULL), func, str, filename, FreeRTOS_strerror(error), error);
     return error;
 }
 
-void __attribute__((weak))
-my_assert_func(const char *file, int line, const char *func,
-               const char *pred) {
+void __attribute__((weak)) my_assert_func(const char *file, int line, const char *func, const char *pred) {
     TRIG();  // DEBUG
     // task_printf(
-    error_message_printf_plain(
-        "%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
-        pcTaskGetName(NULL), pred, file, line, func);
+    error_message_printf_plain("%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n", pcTaskGetName(NULL), pred,
+                               file, line, func);
     fflush(stdout);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
     exit(1);
 }
 
-void assert_always_func(const char *file, int line, const char *func,
-                        const char *pred) {
+void assert_always_func(const char *file, int line, const char *func, const char *pred) {
     TRIG();  // DEBUG
-    error_message_printf_plain("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
-                               pred, file, line, func);
+    error_message_printf_plain("assertion \"%s\" failed: file \"%s\", line %d, function: %s\n", pred, file, line, func);
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
-    __BKPT(3);       // Stop in GUI as if at a breakpoint (if debugging,
-                     // otherwise loop forever)
+    exit(1);
 }
 
 void assert_case_not_func(const char *file, int line, const char *func, int v) {
@@ -223,8 +204,8 @@ void assert_case_not_func(const char *file, int line, const char *func, int v) {
     snprintf(pred, sizeof pred, "case not %d", v);
     assert_always_func(file, line, func, pred);
 }
-void assert_case_is(const char *file, int line, const char *func, int v,
-                    int expected) {
+
+void assert_case_is(const char *file, int line, const char *func, int v, int expected) {
     TRIG();  // DEBUG
     char pred[128];
     snprintf(pred, sizeof pred, "%d is %d", v, expected);
@@ -244,8 +225,7 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
 }
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
     lock_printf();
-    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
-                pbytes, nbytes);
+    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s, pbytes, nbytes);
     fflush(stdout);
     size_t col = 0;
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
@@ -261,8 +241,7 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
 // nwords is size in WORDS!
 void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     lock_printf();
-    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s,
-                pwords, nwords);
+    IMSG_PRINTF("\n%s: %s(%s, 0x%p, %zu)\n", pcTaskGetName(NULL), __FUNCTION__, s, pwords, nwords);
     fflush(stdout);
     size_t col = 0;
     for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {
@@ -276,8 +255,7 @@ void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     unlock_printf();
 }
 // nwords is size in bytes
-bool compare_buffers_8(const char *s0, const uint8_t *pbytes0, const char *s1,
-                       const uint8_t *pbytes1, const size_t nbytes) {
+bool compare_buffers_8(const char *s0, const uint8_t *pbytes0, const char *s1, const uint8_t *pbytes1, const size_t nbytes) {
     /* Verify the data. */
     if (0 != memcmp(pbytes0, pbytes1, nbytes)) {
         hexdump_8(s0, pbytes0, nbytes);
@@ -287,8 +265,7 @@ bool compare_buffers_8(const char *s0, const uint8_t *pbytes0, const char *s1,
     return true;
 }
 // nwords is size in WORDS!
-bool compare_buffers_32(const char *s0, const uint32_t *pwords0, const char *s1,
-                        const uint32_t *pwords1, const size_t nwords) {
+bool compare_buffers_32(const char *s0, const uint32_t *pwords0, const char *s1, const uint32_t *pwords1, const size_t nwords) {
     /* Verify the data. */
     if (0 != memcmp(pwords0, pwords1, nwords * sizeof(uint32_t))) {
         hexdump_32(s0, pwords0, nwords);

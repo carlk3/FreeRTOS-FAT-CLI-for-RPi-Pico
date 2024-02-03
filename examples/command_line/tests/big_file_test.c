@@ -174,8 +174,7 @@ typedef struct bft_args_t {
 } bft_args_t;
 static void big_file_test_task(void *vp) {
     bft_args_t *args_p = vp;
-    if (args_p->cwdbuf)
-        ff_chdir(args_p->cwdbuf);
+    ff_chdir(args_p->cwdbuf);
     run_big_file_test(args_p->pathname, args_p->size, args_p->seed);
     vPortFree(args_p);
     vTaskDelete(NULL);

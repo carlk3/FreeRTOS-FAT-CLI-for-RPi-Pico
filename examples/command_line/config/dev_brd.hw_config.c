@@ -107,19 +107,19 @@ static sd_sdio_if_t sdio_ifs[] = {
     {   // sdio_ifs[0]
         .CMD_gpio = 3,
         .D0_gpio = 4,
-    .CLK_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .CMD_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .D0_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-    .SDIO_PIO = pio1,
-    .DMA_IRQ_num = DMA_IRQ_1,
-    // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-    // .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
-    // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
-    // .baud_rate = 125 * 1000 * 1000 / 5  // 25000000 Hz
-    .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+        .CLK_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+        .CMD_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D0_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .SDIO_PIO = pio1,
+        .DMA_IRQ_num = DMA_IRQ_1,
+        // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 5  // 25000000 Hz
+        .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
     },
     {   // sdio_ifs[1]
         .CMD_gpio = 17,
