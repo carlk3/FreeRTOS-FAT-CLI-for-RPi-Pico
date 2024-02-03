@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.5.0
+v2.5.1
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,9 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.5.1
+* Fixed locking bug in `sd_sync`. 
+* Performance tweaks.
 ### v2.5.0 
 * Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
 * Substantial (~15%) performance improvement for writing large contiguous blocks of data to SDIO-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
