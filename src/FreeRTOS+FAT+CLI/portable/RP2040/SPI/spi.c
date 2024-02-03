@@ -31,8 +31,8 @@ specific language governing permissions and limitations under the License.
 #endif
 
 void spi_irq_handler(spi_t *spi_p) {
-    assert(spi_p->owner);
-    assert(!dma_channel_is_busy(spi_p->rx_dma));
+    configASSERT(spi_p->owner);
+    configASSERT(!dma_channel_is_busy(spi_p->rx_dma));
 
     /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
      it will get set to pdTRUE inside the interrupt safe API function if a

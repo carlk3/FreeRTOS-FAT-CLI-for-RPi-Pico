@@ -343,12 +343,8 @@ bool sd_sdio_writeSectors(sd_card_t *sd_card_p, uint32_t sector, const uint8_t *
             if (!sd_sdio_stopTransmission(sd_card_p, true)) return false;
         }
         uint32_t reply;
-        if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD55_APP_CMD, STATE.rca, &reply)) ||  // APP_CMD
-            !checkReturnOk(
-                rp2040_sdio_command_R1(sd_card_p, ACMD23_SET_WR_BLK_ERASE_COUNT, n, &reply)) ||  // SET_WR_CLK_ERASE_COUNT
-            !checkReturnOk(
-                rp2040_sdio_command_R1(sd_card_p, CMD25_WRITE_MULTIPLE_BLOCK, sector, &reply)) ||  // WRITE_MULTIPLE_BLOCK
-            !checkReturnOk(rp2040_sdio_tx_start(sd_card_p, src, n)))                               // Start transmission
+        if (!checkReturnOk(rp2040_sdio_command_R1(sd_card_p, CMD25_WRITE_MULTIPLE_BLOCK, sector, &reply)) ||
+            !checkReturnOk(rp2040_sdio_tx_start(sd_card_p, src, n)))  // Start transmission
         {
             return false;
         }
@@ -534,8 +530,6 @@ static void gpio_conf(uint gpio, enum gpio_function fn, bool pullup, bool pulldo
 }
 
 static DSTATUS sd_sdio_init(sd_card_t *sd_card_p) {
-    if (!sd_card_p->state.mutex)
-        sd_card_p->state.mutex = xSemaphoreCreateMutex();
     sd_lock(sd_card_p);
 
     // Make sure there's a card in the socket before proceeding
@@ -635,8 +629,8 @@ static block_dev_err_t sd_sync(sd_card_t *sd_card_p) {
     if (STATE.ongoing_wr_mlt_blk)
         if (!sd_sdio_stopTransmission(sd_card_p, true))
             err = SD_BLOCK_DEVICE_ERROR_NO_RESPONSE;
-    return err;
     sd_unlock(sd_card_p);
+    return err;
 }
 void sd_sdio_ctor(sd_card_t *sd_card_p) {
     myASSERT(sd_card_p->sdio_if_p); // Must have an interface object

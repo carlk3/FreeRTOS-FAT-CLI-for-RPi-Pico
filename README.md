@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.5.0
+v2.5.1
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,8 +16,11 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.5.1
+* Fixed locking bug in `sd_sync`. 
+* Performance tweaks.
 ### v2.5.0 
-* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/dev/examples/pico_w/httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
+* Added new example: [examples/wifi_httpd](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/wifi_httpd) demonstrates a Pico W WiFi web server serving files from an SD card.
 * Substantial (~15%) performance improvement for writing large contiguous blocks of data to SDIO-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
 ### v2.4.3
 * Bug fix: Fix miscalculation in `get_num_sectors`.
@@ -129,14 +132,14 @@ Minimum number of unallocated bytes that have ever existed in the heap: 192424
 so the maximum heap utilization was 4184 bytes, or about 1.6 % of the Pico's RAM.
 
 ## Performance
-
-Writing and reading a file of 200 MiB of psuedorandom data on a 
+Writing and reading a file of 200 MiB of psuedorandom data on the same 
 [Silicon Power 3D NAND U1 32GB microSD card](https://www.amazon.com/gp/product/B07RSXSYJC/) inserted into a 
 [Pico Stackable, Plug & Play SD Card Expansion Module](https://forums.raspberrypi.com/viewtopic.php?t=356864)
-at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` build, using the command 
-[big_file_test bf 200 7](#appendix-b-operation-of-command_line-example):
+at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` build, using the command
+[big_file_test bf 200 7](#appendix-b-operation-of-command_line-example)
+once on SPI and one on SDIO.
 
-* SDIO:
+* SDIO, baud rate 31,250,000 Hz:
   * Writing...
     * Elapsed seconds 20.7
     * Transfer rate 9.68 MiB/s (10.1 MB/s), or 9910 KiB/s (10148 kB/s) (81183 kbit/s)
@@ -144,96 +147,51 @@ at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` 
     * Elapsed seconds 16.0
     * Transfer rate 12.5 MiB/s (13.1 MB/s), or 12784 KiB/s (13091 kB/s) (104729 kbit/s)
 
-* SPI:
+* SPI, baud rate 20,833,333 Hz:
   * Writing
-    * Elapsed seconds 79.7
-    * Transfer rate 2.51 MiB/s (2.63 MB/s), or 2571 KiB/s (2632 kB/s) (21058 kb/s)
+    * Elapsed seconds 117
+    * Transfer rate 1.70 MiB/s (1.79 MB/s), or 1746 KiB/s (1788 kB/s) (14302 kbit/s)
   * Reading
-    * Elapsed seconds 76.2
-    * Transfer rate 2.63 MiB/s (2.75 MB/s), or 2688 KiB/s (2753 kB/s) (22021 kb/s)
+    * Elapsed seconds 117
+    * Transfer rate 1.71 MiB/s (1.79 MB/s), or 1746 KiB/s (1788 kB/s) (14303 kbit/s)
 
-Results from a 
+Results from a
 [port](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/tests/bench.c)
- of 
+of
 [SdFat's bench](https://github.com/greiman/SdFat/blob/master/examples/bench/bench.ino):
 
-* SDIO:
+* SDIO, baud rate 31,250,000 Hz:
   ```
-  Working directory: /sd0
-  Reading FAT and calculating Free Space
-  Type is FAT32
-  Manufacturer ID: 0x0
-  OEM ID: Product: USD
-  Revision: 1.0
-  Serial number: 0x302c
-  Manufacturing date: 8/2022
-
-  SDHC/SDXC Card: hc_c_size: 60947
-  Sectors: 62410752
-  Capacity: 30474 MiB (31954 MB)
-  ERASE_BLK_EN: units of 512 bytes
-  SECTOR_SIZE (size of an erasable sector): 128 (65536 bytes)
-
-  FILE_SIZE_MB = 5
-  BUF_SIZE = 65536
-
-  Starting write test, please wait.
-
+  ...
   write speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
   10922.7,12672,5723,5992
   11397.6,6009,5704,5752
-
-  Starting read test, please wait.
-
+  ...
   read speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
   13273.1,4964,4907,4932
   13306.8,4940,4907,4918
-
-  Done
+  ...
   ```
-* SPI:
+* SPI, baud rate 20,833,333 Hz:
   ```
-  Working directory: /sd0
-  Reading FAT and calculating Free Space
-  Type is FAT32
-  Manufacturer ID: 0x0
-  OEM ID:
-  Product: USD
-  Revision: 1.0
-  Serial number: 0x302c
-  Manufacturing date: 8/2022
-  
-  SDHC/SDXC Card: hc_c_size: 60947
-  Sectors: 62410752
-  Capacity: 30474 MiB (31954 MB)
-  ERASE_BLK_EN: units of 512 bytes
-  SECTOR_SIZE (size of an erasable sector): 128 (65536 bytes)
-  
-  FILE_SIZE_MB = 5
-  BUF_SIZE = 65536
-  
-  Starting write test, please wait.
-  
+  ...
   write speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  2534.0,44241,24180,25862
-  2591.6,58983,24126,25276
-  
-  Starting read test, please wait.
-  
+  1744.7,74130,36312,37557
+  1757.6,74078,36285,37283
+  ...
   read speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  2759.4,23770,23723,23740
-  2760.9,23771,23725,23736
- 
-  Done
-  ``` 
+  1791.8,36620,36533,36568
+  1791.8,36637,36523,36568
+  ...
+  ```
 ### Data Striping
 For high data rate applications, it is possible to obtain higher write and read speeds 
 by writing or reading to multiple SD cards simultaneously.
@@ -345,6 +303,9 @@ and it won't be enabled again until the card is power cycled. Also, the RP2040 d
 * Driving the SD card directly with the GPIOs is not ideal. Take a look at the [CM1624](https://www.onsemi.com/pdf/datasheet/cm1624-d.pdf). Unfortunately, it's a tiny little surface mount part -- not so easy to work with, but the schematic in the data sheet is still instructive. Besides the pull up resistors, it's a good idea to have 25 - 100 Ω series source termination resistors in each of the signal lines. 
 This gives a cleaner signal, allowing higher baud rates. Even if you don't care about speed, it also helps to control the slew rate and current, which can reduce EMI and noise in general. (This can be important in audio applications, for example.) Ideally, the resistor should be as close as possible to the driving end of the line. That would be the Pico end for CS, SCK, MOSI, and the SD card end for MISO. For SDIO, the data lines are bidirectional, so, ideally, you'd have a source termination resistor at each end. Practically speaking, the clock is by far the most important to terminate, because each edge is significant. The other lines probably have time to bounce around before being clocked. Ideally, the resistance should be towards the low end for fat PCB traces, and towards the high end for flying wires, but if you have a drawer full of 47 Ω resistors they'll probably work well enough.
 * It can be helpful to add a decoupling capacitor or three (e.g., 100 nF, 1 µF, and 10 µF) between 3.3 V and GND on the SD card. ChaN also [recommends](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug) putting a 22 µH inductor in series with the Vcc (or "Vdd") line to the SD card.
+* Good grounds are very important.
+Remember, the current for all of the signal lines will flow back through the grounds.
+There is a reason that the Pico devotes eight pins to GND.
 * If your system allows hot removal and insertion of an SD card,
 remember to allow for floating lines when the card is removed
 and inrush current when the card is inserted. See [Cosideration to Bus Floating and Hot Insertion](http://elm-chan.org/docs/mmc/mmc_e.html#hotplug).
@@ -376,7 +337,7 @@ This will be picked up automatically as a submodule when you git clone this libr
 ### Procedure
 * Follow instructions in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) to set up the development environment.
 * Install source code:
-  ```Shell
+  ```bash
   git clone --recurse-submodules https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git FreeRTOS+FAT+CLI
   ```
 * Customize:
@@ -385,7 +346,7 @@ This will be picked up automatically as a submodule when you git clone this libr
   * Customize `pico_enable_stdio_uart` and `pico_enable_stdio_usb` in CMakeLists.txt as you prefer. 
 (See *4.1. Serial input and output on Raspberry Pi Pico* in [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf) and *2.7.1. Standard Input/Output (stdio) Support* in [Raspberry Pi Pico C/C++ SDK](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf).) 
 * Build:
-```shell
+```bash
    cd FreeRTOS+FAT+CLI/examples/command_line
    mkdir build
    cd build
@@ -519,7 +480,7 @@ For example, if the system clock frequency is the default 125 MHz:
       .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
   ```
   or
-  ```C++
+  ```C
       .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
   ```
   The higher the baud rate, the faster the data transfer.
@@ -578,7 +539,8 @@ If false, the GPIO's drive strength will be implicitly set to 4 mA.
   GPIO_DRIVE_STRENGTH_8MA 
   GPIO_DRIVE_STRENGTH_12MA
   ```
-### An instance of `spi_t` describes the configuration of one RP2040 SPI controller.
+### SPI Controller Configuration
+An instance of `spi_t` describes the configuration of one RP2040 SPI controller.
 ```C
 typedef struct spi_t {
     spi_inst_t *hw_inst;  // SPI HW
@@ -649,8 +611,8 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
   A low drive strength generates less noise. This might be important in, say, audio applications.
 
 ### You must provide a definition for the functions declared in `sd_driver/hw_config.h`
-`size_t sd_get_num()` Returns the number of SD cards  
-`sd_card_t *sd_get_by_num(size_t num)` Returns a pointer to the SD card "object" at the given (zero origin) index.  
+* `size_t sd_get_num()` Returns the number of SD cards  
+* `sd_card_t *sd_get_by_num(size_t num)` Returns a pointer to the SD card "object" at the given (zero origin) index.  
 
 ### Static vs. Dynamic Configuration
 The definition of the hardware configuration can either be built in at build time, which I'm calling "static configuration", or supplied at run time, which I call "dynamic configuration". 
@@ -739,11 +701,11 @@ in files named something like `/sd0/data/2021-02-27/21.csv`.
 Use this as a starting point for your own data logging application!
 
 If you want to use FreeRTOS+FAT+CLI as a library embedded in another project, use something like:
-  ```Shell
+  ```bash
   git submodule add git@github.com:carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
   ```
   or
-  ```Shell
+  ```bash
   git submodule add https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico.git
   ```
   
@@ -808,7 +770,7 @@ You are welcome to contribute to this project! Just submit a Pull Request in Git
 
 ## Appendix B: Operation of `command_line` example
 * Connect a terminal. [PuTTY](https://www.putty.org/) or `tio` work OK. For example:
-  * `tio -m ODELBS /master/ttyACM0`
+  * `tio -m ODELBS /dev/ttyACM0`
 * Press Enter to start the CLI. You should see a prompt like:
 ```
     > 
