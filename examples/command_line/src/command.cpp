@@ -8,6 +8,7 @@
 #include "hardware/clocks.h"
 #include "hardware/rtc.h"
 #include "pico/stdlib.h"
+#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "FreeRTOS_strerror.h"
@@ -152,7 +153,10 @@ static void run_unmount(const size_t argc, const char *argv[]) {
     for (size_t i = 0; i < argc; ++i) {
         unmount(argv[i]);
         sd_card_t *sd_card_p = sd_get_by_name(argv[i]);
-        configASSERT(sd_card_p);
+        if (!sd_card_p) {
+            EMSG_PRINTF("Unknown device name: %s\n", argv[1]);
+            return;
+        }
         sd_card_p->state.m_Status |= STA_NOINIT;  // in case medium is removed
     }
 }

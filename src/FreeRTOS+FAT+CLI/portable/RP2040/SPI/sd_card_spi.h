@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 void sd_spi_ctor(sd_card_t *sd_card_p);  // Constructor for sd_card_t
+uint32_t sd_go_idle_state(sd_card_t *sd_card_p);
 
 #ifdef __cplusplus
 }

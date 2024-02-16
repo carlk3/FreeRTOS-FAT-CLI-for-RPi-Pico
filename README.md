@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.5.1
+v2.5.2
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,9 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.5.2
+* Fixed initialization problem when multiple SD cards share an SPI bus.
+* Performance improvement for writing large contiguous blocks of data to SPI-attached SD cards. This is accomplished by avoiding sending "stop transmission" for as long as possible.
 ### v2.5.1
 * Fixed locking bug in `sd_sync`. 
 * Performance tweaks.
@@ -656,6 +659,15 @@ A typical sequence would be:
 * `FF_SDDiskDelete`
 
 See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
+
+You may call `sd_init_driver()` to explicitly initialize the block device driver.
+It is called implicitly by `FF_SDDiskInit`,
+but you might want to call it sooner.
+For example, you might want to get the GPIOs configured before setting up a card detect interrupt handler.
+(See [examples/command_line/src/unmounter.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/unmounter.c).)
+You might want to call it to get the SD cards into SPI mode so that they can share an SPI bus with other devices.
+(See [Cosideration on Multi-slave Configuration](http://elm-chan.org/docs/mmc/mmc_e.html#spibus).)
+`sd_init_driver()` must be called from a FreeRTOS task.
 
 ### Messages
 Sometimes problems arise when attempting to use SD cards. At the 
