@@ -19,7 +19,7 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         portable/RP2040/SPI/crc.c
         portable/RP2040/SPI/sd_card_spi.c
         portable/RP2040/SPI/sd_spi.c
-        portable/RP2040/SPI/spi.c
+        portable/RP2040/SPI/my_spi.c
         portable/RP2040/SDIO/sd_card_sdio.c
         portable/RP2040/SDIO/rp2040_sdio.c
         src/ff_utils.c

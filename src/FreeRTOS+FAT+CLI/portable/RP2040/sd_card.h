@@ -32,7 +32,7 @@ specific language governing permissions and limitations under the License.
 #include "semphr.h"
 //
 #include "SDIO/rp2040_sdio.h"
-#include "SPI/spi.h"
+#include "SPI/my_spi.h"
 #include "sd_card_constants.h"
 #include "sd_regs.h"
 #include "util.h"
@@ -45,11 +45,12 @@ typedef uint8_t BYTE;
 /* Status of Disk Functions */
 typedef BYTE DSTATUS;
 
-typedef enum {
-    SD_IF_NONE,
-    SD_IF_SPI,
-    SD_IF_SDIO
-} sd_if_t;
+typedef enum { SD_IF_NONE, SD_IF_SPI, SD_IF_SDIO } sd_if_t;
+
+typedef struct sd_spi_if_state_t {
+    bool ongoing_mlt_blk_wrt;
+    uint32_t cont_sector_wrt;
+} sd_spi_if_state_t;
 
 typedef struct sd_spi_if_t {
     spi_t *spi;
@@ -62,6 +63,7 @@ typedef struct sd_spi_if_t {
     // GPIO_DRIVE_STRENGTH_12MA
     bool set_drive_strength;
     enum gpio_drive_strength ss_gpio_drive_strength;
+    sd_spi_if_state_t state;
 } sd_spi_if_t;
 
 typedef struct sd_sdio_if_t {
@@ -95,25 +97,25 @@ typedef struct sd_sdio_if_t {
 } sd_sdio_if_t;
 
 typedef struct sd_card_state_t {
-    DSTATUS m_Status;                // Card status
-    card_type_t card_type;           // Assigned dynamically
-    CSD_t CSD;                       // Card-Specific Data register.
-    CID_t CID;                       // Card IDentification register
-    uint32_t sectors;                // Assigned dynamically
+    DSTATUS m_Status;       // Card status
+    card_type_t card_type;  // Assigned dynamically
+    CSD_t CSD;              // Card-Specific Data register.
+    CID_t CID;              // Card IDentification register
+    uint32_t sectors;       // Assigned dynamically
 
     SemaphoreHandle_t mutex;         // Guard semaphore, assigned dynamically
     StaticSemaphore_t mutex_buffer;  // Guard semaphore storage, assigned dynamically
     TaskHandle_t owner;              // Assigned dynamically
     FF_Disk_t ff_disk;               // FreeRTOS+FAT "disk" using this device
- } sd_card_state_t;
+} sd_card_state_t;
 
 typedef struct sd_card_t sd_card_t;
 
 // "Class" representing SD Cards
 struct sd_card_t {
     const char *device_name;
-    const char *mount_point;  // Must be a directory off the file system's root directory and must be an absolute path that
-                              // starts with a forward slash (/)
+    const char *mount_point;  // Must be a directory off the file system's root directory and
+                              // must be an absolute path that starts with a forward slash (/)
     sd_if_t type;             // Interface type
     union {
         sd_spi_if_t *spi_if_p;
@@ -132,8 +134,10 @@ struct sd_card_t {
 
     DSTATUS (*init)(sd_card_t *sd_card_p);
     void (*deinit)(sd_card_t *sd_card_p);
-    block_dev_err_t (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer, uint32_t ulSectorNumber, uint32_t blockCnt);
-    block_dev_err_t (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer, uint32_t ulSectorNumber, uint32_t ulSectorCount);
+    block_dev_err_t (*write_blocks)(sd_card_t *sd_card_p, const uint8_t *buffer,
+                                    uint32_t ulSectorNumber, uint32_t blockCnt);
+    block_dev_err_t (*read_blocks)(sd_card_t *sd_card_p, uint8_t *buffer,
+                                   uint32_t ulSectorNumber, uint32_t ulSectorCount);
     block_dev_err_t (*sync)(sd_card_t *sd_card_p);
     uint32_t (*get_num_sectors)(sd_card_t *sd_card_p);
 

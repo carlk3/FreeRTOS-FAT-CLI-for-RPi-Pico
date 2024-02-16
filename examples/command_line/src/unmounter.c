@@ -51,11 +51,6 @@ static void card_detect_callback(uint gpio, uint32_t events) {
 }
 
 void unmounter_init() {
-    // Implicitly called by disk_initialize,
-    // but called here to set up the GPIOs
-    // before enabling the card detect interrupt:
-    sd_init_driver();
-
     for (size_t i = 0; i < sd_get_num(); ++i) {
         sd_card_t *sd_card_p = sd_get_by_num(i);
         if (sd_card_p->use_card_detect) {

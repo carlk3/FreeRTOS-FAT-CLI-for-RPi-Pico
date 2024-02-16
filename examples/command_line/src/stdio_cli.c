@@ -23,7 +23,9 @@ specific language governing permissions and limitations under the License.
 #include "pico/util/datetime.h"
 //
 #include "command.h"
+#include "sd_card.h"
 #include "task_config.h"
+#include "unmounter.h"
 //
 #include "stdio_cli.h"
 
@@ -68,6 +70,11 @@ static void stdioTask(void *arg) {
         } while (n != 0);
     }
 
+    // Called here to set up the GPIOs
+    // before enabling the card detect interrupt:
+    sd_init_driver();
+    unmounter_init();
+
     // get notified when there are input characters available
     stdio_set_chars_available_callback(callback, xTaskGetCurrentTaskHandle());
 
@@ -84,8 +91,7 @@ static void stdioTask(void *arg) {
         uint32_t nv = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_STDIO,  // uxIndexToWaitOn
                                               pdTRUE,                 // xClearCountOnExit
                                               portMAX_DELAY);         // xTicksToWait
-        if (nv < 1)
-            continue;
+        if (nv < 1) continue;
 
         for (;;) {
             /* Get the character from terminal */
@@ -102,10 +108,10 @@ static void stdioTask(void *arg) {
 void CLI_Start() {
     static StackType_t xStack[1024];
     static StaticTask_t xTaskBuffer;
-    TaskHandle_t th = xTaskCreateStatic(
-        stdioTask, "stdio Task", sizeof xStack / sizeof xStack[0], 0,
-        PRIORITY_stdioTask, /* Priority at which the task is created. */
-        xStack, &xTaskBuffer);
+    TaskHandle_t th =
+        xTaskCreateStatic(stdioTask, "stdio Task", sizeof xStack / sizeof xStack[0], 0,
+                          PRIORITY_stdioTask, /* Priority at which the task is created. */
+                          xStack, &xTaskBuffer);
     configASSERT(th);
 }
 

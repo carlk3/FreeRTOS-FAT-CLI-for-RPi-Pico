@@ -24,7 +24,7 @@ specific language governing permissions and limitations under the License.
 #include "task_config.h"
 #include "util.h"
 //
-#include "spi.h"
+#include "my_spi.h"
 
 #ifdef NDEBUG
 #  pragma GCC diagnostic ignored "-Wunused-variable"
@@ -56,26 +56,26 @@ void spi_irq_handler(spi_t *spi_p) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-static bool chk_spi(spi_inst_t *spi) {
+static bool chk_spi(spi_inst_t *spi_p) {
     bool rc = true;
 
-    if (spi_get_const_hw(spi)->sr & SPI_SSPSR_BSY_BITS) {
+    if (spi_get_const_hw(spi_p)->sr & SPI_SSPSR_BSY_BITS) {
         DBG_PRINTF("\tSPI is busy\n");
         rc = false;
     }
-    if (spi_get_const_hw(spi)->sr & SPI_SSPSR_RFF_BITS) {
+    if (spi_get_const_hw(spi_p)->sr & SPI_SSPSR_RFF_BITS) {
         DBG_PRINTF("\tSPI Receive FIFO full\n");
         rc = false;
     }
-    if (spi_get_const_hw(spi)->sr & SPI_SSPSR_RNE_BITS) {
+    if (spi_get_const_hw(spi_p)->sr & SPI_SSPSR_RNE_BITS) {
         DBG_PRINTF("\tSPI Receive FIFO not empty\n");
         rc = false;
     }
-    if (!(spi_get_const_hw(spi)->sr & SPI_SSPSR_TNF_BITS)) {
+    if (!(spi_get_const_hw(spi_p)->sr & SPI_SSPSR_TNF_BITS)) {
         DBG_PRINTF("\tSPI Transmit FIFO is full\n");
         rc = false;
     }
-    if (!(spi_get_const_hw(spi)->sr & SPI_SSPSR_TFE_BITS)) {
+    if (!(spi_get_const_hw(spi_p)->sr & SPI_SSPSR_TFE_BITS)) {
         DBG_PRINTF("\tSPI Transmit FIFO is not empty\n");
         rc = false;
     }

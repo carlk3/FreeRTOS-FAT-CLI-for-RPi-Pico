@@ -7,7 +7,6 @@
 //
 #include "crash.h"
 #include "stdio_cli.h"
-#include "unmounter.h"
 
 #ifndef USE_PRINTF
 #error This program is useless without standard input and output.
@@ -23,7 +22,6 @@ int main() {
     stdio_flush();
 
     CLI_Start();
-    unmounter_init();
 
     /* Start the tasks and timer running. */
     vTaskStartScheduler();

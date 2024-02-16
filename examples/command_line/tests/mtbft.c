@@ -229,7 +229,7 @@ void killall(const size_t parallelism, task_args_t args_a[parallelism]) {
 #pragma GCC diagnostic ignored "-Wstack-usage="
 // Specify size in Mebibytes (1024x1024 bytes)
 void mtbft(const size_t parallelism, const size_t size_MiB,
-           const char *pathnames[parallelism]) {
+           const char *pathnames[]) {
     myASSERT(size_MiB);
     myASSERT(parallelism <= 10); // Arbitrary limit
 

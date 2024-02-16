@@ -49,14 +49,14 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .mosi_gpio = 3,
         .miso_gpio = 4,
         .set_drive_strength = true,
-        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
-        .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA,
+        .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+        .no_miso_gpio_pull_up = true,
         .DMA_IRQ_num = DMA_IRQ_0,
-        .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 10 // 12500000 Hz
         // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-        // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
         // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
-        .no_miso_gpio_pull_up = true
     },
     {   // spis[1]
         .hw_inst = spi1,  // RP2040 SPI component
@@ -64,14 +64,15 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .sck_gpio = 10,
         .mosi_gpio = 11,
         .set_drive_strength = true,
-        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+        .mosi_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
         .sck_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-        .DMA_IRQ_num = DMA_IRQ_1,
-        .baud_rate = 125 * 1000 * 1000 / 10,  // 12500000 Hz
-        // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-        // .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        .no_miso_gpio_pull_up = true,
+        .DMA_IRQ_num = DMA_IRQ_0,
+        //.baud_rate = 125 * 1000 * 1000 / 12
+        //.baud_rate = 125 * 1000 * 1000 / 10  // 12500000 Hz
+        //.baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
         // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
-        .no_miso_gpio_pull_up = true
     }
 };
 
@@ -79,15 +80,21 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
 static sd_spi_if_t spi_ifs[] = {
     {   // spi_ifs[0]
         .spi = &spis[0],  // Pointer to the SPI driving this card
-        .ss_gpio = 7      // The SPI slave select GPIO for this SD card
+        .ss_gpio = 7,     // The SPI slave select GPIO for this SD card
+        .set_drive_strength = true,
+        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA
     },
     {   // spi_ifs[1]
         .spi = &spis[1],   // Pointer to the SPI driving this card
-        .ss_gpio = 12      // The SPI slave select GPIO for this SD card
+        .ss_gpio = 12,     // The SPI slave select GPIO for this SD card
+        .set_drive_strength = true,
+        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA
     },
     {   // spi_ifs[2]
         .spi = &spis[1],   // Pointer to the SPI driving this card
-        .ss_gpio = 13      // The SPI slave select GPIO for this SD card
+        .ss_gpio = 13,     // The SPI slave select GPIO for this SD card
+        .set_drive_strength = true,
+        .ss_gpio_drive_strength = GPIO_DRIVE_STRENGTH_2MA
     }
 };
 
@@ -124,7 +131,18 @@ static sd_sdio_if_t sdio_ifs[] = {
     {   // sdio_ifs[1]
         .CMD_gpio = 17,
         .D0_gpio = 18,
+        .CLK_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
+        .CMD_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D0_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_4MA,
+        .DMA_IRQ_num = DMA_IRQ_1,
+        // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 7  // 17857143 Hz
         .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 5  // 25000000 Hz
+        // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
     }
 };
 
