@@ -17,9 +17,17 @@ It is wrapped up in a complete runnable project, with a little command line inte
 
 ## What's new
 ### v2.5.3
-* Added `include/file_stream.h` and `src/file_stream.c` which use the C library's [fopencookie—open a stream with custom callbacks](https://sourceware.org/newlib/libc.html#fopencookie) API to put a buffered Standard Input/Output (stdio) wrapper around the 
+* Added
+[include/file_stream.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/file_stream.h)
+and
+[src/file_stream.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/src/file_stream.c)
+which use the C library's
+[fopencookie—open a stream with custom callbacks](https://sourceware.org/newlib/libc.html#fopencookie)
+API to put a buffered Standard Input/Output (stdio) wrapper around the
 [FreeRTOS-Plus-FAT Standard API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html).
-* Added `examples/stdio_buffering/` which shows how to use the C library's Standard Input/Output (stdio) buffering to achieve significant
+* Added
+[examples/stdio_buffering/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/stdio_buffering)
+which shows how to use the C library's Standard Input/Output (stdio) buffering to achieve significant
 (up to 4X) speedups in many applications.
 * See [Appendix D: Performance Tuning Tips](#appendix-d-performance-tuning-tips).
 ### v2.5.2
@@ -961,16 +969,25 @@ The application would use [fprintf](https://sourceware.org/newlib/libc.html#spri
 or 
 [fwrite](https://sourceware.org/newlib/libc.html#fwrite) instead of 
 [ff_fwrite](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fwrite.html),
-for example. 
+for example.
+If you are using SDIO, it is critically important for performance to use `setvbuf` 
+to set the buffer to an `aligned` buffer. 
+Also, the buffer should be a multiple of the SD block size, 512 bytes, in size.
+For example:
+```C
+    static char vbuf[1024] __attribute__((aligned));
+    int err = setvbuf(file_p, vbuf, _IOFBF, sizeof vbuf);
+```
 If you have a record-oriented application, 
 and the records are multiples of 512 bytes in size,
 you might not see a significant speedup.
 However, if, for example, you are writing text files with 
 no fixed record length, the speedup can be great.
-See `examples/stdio_buffering/`.
+See
+[examples/stdio_buffering/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/stdio_buffering).
 
 Now, for the details:
- The modern SD card is a block device, meaning that the smallest addressable unit is a a block (or "sector") of 512 bytes. So, it helps performance if your write size is a multiple of 512. If it isn't, partial block writes involve reading the existing block, modifying it in memory, and writing it back out. With all the space in SD cards these days, it can be well worth it to pad a record length to a multiple of 512.
+The modern SD card is a block device, meaning that the smallest addressable unit is a a block (or "sector") of 512 bytes. So, it helps performance if your write size is a multiple of 512. If it isn't, partial block writes involve reading the existing block, modifying it in memory, and writing it back out. With all the space in SD cards these days, it can be well worth it to pad a record length to a multiple of 512.
 
 Generally, flash memory has to be erased before it can be written, and the minimum erase size is the "allocation unit" or "segment":
 
