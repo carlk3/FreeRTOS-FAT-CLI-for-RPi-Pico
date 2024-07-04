@@ -13,6 +13,8 @@ specific language governing permissions and limitations under the License.
 */
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdint.h>
 //
 #include "pico/stdlib.h"
 //
@@ -186,7 +188,7 @@ bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {
 //     element.
 bool spi_transfer(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
     spi_transfer_start(spi_p, tx, rx, length);
-    return spi_transfer_wait_complete(spi_p, 1000);
+    return spi_transfer_wait_complete(spi_p, 2000);
 }
 
 void spi_lock(spi_t *spi_p) {

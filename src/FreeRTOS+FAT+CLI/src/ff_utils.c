@@ -13,16 +13,18 @@ specific language governing permissions and limitations under the License.
 */
 
 #include <stddef.h>
-#include <string.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 //
 #include "FreeRTOS.h"
 #include "ff_headers.h"
-#include "ff_stdio.h"
 #include "ff_sddisk.h"
+#include "ff_stdio.h"
 //
 #include "FreeRTOS_strerror.h"
 #include "SPI/sd_card_spi.h"
+#include "file_stream.h"
 #include "hw_config.h"
 #include "my_debug.h"
 #include "sd_card_constants.h"
@@ -33,6 +35,8 @@ specific language governing permissions and limitations under the License.
 // #define TRACE_PRINTF printf
 
 static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
+    configASSERT(pxDisk->ulNumberOfSectors);
+
     FF_PartitionParameters_t xPartition;
     FF_Error_t xError;
 
@@ -41,18 +45,17 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     by clearing the xPartition structure to zero. */
     memset(&xPartition, 0x00, sizeof(xPartition));
 
-    /* A single partition that fills all available space on the media 
-    can be created by simply leaving the structure's 
-    xSizes and xPrimaryCount members at zero.*/    
+    /* A single partition that fills all available space on the media
+    can be created by simply leaving the structure's
+    xSizes and xPrimaryCount members at zero.*/
 
     xPartition.ulSectorCount = pxDisk->ulNumberOfSectors;
-    xPartition.xPrimaryCount = 1; // Instead of using extended partitions
+    xPartition.xPrimaryCount = 1;  // Instead of using extended partitions
 
     /* Attempt to align partition to SD card segment */
     size_t au_size_bytes;
     bool ok = sd_allocation_unit(pxDisk->pvTag, &au_size_bytes);
-    if (!ok || !au_size_bytes)
-        au_size_bytes = 4194304; // Default to 4 MiB
+    if (!ok || !au_size_bytes) au_size_bytes = 4194304;  // Default to 4 MiB
     xPartition.ulHiddenSectors = au_size_bytes / sd_block_size;
 
     /* Perform the partitioning. */
@@ -65,7 +68,7 @@ static FF_Error_t prvPartitionAndFormatDisk(FF_Disk_t *pxDisk) {
     if (FF_isERR(xError) == pdFALSE) {
         /* The disk was partitioned successfully.  Format the first partition.
          */
-        xError = FF_FormatDisk(pxDisk, 0, pdFALSE, pdFALSE, "FreeRTOSFAT" );
+        xError = FF_FormatDisk(pxDisk, 0, pdFALSE, pdFALSE, "FreeRTOSFAT");
         /* Print out the result of the format operation. */
         FF_PRINTF("FF_Format: %s\n", FF_GetErrMessage(xError));
     }
@@ -85,60 +88,30 @@ bool format(const char *name) {
 bool mount(const char *name) {
     TRACE_PRINTF("> %s\n", __FUNCTION__);
     FF_Disk_t *pxDisk = FF_SDDiskInit(name);
-    if (!pxDisk) {
-        return false;
-    }
-    if (!(pxDisk)->xStatus.bIsMounted) {
-        // BaseType_t FF_SDDiskMount( FF_Disk_t *pDisk );
-        FF_Error_t xError = FF_SDDiskMount(pxDisk);
-        if (FF_isERR(xError) != pdFALSE) {
-            FF_PRINTF("FF_SDDiskMount: %s\n",
-                      (const char *)FF_GetErrMessage(xError));
-            return false;
-        }
-    }
+    if (!pxDisk) return false;
+    if (pxDisk->xStatus.bIsMounted) return true;
+    FF_Error_t xError = FF_SDDiskMount(pxDisk);
+    if (FF_isERR(xError) != pdFALSE) return false;
     sd_card_t *sd_card_p = pxDisk->pvTag;
+    configASSERT(sd_card_p);
     return FF_FS_Add(sd_card_p->mount_point, pxDisk);
 }
 void unmount(const char *name) {
     TRACE_PRINTF("> %s\n", __FUNCTION__);
     sd_card_t *sd_card_p = sd_get_by_name(name);
     if (!sd_card_p) {
-        FF_PRINTF("%s: unknown name %s\n", __func__, name);
         return;
     }
     FF_FS_Remove(sd_card_p->mount_point);
     FF_Disk_t *pxDisk = &sd_card_p->state.ff_disk;
-    if (!pxDisk)
-        return;
 
     /*Unmount the partition. */
     FF_Error_t xError = FF_SDDiskUnmount(pxDisk);
     if (FF_isERR(xError) != pdFALSE) {
-        FF_PRINTF("FF_Unmount: %s\n", (const char *)FF_GetErrMessage(xError));
+        FF_PRINTF("FF_SDDiskUnmount: %s (0x%08x)\n", (const char *)FF_GetErrMessage(xError),
+                  (unsigned)xError);
     }
     FF_SDDiskDelete(pxDisk);
-}
-void eject(const char *const name) {
-    sd_card_t *sd_card_p = sd_get_by_name(name);
-    if (!sd_card_p) {
-        FF_PRINTF("%s: unknown name %s\n", __func__, name);
-        return;
-    }
-    FF_FS_Remove(sd_card_p->mount_point);
-    FF_Disk_t *pxDisk = &sd_card_p->state.ff_disk;
-    if (pxDisk) {
-        if (pxDisk->xStatus.bIsMounted) {
-            FF_FlushCache(pxDisk->pxIOManager);
-			IMSG_PRINTF("Invalidating %s\n", name);
-            FF_Invalidate(pxDisk->pxIOManager);
-			IMSG_PRINTF("Unmounting %s\n", name);
-            FF_Unmount(pxDisk);
-            pxDisk->xStatus.bIsMounted = pdFALSE;
-        }
-        FF_SDDiskDelete(pxDisk);
-    }
-    //	sd_card_deinit(pDrv);
 }
 
 void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct) {
@@ -157,8 +130,7 @@ void getFree(FF_Disk_t *pxDisk, uint64_t *pFreeMB, unsigned *pFreePct) {
         iPercentageFree = 0;
     } else {
         iPercentageFree =
-            (int)((100ULL * ullFreeSectors +
-                   pxIOManager->xPartition.ulDataSectors / 2) /
+            (int)((100ULL * ullFreeSectors + pxIOManager->xPartition.ulDataSectors / 2) /
                   ((uint64_t)pxIOManager->xPartition.ulDataSectors));
     }
 
@@ -175,20 +147,19 @@ FF_Error_t FF_UpdateDirEnt(FF_FILE *pxFile) {
     FF_Error_t xError;
 
     /* Get the directory entry and update it to show the new file size */
-    xError = FF_GetEntry(pxFile->pxIOManager, pxFile->usDirEntry,
-                         pxFile->ulDirCluster, &xOriginalEntry);
+    xError = FF_GetEntry(pxFile->pxIOManager, pxFile->usDirEntry, pxFile->ulDirCluster,
+                         &xOriginalEntry);
 
     /* Now update the directory entry */
     if ((FF_isERR(xError) == pdFALSE) &&
-        ((pxFile->ulFileSize != xOriginalEntry.ulFileSize) ||
-         (pxFile->ulFileSize == 0UL))) {
+        ((pxFile->ulFileSize != xOriginalEntry.ulFileSize) || (pxFile->ulFileSize == 0UL))) {
         if (pxFile->ulFileSize == 0UL) {
             xOriginalEntry.ulObjectCluster = 0;
         }
 
         xOriginalEntry.ulFileSize = pxFile->ulFileSize;
-        xError = FF_PutEntry(pxFile->pxIOManager, pxFile->usDirEntry,
-                             pxFile->ulDirCluster, &xOriginalEntry, NULL);
+        xError = FF_PutEntry(pxFile->pxIOManager, pxFile->usDirEntry, pxFile->ulDirCluster,
+                             &xOriginalEntry, NULL);
     }
     return xError;
 }
@@ -239,8 +210,7 @@ int mkdirhier(char *path) {
     while ((dirp = strsep(&nextp, "/")) != NULL) {
         if (*dirp == '\0') continue;
 
-        if ((dst[0] != '\0') && !(dst[0] == '/' && dst[1] == '\0'))
-            strcat(dst, "/");
+        if ((dst[0] != '\0') && !(dst[0] == '/' && dst[1] == '\0')) strcat(dst, "/");
         // size_t strlcat(char *dst, const char *src, size_t size);
         strlcat(dst, dirp, sizeof dst);
 
@@ -248,8 +218,7 @@ int mkdirhier(char *path) {
         if (ff_mkdir(dst) == -1) {
             if (stdioGET_ERRNO() != pdFREERTOS_ERRNO_EEXIST) {
                 int error = stdioGET_ERRNO();
-                DBG_PRINTF("%s: %s (%d)\n", __FUNCTION__, FreeRTOS_strerror(error),
-                           error);
+                DBG_PRINTF("%s: %s (%d)\n", __FUNCTION__, FreeRTOS_strerror(error), error);
                 return -1;
             }
         } else
@@ -266,8 +235,7 @@ void ls(const char *path) {
     FF_FindData_t xFindStruct;
     memset(&xFindStruct, 0x00, sizeof(FF_FindData_t));
 
-    if (!path)
-        ff_getcwd(pcWriteBuffer, sizeof(pcWriteBuffer));
+    if (!path) ff_getcwd(pcWriteBuffer, sizeof(pcWriteBuffer));
     IMSG_PRINTF("Directory Listing: %s\n", path ? path : pcWriteBuffer);
 
     int iReturned = ff_findfirst(path ? path : "", &xFindStruct);
@@ -277,8 +245,7 @@ void ls(const char *path) {
         return;
     }
     do {
-        const char *pcWritableFile = "writable file",
-                   *pcReadOnlyFile = "read only file",
+        const char *pcWritableFile = "writable file", *pcReadOnlyFile = "read only file",
                    *pcDirectory = "directory";
         const char *pcAttrib;
 
@@ -293,13 +260,12 @@ void ls(const char *path) {
         /* Create a string that includes the file name, the file size and the
          attributes string. */
         IMSG_PRINTF("%s\t[%s]\t[size=%lu]\n", xFindStruct.pcFileName, pcAttrib,
-                  xFindStruct.ulFileSize);
+                    xFindStruct.ulFileSize);
     } while (FF_ERR_NONE == ff_findnext(&xFindStruct));
 }
 
-
 sd_card_t *get_current_sd_card_p() {
-    char buf[256] ;
+    char buf[256];
     char *ret = ff_getcwd(buf, sizeof buf);
     if (!ret) {
         FF_PRINTF("ff_getcwd failed\n");
@@ -308,13 +274,12 @@ sd_card_t *get_current_sd_card_p() {
     IMSG_PRINTF("Working directory: %s\n", buf);
     if (strlen(buf) < 2) {
         FF_PRINTF("Can't write to current working directory: %s\n", buf);
-        return NULL;       
+        return NULL;
     }
     configASSERT('/' == buf[0]);
     size_t i;
     for (i = 1; i < sizeof buf; ++i) {
-        if (0 == buf[i])
-            break;
+        if (0 == buf[i]) break;
         if ('/' == buf[i]) {
             buf[i] = 0;
             break;
@@ -332,5 +297,27 @@ sd_card_t *get_current_sd_card_p() {
     return sd_card_p;
 }
 
+FILE *mk_tmp_fil(const char *prefix, size_t pathname_sz, char *pathname) {
+    int nw = snprintf(pathname, pathname_sz, "%s/tmp", prefix);
+    // Only when this returned value is non-negative and less than n,
+    //    the string has been completely written.
+    configASSERT(0 <= nw && nw < (int)pathname_sz);
+
+    ff_mkdir(pathname);
+
+    //    char *tempnam(char *dir, char *pfx);
+    //    char *_tempnam_r(struct _reent *reent, char *dir, char *pfx);
+    static struct _reent reent;
+    char *pn = _tempnam_r(&reent, "", NULL);
+    int nw2 = snprintf(pathname + nw, pathname_sz - nw, "%s", pn);
+    // Only when this returned value is non-negative and less than n,
+    //    the string has been completely written.
+    configASSERT(0 <= nw2 && nw2 < (int)pathname_sz);
+
+    FILE *fil;
+    fil = open_file_stream(pathname, "w+");
+    if (!fil) FF_FAIL("ff_fopen", pathname);
+    return fil;
+}
 
 /* [] END OF FILE */

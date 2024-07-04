@@ -45,8 +45,13 @@ specific language governing permissions and limitations under the License.
  *
  */
 
+#include <stdio.h>
+//
 #include "ff_headers.h"
+//
+#include "delays.h"
 #include "hw_config.h"
+#include "sd_card.h"
 #include "sd_card_constants.h"
 //
 #include "ff_sddisk.h"
@@ -58,15 +63,13 @@ specific language governing permissions and limitations under the License.
 #define SECTORS_PER_KB (BYTES_PER_KB / 512ull)
 
 /* A function to write sectors to the device. */
-static int32_t
-prvWrite(uint8_t *pucSource,      /* Source of data to be written. */
-         uint32_t ulSectorNumber, /* The first sector being written to. */
-         uint32_t ulSectorCount,  /* The number of sectors to write. */
-         FF_Disk_t *pxDisk)       /* Describes the disk being written to. */
+static int32_t prvWrite(uint8_t *pucSource,      /* Source of data to be written. */
+                        uint32_t ulSectorNumber, /* The first sector being written to. */
+                        uint32_t ulSectorCount,  /* The number of sectors to write. */
+                        FF_Disk_t *pxDisk)       /* Describes the disk being written to. */
 {
     int status = ((sd_card_t *)(pxDisk->pvTag))
-                     ->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber,
-                                    ulSectorCount);
+                     ->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;
     } else {
@@ -75,15 +78,14 @@ prvWrite(uint8_t *pucSource,      /* Source of data to be written. */
 }
 
 /* A function to read sectors from the device. */
-static int32_t
-prvRead(uint8_t *pucDestination, /* Destination for data being read. */
-        uint32_t ulSectorNumber, /* Sector from which to start reading data. */
-        uint32_t ulSectorCount,  /* Number of sectors to read. */
-        FF_Disk_t *pxDisk)       /* Describes the disk being read from. */
+static int32_t prvRead(uint8_t *pucDestination, /* Destination for data being read. */
+                       uint32_t ulSectorNumber, /* Sector from which to start reading data. */
+                       uint32_t ulSectorCount,  /* Number of sectors to read. */
+                       FF_Disk_t *pxDisk)       /* Describes the disk being read from. */
 {
-    int status = ((sd_card_t *)(pxDisk->pvTag))
-                     ->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber,
-                                   ulSectorCount);
+    int status =
+        ((sd_card_t *)(pxDisk->pvTag))
+            ->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;
     } else {
@@ -92,8 +94,7 @@ prvRead(uint8_t *pucDestination, /* Destination for data being read. */
 }
 
 BaseType_t FF_SDDiskDetect(FF_Disk_t *pxDisk) {
-    if (!pxDisk)
-        return false;
+    if (!pxDisk) return false;
     return sd_card_detect(pxDisk->pvTag);
 }
 
@@ -102,11 +103,11 @@ bool disk_init(sd_card_t *sd_card_p) {
     FF_CreationParameters_t xParameters = {};
     uint32_t xIOManagerCacheSize;
     if (sd_card_p->cache_sectors)
-    	xIOManagerCacheSize = sd_card_p->cache_sectors * SECTOR_SIZE;
+        xIOManagerCacheSize = sd_card_p->cache_sectors * SECTOR_SIZE;
     else
-    	xIOManagerCacheSize = 4 * SECTOR_SIZE;
+        xIOManagerCacheSize = 4 * SECTOR_SIZE;
 
-    if (sd_card_p->state.ff_disk.xStatus.bIsInitialised == pdTRUE) {
+    if (sd_card_p->state.ff_disk.xStatus.bIsInitialised != pdFALSE) {
         // Already initialized
         return true;
     }
@@ -117,15 +118,13 @@ bool disk_init(sd_card_t *sd_card_p) {
 
     // Initialize the media driver
     bool rc = sd_init_driver();
-    if (!rc)
-        return rc;
+    if (!rc) return rc;
 
     //	STA_NOINIT = 0x01, /* Drive not initialized */
     //	STA_NODISK = 0x02, /* No medium in the drive */
     //	STA_PROTECT = 0x04 /* Write protected */
     int ds = sd_card_p->init(sd_card_p);
-    if (STA_NODISK & ds || STA_NOINIT & ds)
-        return false;
+    if (STA_NODISK & ds || STA_NOINIT & ds) return false;
 
     /* The pvTag member of the FF_Disk_t structure allows the structure to be
             extended to also include media specific parameters. */
@@ -148,8 +147,7 @@ bool disk_init(sd_card_t *sd_card_p) {
     xParameters.xBlockDeviceIsReentrant = pdTRUE;
     sd_card_p->state.ff_disk.pxIOManager = FF_CreateIOManger(&xParameters, &xError);
 
-    if ((sd_card_p->state.ff_disk.pxIOManager != NULL) &&
-        (FF_isERR(xError) == pdFALSE)) {
+    if ((sd_card_p->state.ff_disk.pxIOManager != NULL) && (FF_isERR(xError) == pdFALSE)) {
         /* Record that the disk has been initialised. */
         sd_card_p->state.ff_disk.xStatus.bIsInitialised = pdTRUE;
     } else {
@@ -184,16 +182,26 @@ BaseType_t FF_SDDiskReinit(FF_Disk_t *pxDisk) {
 
 /* Unmount the volume */
 // FF_SDDiskUnmount() calls FF_Unmount().
-BaseType_t FF_SDDiskUnmount(FF_Disk_t *pDisk) {
-    if (!pDisk->xStatus.bIsMounted)
-        return FF_ERR_NONE;
-    sd_card_t *sd_card_p = pDisk->pvTag;
+BaseType_t FF_SDDiskUnmount(FF_Disk_t *pxDisk) {
+    if (!pxDisk->xStatus.bIsMounted) return FF_ERR_NONE;
+    sd_card_t *sd_card_p = pxDisk->pvTag;
+    const char *name = sd_card_p->device_name;
+    FF_PRINTF("Invalidating %s\n", name);
+    int32_t rc = FF_Invalidate(pxDisk->pxIOManager);
+    if (0 == rc)
+        DBG_PRINTF("no handles were open\n");
+    else if (rc > 0)
+        DBG_PRINTF("%ld handles were invalidated\n", rc);
+    else
+        DBG_PRINTF("%ld: probably an invalid FF_IOManager_t pointer\n", rc);
+    FF_FlushCache(pxDisk->pxIOManager);
     sd_card_p->sync(sd_card_p);
-    FF_Error_t e = FF_Unmount(pDisk);
+    FF_PRINTF("Unmounting %s\n", name);
+    FF_Error_t e = FF_Unmount(pxDisk);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Unmount error: %s\n", FF_GetErrMessage(e));
     } else {
-        pDisk->xStatus.bIsMounted = pdFALSE;
+        pxDisk->xStatus.bIsMounted = pdFALSE;
     }
     return e;
 }
@@ -201,8 +209,11 @@ BaseType_t FF_SDDiskUnmount(FF_Disk_t *pDisk) {
 /* Mount the volume */
 // FF_SDDiskMount() calls FF_Mount().
 BaseType_t FF_SDDiskMount(FF_Disk_t *pDisk) {
-    if (pDisk->xStatus.bIsMounted)
-        return FF_ERR_NONE;
+    if (pDisk->xStatus.bIsMounted) return FF_ERR_NONE;
+    if (pdFALSE == pDisk->xStatus.bIsInitialised) {
+        bool ok = disk_init(pDisk->pvTag);
+        if (!ok) return FF_ERR_DEVICE_DRIVER_FAILED;
+    }
     // FF_Error_t FF_Mount( FF_Disk_t *pxDisk, BaseType_t xPartitionNumber );
     FF_Error_t e = FF_Mount(pDisk, PARTITION_NUMBER);
     if (FF_ERR_NONE != e) {
@@ -215,20 +226,21 @@ BaseType_t FF_SDDiskMount(FF_Disk_t *pDisk) {
 
 BaseType_t FF_SDDiskDelete(FF_Disk_t *pxDisk) {
     if (pxDisk) {
-        if (pxDisk->pvTag) {
-            ((sd_card_t *)(pxDisk->pvTag))->init(pxDisk->pvTag);
-        }
         if (pxDisk->xStatus.bIsInitialised) {
+            sd_card_t *sd_card_p = pxDisk->pvTag;
+            if (sd_card_p) {
+                sd_card_p->deinit(sd_card_p);
+            }
             if (pxDisk->pxIOManager) {
                 FF_DeleteIOManager(pxDisk->pxIOManager);
             }
             pxDisk->ulSignature = 0;
             pxDisk->xStatus.bIsInitialised = pdFALSE;
         }
-        sd_card_t *sd_card_p = pxDisk->pvTag;
-        configASSERT(sd_card_p);
+        return pdPASS;
+    } else {
+        return pdFAIL;
     }
-    return pdPASS;
 }
 
 /* Show some partition information */
@@ -273,26 +285,24 @@ BaseType_t FF_SDDiskShowPartition(FF_Disk_t *pxDisk) {
         if (pxIOManager->xPartition.ulDataSectors == (uint32_t)0) {
             iPercentageFree = 0;
         } else {
-            iPercentageFree =
-                (int)((HUNDRED_64_BIT * ullFreeSectors +
-                       pxIOManager->xPartition.ulDataSectors / 2) /
-                      ((uint64_t)pxIOManager->xPartition.ulDataSectors));
+            iPercentageFree = (int)((HUNDRED_64_BIT * ullFreeSectors +
+                                     pxIOManager->xPartition.ulDataSectors / 2) /
+                                    ((uint64_t)pxIOManager->xPartition.ulDataSectors));
         }
 
         ulTotalSizeKB = pxIOManager->xPartition.ulDataSectors / SECTORS_PER_KB;
         ulFreeSizeKB = (uint32_t)(ullFreeSectors / SECTORS_PER_KB);
 
         FF_PRINTF("Partition Nr   %8u\n", pxDisk->xStatus.bPartitionNumber);
-        FF_PRINTF("Type           %8u (%s)\n", pxIOManager->xPartition.ucType,
-                  pcTypeName);
+        FF_PRINTF("Type           %8u (%s)\n", pxIOManager->xPartition.ucType, pcTypeName);
         FF_PRINTF("VolLabel       '%8s' \n", pxIOManager->xPartition.pcVolumeLabel);
         FF_PRINTF("TotalSectors   %8lu\n",
                   (unsigned long)pxIOManager->xPartition.ulTotalSectors);
         FF_PRINTF("SecsPerCluster %8lu\n",
                   (unsigned long)pxIOManager->xPartition.ulSectorsPerCluster);
         FF_PRINTF("Size           %8lu KB\n", (unsigned long)ulTotalSizeKB);
-        FF_PRINTF("FreeSize       %8lu KB ( %d perc free )\n",
-                  (unsigned long)ulFreeSizeKB, iPercentageFree);
+        FF_PRINTF("FreeSize       %8lu KB ( %d perc free )\n", (unsigned long)ulFreeSizeKB,
+                  iPercentageFree);
     }
 
     return xReturn;
@@ -302,23 +312,20 @@ BaseType_t FF_SDDiskShowPartition(FF_Disk_t *pxDisk) {
 void FF_SDDiskFlush(FF_Disk_t *pDisk) { FF_FlushCache(pDisk->pxIOManager); }
 
 /* Format a given partition on an SD-card. */
-// FF_SDDiskFormat() calls FF_Format() + FF_SDDiskMount().
 BaseType_t FF_SDDiskFormat(FF_Disk_t *pxDisk, BaseType_t aPart) {
     // FF_Error_t FF_Format( FF_Disk_t *pxDisk, BaseType_t xPartitionNumber,
     // BaseType_t xPreferFAT16, BaseType_t xSmallClusters );
     FF_Error_t e = FF_Format(pxDisk, aPart, pdFALSE, pdFALSE);
     if (FF_ERR_NONE != e) {
         FF_PRINTF("FF_Format error:%s\n", FF_GetErrMessage(e));
-        return e;
     }
-    return FF_SDDiskMount(pxDisk);
+    return e;
 }
 
 /* Return non-zero if an SD-card is detected in a given slot. */
 BaseType_t FF_SDDiskInserted(BaseType_t xDriveNr) {
     sd_card_t *sd_card_p = sd_get_by_num(xDriveNr);
-    if (!sd_card_p)
-        return false;
+    if (!sd_card_p) return false;
     return sd_card_detect(sd_card_p);
 }
 
