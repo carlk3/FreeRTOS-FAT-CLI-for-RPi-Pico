@@ -2,10 +2,12 @@
 
 #include <stdint.h>
 //
+#include "pico/stdlib.h"
+//
 #include "FreeRTOS.h"
 #include "task.h"
 
-/* Using millis() for timeouts
+/* Using millis() or micros() for timeouts
 
 For example, 
 
@@ -52,4 +54,8 @@ static inline uint32_t millis() {
 
 static inline void delay_ms(uint32_t ulTime_ms) {
     vTaskDelay( pdMS_TO_TICKS( ulTime_ms ) );
+}
+
+static inline uint64_t micros() {
+    return to_us_since_boot(get_absolute_time());
 }

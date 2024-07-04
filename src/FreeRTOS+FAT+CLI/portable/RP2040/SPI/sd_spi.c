@@ -20,7 +20,7 @@ specific language governing permissions and limitations under the License.
 #include "hardware/gpio.h"
 //
 #include "my_debug.h"
-#include "portability.h"
+#include "delays.h"
 #include "my_spi.h"
 //
 #if !defined(USE_DBG_PRINTF) || defined(NDEBUG)

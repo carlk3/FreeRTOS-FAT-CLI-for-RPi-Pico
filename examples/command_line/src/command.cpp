@@ -600,7 +600,7 @@ static cmd_def_t cmds[] = {
      " Specify <size in MiB> in units of mebibytes (2^20, or 1024*1024 bytes)\n"
      "\te.g.: big_file_test /sd0/bf 1 1\n"
      "\tor: big_file_test /sd1/big3G-3 3072 3"},
-    {"bft", run_big_file_test, "Alias for big_file_test"},
+    {"bft", run_big_file_test, "bft:\n Alias for big_file_test"},
     {"mtbft", run_mtbft, 
      "mtbft <size in MiB> <pathname 0> [pathname 1...]\n"
      "Multi Task Big File Test\n"

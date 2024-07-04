@@ -117,7 +117,7 @@ int stdio_fail(const char *const fn, const char *const str);
 
 int ff_stdio_fail(const char *const func, char const *const str,
                   char const *const filename);
-#define FF_FAIL(str, filname) ff_stdio_fail(__FUNCTION__, str, filename)
+#define FF_FAIL(str, filename) ff_stdio_fail(__FUNCTION__, str, filename)
 
 static inline void dump_bytes(size_t num, uint8_t bytes[]) {
     DBG_PRINTF("     ");

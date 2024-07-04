@@ -15,6 +15,8 @@ specific language governing permissions and limitations under the License.
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 //
 // Pico includes
 #include "pico/stdlib.h"
@@ -25,7 +27,8 @@ specific language governing permissions and limitations under the License.
 #include "hardware/spi.h"
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
-#include <semphr.h>
+#include "semphr.h"
+#include "task.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +63,7 @@ typedef struct spi_t {
     dma_channel_config tx_dma_cfg;
     dma_channel_config rx_dma_cfg;
     SemaphoreHandle_t mutex;    
-    TaskHandle_t owner;       // Assigned dynamically
+    TaskHandle_t owner;
     bool initialized;  
 } spi_t;
   
