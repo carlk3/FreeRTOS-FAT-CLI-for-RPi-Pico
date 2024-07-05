@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.5.4
+v2.6.1
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
