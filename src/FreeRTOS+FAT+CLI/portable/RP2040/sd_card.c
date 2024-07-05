@@ -13,7 +13,10 @@ specific language governing permissions and limitations under the License.
 */
 
 /* Standard includes. */
+#include <stdlib.h>
+#include <ctype.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 //
 #include "pico/mutex.h"
@@ -110,6 +113,7 @@ bool sd_init_driver() {
                 }
                 gpio_init(sd_card_p->card_detect_gpio);
             }
+
             switch (sd_card_p->type) {
                 case SD_IF_NONE:
                     myASSERT(false);

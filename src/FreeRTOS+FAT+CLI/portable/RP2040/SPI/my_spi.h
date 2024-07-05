@@ -60,6 +60,8 @@ typedef struct spi_t {
     /* The following fields are not part of the configuration. They are dynamically assigned. */
     uint tx_dma;
     uint rx_dma;
+
+    /* The following fields are not part of the configuration. They are dynamically assigned. */
     dma_channel_config tx_dma_cfg;
     dma_channel_config rx_dma_cfg;
     SemaphoreHandle_t mutex;    

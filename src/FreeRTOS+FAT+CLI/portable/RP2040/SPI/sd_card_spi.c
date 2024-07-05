@@ -1074,10 +1074,10 @@ static uint32_t in_sd_go_idle_state(sd_card_t *sd_card_p) {
         sd_spi_deselect(sd_card_p);
         uint8_t ones[10];
         memset(ones, 0xFF, sizeof ones);
-        TickType_t xStart = xTaskGetTickCount();
+        uint32_t start = millis();
         do {
             spi_transfer(sd_card_p->spi_if_p->spi, ones, NULL, sizeof ones);
-        } while ((xTaskGetTickCount() - xStart) < pdMS_TO_TICKS(1));
+        } while (millis() - start < 1);
         sd_spi_select(sd_card_p);
 
         sd_cmd(sd_card_p, CMD0_GO_IDLE_STATE, 0x0, false, &response);
