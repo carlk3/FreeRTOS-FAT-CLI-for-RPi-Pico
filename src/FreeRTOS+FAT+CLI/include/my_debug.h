@@ -15,6 +15,7 @@ specific language governing permissions and limitations under the License.
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -70,13 +71,17 @@ int info_message_printf(const char *fmt, ...) __attribute__ ((format (__printf__
 #endif
 
 /* For passing an output function as an argument */
-typedef int (*printer_t)(const char* format, ...);
+//typedef int (*printer_t)(const char* format, ...);
 
-void my_assert_func(const char *file, int line, const char *func, const char *pred) __attribute__((noreturn));
+void lock_printf();
+void unlock_printf();
+
+void my_assert_func(const char *file, int line, const char *func, 
+	const char *pred) __attribute__((noreturn));
 #define myASSERT(__e) \
     { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
 
-void task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
+int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 
 #define time_fn(arg)                                              \
     {                                                             \
@@ -87,21 +92,17 @@ void task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1,
                       configTICK_RATE_HZ);                        \
     }
 
-// See FreeRTOSConfig.h
-void my_assert_func(const char *file, int line, const char *func,
-                    const char *pred);
-
 void assert_always_func(const char *file, int line, const char *func,
                         const char *pred);
 #define ASSERT_ALWAYS(__e) \
-    ((__e) ? (void)0 : assert_always_func(__FILE__, __LINE__, __func__, #__e))
+    ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
 
 void assert_case_is(const char *file, int line, const char *func, int v,
-                    int expected);
+                    int expected) __attribute__((noreturn));
 #define ASSERT_CASE_IS(__v, __e) \
     ((__v == __e) ? (void)0 : assert_case_is(__FILE__, __LINE__, __func__, __v, __e))
 
-void assert_case_not_func(const char *file, int line, const char *func, int v);
+void assert_case_not_func(const char *file, int line, const char *func, int v) __attribute__((noreturn));
 #define ASSERT_CASE_NOT(__v) \
     (assert_case_not_func(__FILE__, __LINE__, __func__, __v))
 
@@ -120,6 +121,9 @@ int ff_stdio_fail(const char *const func, char const *const str,
 #define FF_FAIL(str, filename) ff_stdio_fail(__FUNCTION__, str, filename)
 
 static inline void dump_bytes(size_t num, uint8_t bytes[]) {
+#if !USE_DBG_PRINTF
+    (void)bytes;
+#endif
     DBG_PRINTF("     ");
     for (size_t j = 0; j < 16; ++j) {
         DBG_PRINTF("%02hhx", j);

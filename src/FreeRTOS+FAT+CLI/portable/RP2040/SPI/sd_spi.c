@@ -41,14 +41,6 @@ void sd_spi_go_low_frequency(sd_card_t *sd_card_p) {
     DBG_PRINTF("%s: Actual frequency: %lu\n", __FUNCTION__, (long)actual);
 }
 
-/* Some SD cards want to be deselected between every bus transaction */
-void sd_spi_deselect_pulse(sd_card_t *sd_card_p) {
-    sd_spi_deselect(sd_card_p);
-    // tCSH Pulse duration, CS high 200 ns
-    sd_spi_select(sd_card_p);
-}
-
-
 /* 
 After power up, the host starts the clock and sends the initializing sequence on the CMD line. 
 This sequence is a contiguous stream of logical ‘1’s. The sequence length is the maximum of 1msec, 

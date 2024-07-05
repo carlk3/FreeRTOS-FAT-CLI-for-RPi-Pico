@@ -17,6 +17,7 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
@@ -33,8 +34,6 @@ extern "C" {
  * that is not initialized by the linker to preserve
  * information across reboots.
  */
-
-#define CRASH_INFO_SECTION_LENGTH 192
 
 #define CY_R0_Pos \
     (0U) /**< The position of the R0  content in a fault structure */
@@ -69,9 +68,11 @@ typedef enum {
 	crash_magic_bootloader_entry = 0xB000B000,
 	crash_magic_hard_fault       = 0xCAFEBABE,
 	crash_magic_debug_mon        = 0x01020304,
-	crash_magic_reboot_requested = 0x0ABCDEF,
-	crash_magic_stack_overflow   = 0xBADBEEF,
-	crash_magic_assert           = 0xDEBDEBDE
+	crash_magic_reboot_requested = 0x00ABCDEF,
+	crash_magic_stack_overflow   = 0x0BADBEEF,
+	crash_magic_malloc_failed    = 0xBABECAFE,
+	crash_magic_assert           = 0xDEBDEBDE,
+    crash_magic_err_handler      = 0x0FEDCBA0
 } crash_magic_t;
 
 typedef struct {
@@ -90,16 +91,12 @@ typedef struct {
         char task_name[configMAX_TASK_NAME_LEN];
         char calling_func[64];
     };
-    uint32_t xor_checksum;  // last to avoid including in calculation
+	uint8_t xor_checksum;  // last to avoid including in calculation
 } crash_info_t;
 
-typedef struct {
-    crash_info_t crash_info;
-    uint8_t unused[CRASH_INFO_SECTION_LENGTH - sizeof(crash_info_t)];
-} crash_info_ram_t;
-
-_Static_assert(sizeof(crash_info_ram_t) == CRASH_INFO_SECTION_LENGTH,
-               "Wrong size");
+//typedef struct {
+//    crash_info_t crash_info;
+//} crash_info_ram_t;
 
 // Trick to find struct size at compile time:
 // char (*__kaboom)[sizeof(crash_info_flash_t)] = 1;
@@ -110,16 +107,10 @@ const crash_info_t *crash_handler_get_info();
 volatile const crash_info_t *crash_handler_get_info_flash();
 
 #define SYSTEM_RESET() system_reset_func(__FUNCTION__)
-__attribute__((noreturn)) void system_reset_func(char const *const func);
-#ifdef BOOTLOADER_BUILD
-bool system_check_bootloader_request_flag(void);
-#else
-__attribute__((noreturn)) void system_request_bootloader_entry(void);
-#endif
-
-void capture_assert(const char *file, int line, const char *func, const char *pred);
-void capture_assert_case_not(const char *file, int line, const char *func, int v);
-
+void system_reset_func(char const *const func) __attribute__((noreturn));
+void error_handler(void);
+void capture_assert(const char *file, int line, const char *func, const char *pred) __attribute__((noreturn));
+void capture_assert_case_not(const char *file, int line, const char *func, int v) __attribute__((noreturn));
 
 int dump_crash_info(crash_info_t const * const pCrashInfo, int next, char * const buf, size_t const buf_sz);
 
