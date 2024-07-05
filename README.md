@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.5.3
+v2.5.4
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,7 +16,10 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
-### v2.5.3
+### v2.6.1
+Fix bug in SPI sd_write_blocks that caused single block writes to be sent with CMD25 WRITE_MULTIPLE_BLOCK
+instead of CMD24 WRITE_BLOCK.
+### v2.6.0
 * Added
 [include/file_stream.h](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/src/FreeRTOS%2BFAT%2BCLI/include/file_stream.h)
 and
