@@ -99,7 +99,7 @@ static void SimpleTask(void *arg) {
     unbuffered();
     buffered();
 
-    FF_FS_Remove("/sd0");
+    FF_FS_Remove("/" DEVICE);
     FF_Unmount(pxDisk);
     FF_SDDiskDelete(pxDisk);
     puts("Goodbye, world!");
