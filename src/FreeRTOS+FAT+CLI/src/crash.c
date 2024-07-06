@@ -35,8 +35,8 @@ static crash_info_t volatile *crash_info_ram_p = &crash_info_ram;
 static crash_info_t previous_crash_info;
 static bool _previous_crash_info_valid = false;
 
-__attribute__((noreturn))
-static void reset() {
+__attribute__((noreturn, always_inline))
+static inline void reset() {
 //    if (debugger_connected()) {
         __BKPT(0);
 //    } else {

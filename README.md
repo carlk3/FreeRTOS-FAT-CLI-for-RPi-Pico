@@ -946,7 +946,8 @@ GND|||18, 23|||GND|GND
 ### Wiring
 As you can see from the table above, the only new signals are CD1 and CS1. Otherwise, the new card is wired in parallel with the first card.
 ### Firmware
-* [The hardware configuration](#customizing-for-the-hardware-configuration) must be edited to add a new instance of 
+* [The hardware configuration](#customizing-for-the-hardware-configuration)
+must be edited to add a new instance of 
 [sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket)
 and its interface
 [sd_sdio_if_t](#an-instance-of-sd_sdio_if_t-describes-the-configuration-of-one-sdio-to-sd-card-interface)
@@ -964,9 +965,9 @@ TL;DR: In general, it is much faster to transfer a given number of bytes in one 
 than to transfer the same number of bytes in multiple smaller writes (or reads). 
 
 One quick and easy way to speed up many applications is to take advantage of the buffering built into the C library for standard I/O streams.
-See 
+(See 
 [fopencookie—open a stream with custom callbacks](https://sourceware.org/newlib/libc.html#fopencookie) and 
-[setvbuf—specify file or stream buffering](https://sourceware.org/newlib/libc.html#setvbuf). 
+[setvbuf—specify file or stream buffering](https://sourceware.org/newlib/libc.html#setvbuf)). 
 The application would use [fprintf](https://sourceware.org/newlib/libc.html#sprintf) instead of 
 [ff_fprintf](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/stdio_API/ff_fprintf.html), 
 or 

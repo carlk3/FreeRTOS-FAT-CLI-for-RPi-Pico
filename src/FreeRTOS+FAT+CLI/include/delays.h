@@ -1,11 +1,3 @@
-#pragma once
-
-#include <stdint.h>
-//
-#include "pico/stdlib.h"
-//
-#include "FreeRTOS.h"
-#include "task.h"
 
 /* Using millis() or micros() for timeouts
 
@@ -48,8 +40,21 @@ call to millis() returns 0xFFFFFFFF:
     while (millis() < end)  // while (0xFFFFFFFF < 0x00000054)
 
 */
+
+#pragma once
+
+#include <stdint.h>
+//
+#include "pico/stdlib.h"
+#include "RP2040.h"
+//
+#include "FreeRTOS.h"
+#include "task.h"
+
 static inline uint32_t millis() {
+    __COMPILER_BARRIER();
     return xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
+    __COMPILER_BARRIER();
 }
 
 static inline void delay_ms(uint32_t ulTime_ms) {
@@ -57,5 +62,7 @@ static inline void delay_ms(uint32_t ulTime_ms) {
 }
 
 static inline uint64_t micros() {
+    __COMPILER_BARRIER();
     return to_us_since_boot(get_absolute_time());
+    __COMPILER_BARRIER();
 }

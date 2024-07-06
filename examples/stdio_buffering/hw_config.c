@@ -59,7 +59,7 @@ static sd_card_t sd_card = {
     // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
     .mount_point = "/sd0",
     .type = SD_IF_SDIO,
-    .sdio_if_p = &sdio_if  // Pointer to the SPI interface driving this card
+    .spi_if_p = &sdio_if  // Pointer to the SPI interface driving this card
 };
 
 /* ********************************************************************** */

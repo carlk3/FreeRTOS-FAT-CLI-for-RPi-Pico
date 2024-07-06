@@ -15,22 +15,23 @@ specific language governing permissions and limitations under the License.
 #include <stdbool.h>
 #include <stdint.h>
 //
-#include "hardware/timer.h"
+//#include "hardware/timer.h"
 #include "pico/multicore.h"  // get_core_num()
-#include "pico/stdio.h"
+//#include "pico/stdio.h"
 #include "pico/stdlib.h"
+#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "ff_stdio.h"
 #include "semphr.h"
 #include "task.h"
 //
-#include <RP2040.h>
+
 //
 #include "FreeRTOS_strerror.h"
 #include "FreeRTOS_time.h"
-#include "crash.h"
 //
+#include "crash.h"
 #include "my_debug.h"
 
 static time_t start_time;
@@ -84,7 +85,8 @@ void __attribute__((weak)) put_out_debug_message(const char *s) { (void)s; }
 
 #if defined(USE_PRINTF) && USE_PRINTF
 
-int __attribute__((weak)) error_message_printf(const char *func, int line, 
+int __attribute__((weak)) 
+error_message_printf(const char *func, int line, 
         const char *fmt, ...) 
 {
     printf("%s:%d: ", func, line);
@@ -118,8 +120,10 @@ int __attribute__((weak)) info_message_printf(const char *fmt, ...) {
     va_end(args);
     return cw;
 }
-int __attribute__((weak)) debug_message_printf(const char *func, int line, const char *fmt,
-                                               ...) {
+int __attribute__((weak)) 
+debug_message_printf(const char *func, int line, 
+		const char *fmt, ...) 
+{
     lock_printf();
     printf("%s:%d: ", func, line);
     va_list args;
@@ -136,7 +140,8 @@ int __attribute__((weak)) debug_message_printf(const char *func, int line, const
 
 /* These will truncate at 256 bytes. You can tell by checking the return code. */
 
-int __attribute__((weak)) error_message_printf(const char *func, int line, 
+int __attribute__((weak)) 
+error_message_printf(const char *func, int line, 
         const char *fmt, ...) 
 {
     char buf[256] = {0};
@@ -165,7 +170,8 @@ int __attribute__((weak)) info_message_printf(const char *fmt, ...) {
     va_end(args);
     return cw;
 }
-int __attribute__((weak)) debug_message_printf(const char *func, int line, 
+int __attribute__((weak)) 
+debug_message_printf(const char *func, int line, 
         const char *fmt, ...) 
 {
     char buf[256] = {0};
@@ -232,6 +238,7 @@ void assert_case_not_func(const char *file, int line, const char *func, int v) {
     snprintf(pred, sizeof pred, "case not %d", v);
     my_assert_func(file, line, func, pred);
 }
+
 void assert_case_is(const char *file, int line, const char *func, int v, int expected) {
     TRIG();  // DEBUG
     char pred[128];
