@@ -15,9 +15,7 @@ specific language governing permissions and limitations under the License.
 #include <stdbool.h>
 #include <stdint.h>
 //
-//#include "hardware/timer.h"
 #include "pico/multicore.h"  // get_core_num()
-//#include "pico/stdio.h"
 #include "pico/stdlib.h"
 #include "RP2040.h"
 //
@@ -26,12 +24,10 @@ specific language governing permissions and limitations under the License.
 #include "semphr.h"
 #include "task.h"
 //
-
-//
 #include "FreeRTOS_strerror.h"
 #include "FreeRTOS_time.h"
-//
 #include "crash.h"
+//
 #include "my_debug.h"
 
 static time_t start_time;
