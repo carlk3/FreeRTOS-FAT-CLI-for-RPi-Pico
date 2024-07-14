@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.6.2
+v2.7.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,10 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.7.0
+* Refactor SPI sd_write_blocks
+* Drop support for SD Standard Capacity Memory Card (up to and including 2 GB). 
+SDSC Card uses byte unit address and SDHC and SDXC Cards (CCS=1) use block unit address (512 Bytes unit).
 ### v2.6.2
 Pick up Lab-Project-FreeRTOS-FAT bug fix: [Add missing error check #68](https://github.com/FreeRTOS/Lab-Project-FreeRTOS-FAT/pull/68). 
 The bug could cause a memory overwrite if the Media Driver returned an error.

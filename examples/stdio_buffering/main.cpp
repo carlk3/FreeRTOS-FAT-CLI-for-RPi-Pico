@@ -13,7 +13,7 @@
 #include "delays.h"
 #include "file_stream.h"
 
-#define DEVICE "sd2"
+#define DEVICE "sd0"
 #define ITERATIONS 100000
 
 static inline void stop() {
