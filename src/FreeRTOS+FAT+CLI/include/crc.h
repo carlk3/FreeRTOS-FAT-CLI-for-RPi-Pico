@@ -34,9 +34,39 @@ specific language governing permissions and limitations under the License.
 #include <stddef.h>
 #include <stdint.h>
     
-char crc7(const uint8_t* data, int length);
-unsigned short crc16(const uint8_t* data, int length);
-void update_crc16(unsigned short *pCrc16, const char data[], size_t length);
+/**
+ * @brief Calculate the CRC7 checksum for the specified data block.
+ * 
+ * This function calculates the CRC7 checksum for the specified data block
+ * using the lookup table defined in the m_Crc7Table array.
+ * 
+ * @param data The data block to be checked.
+ * @param length The length of the data block in bytes.
+ * @return The calculated checksum.
+ */
+__attribute__((optimize("Ofast")))
+static inline char crc7(const uint8_t* data, int length) {
+    extern const char m_Crc7Table[];    
+	char crc = 0;
+	for (int i = 0; i < length; i++) {
+		crc = m_Crc7Table[(crc << 1) ^ data[i]];
+	}
+
+	//Return the calculated checksum
+	return crc;
+}
+
+/**
+ * @brief Calculate the CRC16 checksum for the specified data block.
+ * 
+ * This function calculates the CRC16 checksum for the specified data block
+ * using the lookup table defined in the m_Crc7Table array.
+ * 
+ * @param data The data block to be checked.
+ * @param length The length of the data block in bytes.
+ * @return The calculated checksum.
+ */
+unsigned short crc16(uint8_t * data, int length);
 
 #endif
 

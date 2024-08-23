@@ -18,9 +18,6 @@ int main() {
     FreeRTOS_time_init();
     setvbuf(stdout, NULL, _IONBF, 1);  // specify that the stream should be unbuffered
 
-    printf("\033[2J\033[H");  // Clear Screen
-    stdio_flush();
-
     CLI_Start();
 
     /* Start the tasks and timer running. */

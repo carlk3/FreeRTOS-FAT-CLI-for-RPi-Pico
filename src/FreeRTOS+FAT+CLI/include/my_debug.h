@@ -13,10 +13,10 @@ specific language governing permissions and limitations under the License.
 */
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,14 +49,16 @@ void put_out_debug_message(const char *s);
 
 // https://gcc.gnu.org/onlinedocs/gcc-3.2.3/cpp/Variadic-Macros.html
 
-int error_message_printf(const char *func, int line, const char *fmt, ...) __attribute__ ((format (__printf__, 3, 4)));
+int error_message_printf(const char *func, int line, const char *fmt, ...)
+    __attribute__((format(__printf__, 3, 4)));
 #ifndef EMSG_PRINTF
 #define EMSG_PRINTF(fmt, ...) error_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
 #endif
 
 int error_message_printf_plain(const char *fmt, ...) __attribute__ ((format (__printf__, 1, 2)));
 
-int debug_message_printf(const char *func, int line, const char *fmt, ...) __attribute__ ((format (__printf__, 3, 4)));
+int debug_message_printf(const char *func, int line, const char *fmt, ...)
+    __attribute__((format(__printf__, 3, 4)));
 #ifndef DBG_PRINTF
 #  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF && !defined(NDEBUG)
 #    define DBG_PRINTF(fmt, ...) debug_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
@@ -70,14 +72,11 @@ int info_message_printf(const char *fmt, ...) __attribute__ ((format (__printf__
 #define IMSG_PRINTF(fmt, ...) info_message_printf(fmt, ##__VA_ARGS__)
 #endif
 
-/* For passing an output function as an argument */
-//typedef int (*printer_t)(const char* format, ...);
-
 void lock_printf();
 void unlock_printf();
 
-void my_assert_func(const char *file, int line, const char *func, 
-	const char *pred) __attribute__((noreturn));
+void my_assert_func(const char *file, int line, const char *func, const char *pred)
+    __attribute__((noreturn));
 #define myASSERT(__e) \
     { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
 
@@ -92,25 +91,24 @@ int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 
                       configTICK_RATE_HZ);                        \
     }
 
-void assert_always_func(const char *file, int line, const char *func,
-                        const char *pred);
+void assert_always_func(const char *file, int line, const char *func, const char *pred)
+    __attribute__((noreturn));
 #define ASSERT_ALWAYS(__e) \
     ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
 
-void assert_case_is(const char *file, int line, const char *func, int v,
-                    int expected) __attribute__((noreturn));
+void assert_case_is(const char *file, int line, const char *func, int v, int expected)
+    __attribute__((noreturn));
 #define ASSERT_CASE_IS(__v, __e) \
     ((__v == __e) ? (void)0 : assert_case_is(__FILE__, __LINE__, __func__, __v, __e))
 
-void assert_case_not_func(const char *file, int line, const char *func, int v) __attribute__((noreturn));
-#define ASSERT_CASE_NOT(__v) \
-    (assert_case_not_func(__FILE__, __LINE__, __func__, __v))
+void assert_case_not_func(const char *file, int line, const char *func, int v)
+    __attribute__((noreturn));
+#define ASSERT_CASE_NOT(__v) (assert_case_not_func(__FILE__, __LINE__, __func__, __v))
 
 #ifdef NDEBUG /* required by ANSI standard */
 #define DBG_ASSERT_CASE_NOT(__e) ((void)0)
 #else
-#define DBG_ASSERT_CASE_NOT(__v) \
-    (assert_case_not_func(__FILE__, __LINE__, __func__, __v))
+#define DBG_ASSERT_CASE_NOT(__v) (assert_case_not_func(__FILE__, __LINE__, __func__, __v))
 #endif
 
 int stdio_fail(const char *const fn, const char *const str);

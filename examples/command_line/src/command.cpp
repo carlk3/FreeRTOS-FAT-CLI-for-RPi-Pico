@@ -70,7 +70,10 @@ static void run_setrtc(const size_t argc, const char *argv[]) {
                     .min = min,
                     .sec = sec};
     // rtc_set_datetime(&t);
-    setrtc(&t);
+    bool ok = setrtc(&t);
+    if (!ok) {
+        printf("The passed in datetime was invalid\n");
+    }
 }
 static void run_date(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 0)) return;
@@ -693,12 +696,19 @@ static void process_cmd(size_t cmd_sz, char *cmd) {
     }
 }
 
+/**
+ * @brief Process a character received from the console
+ *
+ * @param cRxedChar A character received from the console
+ */
 void process_stdio(int cRxedChar) {
     static char cmd[256];
-    static size_t ix;
+    static size_t ix = 0;
 
-    if (!(0 < cRxedChar && cRxedChar <= 0x7F))
-        return;  // Not dealing with multibyte characters
+    if (!(0 < cRxedChar && cRxedChar <= 0x7F)) {
+        return;  // Not dealing with multibyte characters or NULLs
+    }
+
     switch (cRxedChar) {
         case 3:  // Ctrl-C
             SYSTEM_RESET();
@@ -707,8 +717,9 @@ void process_stdio(int cRxedChar) {
             __BKPT();
     }
     if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
-        '\b' != cRxedChar && cRxedChar != 127)
+        '\b' != cRxedChar && cRxedChar != 127) {
         return;
+    }
     printf("%c", cRxedChar);  // echo
     stdio_flush();
     if (cRxedChar == '\r') {

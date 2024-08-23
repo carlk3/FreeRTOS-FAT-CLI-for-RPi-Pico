@@ -21,7 +21,6 @@
 #include "hw_config.h"
 #include "rp2040_sdio.h"
 #include "rp2040_sdio.pio.h"
-#include "RP2040.h"
 #include "delays.h"
 #include "sd_card.h"
 #include "my_debug.h"
@@ -83,7 +82,7 @@ static const uint8_t crc7_table[256] = {
 // When the SDIO bus operates in 4-bit mode, the CRC16 algorithm
 // is applied to each line separately and generates total of
 // 4 x 16 = 64 bits of checksum.
-__attribute__((optimize("O3")))
+__attribute__((optimize("Ofast")))
 uint64_t sdio_crc16_4bit_checksum(uint32_t *data, uint32_t num_words)
 {
     uint64_t crc = 0;
@@ -819,7 +818,10 @@ bool rp2040_sdio_init(sd_card_t *sd_card_p, float clk_div) {
     SDIO_PIO->input_sync_bypass |= (1 << SDIO_CLK) | (1 << SDIO_CMD) | (1 << SDIO_D0) | (1 << SDIO_D1) | (1 << SDIO_D2) | (1 << SDIO_D3);
 
     // Redirect GPIOs to PIO
-    enum gpio_function fn;
+#if PICO_SDK_VERSION_MAJOR < 2
+    typedef enum gpio_function gpio_function_t;
+#endif
+   gpio_function_t fn;
     if (pio1 == SDIO_PIO) 
         fn = GPIO_FUNC_PIO1;
     else

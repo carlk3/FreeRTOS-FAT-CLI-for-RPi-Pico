@@ -11,9 +11,11 @@ under the License is distributed on an AS IS BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
 */
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 //
 #include "pico/multicore.h"  // get_core_num()
 #include "pico/stdlib.h"
@@ -120,6 +122,10 @@ int __attribute__((weak))
 debug_message_printf(const char *func, int line, 
 		const char *fmt, ...) 
 {
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+    (void) func;
+    (void) line;
+#endif
     lock_printf();
     printf("%s:%d: ", func, line);
     va_list args;
@@ -223,11 +229,6 @@ void my_assert_func(const char *file, int line, const char *func, const char *pr
     __disable_irq(); /* Disable global interrupts. */
     capture_assert(file, line, func, pred);
 }
-
-//__attribute__((__noreturn__)) void __assert_func(const char *filename, int line,
-//                                                 const char *assert_func, const char *expr) {
-//    my_assert_func(filename, line, assert_func, expr);
-//}
 
 void assert_case_not_func(const char *file, int line, const char *func, int v) {
     char pred[128];
