@@ -54,8 +54,8 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .no_miso_gpio_pull_up = true,
         .DMA_IRQ_num = DMA_IRQ_0,
         // .baud_rate = 125 * 1000 * 1000 / 10 // 12500000 Hz
-        // .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+        //.baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
         // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
     },
     {   // spis[1]
@@ -70,9 +70,9 @@ static spi_t spis[] = {  // One for each RP2040 SPI component used
         .DMA_IRQ_num = DMA_IRQ_0,
         //.baud_rate = 125 * 1000 * 1000 / 12
         //.baud_rate = 125 * 1000 * 1000 / 10  // 12500000 Hz
-        //.baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
-        .baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
-        // .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+        .baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
+        //.baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz
+        //.baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
     }
 };
 

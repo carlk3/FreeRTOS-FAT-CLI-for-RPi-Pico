@@ -24,7 +24,7 @@ extern "C" {
 extern time_t epochtime;
 
 void FreeRTOS_time_init();
-void setrtc(datetime_t *t);
+bool setrtc(datetime_t *t);
 
 #ifdef __cplusplus
 }

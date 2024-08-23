@@ -17,7 +17,6 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
@@ -35,14 +34,21 @@ extern "C" {
  * information across reboots.
  */
 
-#define CY_R0_Pos (0U)  /**< The position of the R0  content in a fault structure */
-#define CY_R1_Pos (1U)  /**< The position of the R1  content in a fault structure */
-#define CY_R2_Pos (2U)  /**< The position of the R2  content in a fault structure */
-#define CY_R3_Pos (3U)  /**< The position of the R3  content in a fault structure */
-#define CY_R12_Pos (4U) /**< The position of the R12 content in a fault structure */
-#define CY_LR_Pos (5U)  /**< The position of the LR  content in a fault structure */
-#define CY_PC_Pos (6U)  /**< The position of the PC  content in a fault structure */
-#define CY_PSR_Pos (7U) /**< The position of the PSR content in a fault structure */
+/**
+ * These are the positions of the fault frame elements in the
+ * fault frame structure.
+ */
+enum {
+    R0_Pos = 0, /**< The position of the R0  content in a fault structure */
+    R1_Pos,     /**< The position of the R1  content in a fault structure */
+    R2_Pos,     /**< The position of the R2  content in a fault structure */
+    R3_Pos,     /**< The position of the R3  content in a fault structure */
+    R12_Pos,    /**< The position of the R12 content in a fault structure */
+    LR_Pos,     /**< The position of the LR  content in a fault structure */
+    PC_Pos,     /**< The position of the PC  content in a fault structure */
+    PSR_Pos,    /**< The position of the PSR content in a fault structure */
+    NUM_REGS,   /**< The number of registers in the fault frame */
+};
 
 typedef struct {
     uint32_t r0;  /**< R0 register content */

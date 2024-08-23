@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.7.0
+v2.8.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,10 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.8.0
+* Migrate to **Raspberry Pi Pico SDK 2.0.0**
+* CRC performance improvements for SPI
+* Clean up `sd_write_blocks` in `sd_card_spi.c`
 ### v2.7.0
 * Refactor SPI sd_write_blocks
 * Drop support for SD Standard Capacity Memory Card (up to and including 2 GB). 
@@ -631,7 +635,7 @@ If `set_drive_strength` is true, each GPIO's drive strength can be set individua
   GPIO_DRIVE_STRENGTH_8MA 
   GPIO_DRIVE_STRENGTH_12MA
   ```
-  You might want to do this for electrical tuning. A low drive strength can give a cleaner signal, with less overshoot and undershoot. 
+  You might want to do this for electrical tuning. A low drive strength can give a cleaner signal, with less overshoot and undershoot.
   In some cases, this allows operation at higher baud rates.
   In other cases, the signal lines might have a lot of capacitance to overcome.
   Then, a higher drive strength might allow operation at higher baud rates.

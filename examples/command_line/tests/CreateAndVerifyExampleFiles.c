@@ -359,7 +359,7 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
-	FF_PRINTF( "Back in root directory %s\n", pcRAMBuffer );
+	FF_PRINTF( "%s: Back in root directory %s\n", __func__, pcRAMBuffer );
 	configASSERT( strcmp( pcRAMBuffer, pcMountPath ) == 0 );
 
 	vPortFree( pcRAMBuffer );
@@ -426,7 +426,7 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
-	FF_PRINTF( "Back in root directory %s\n", pcRAMBuffer );
+	FF_PRINTF( "%s: Back in root directory %s\n", __func__, pcRAMBuffer );
 
 	vPortFree( pcRAMBuffer );
 	vPortFree( pcFileName );
@@ -472,4 +472,3 @@ char *pcRAMBuffer, *pcFileName;
 
 #endif /* ipconfigUSE_HTTP */
 /*-----------------------------------------------------------*/
-

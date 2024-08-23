@@ -98,10 +98,11 @@ void FreeRTOS_time_init() {
     }
 }
 
-void setrtc(datetime_t *t) {
-    rtc_set_datetime(t);
+bool setrtc(datetime_t *t) {
+    bool ok = rtc_set_datetime(t);
     // Start callback timer if it's not already running
-    if (rtc_running() && pdFALSE == xTimerIsTimerActive(TimeUpdateTimer)) {
+    if (ok && pdFALSE == xTimerIsTimerActive(TimeUpdateTimer)) {
         xTimerStart(TimeUpdateTimer, portMAX_DELAY);
     }
+    return ok;
 }
