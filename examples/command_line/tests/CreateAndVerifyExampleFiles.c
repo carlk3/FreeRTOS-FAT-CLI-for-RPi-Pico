@@ -94,13 +94,16 @@ specific language governing permissions and limitations under the License.
 //
 #include "my_debug.h"
 
-#ifdef NDEBUG 
-#   warning "This test relies on asserts to verify test results!"
-#	pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#endif
+static void check(const char *file, int line, const char *func, const char *pred) {
+    FF_PRINTF("%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
+        pcTaskGetName(NULL), pred, file, line, func);
+    __breakpoint();
+    abort();
+}
+#define CHECK(__e) ((__e) ? (void)0 : check(__FILE__, __LINE__, __func__, #__e))
 
 //#define TRACE_PRINTF(fmt, args...)
-#define TRACE_PRINTF DBG_PRINTF
+#define TRACE_PRINTF FF_PRINTF
 
 /* The number of bytes read/written to the example files at a time. */
 #define fsRAM_BUFFER_SIZE 				200
@@ -167,15 +170,15 @@ char *pcRAMBuffer, *pcFileName;
 	file names. */
 	pcRAMBuffer = ( char * ) pvPortMalloc( fsRAM_BUFFER_SIZE );
 	pcFileName = ( char * ) pvPortMalloc( ffconfigMAX_FILENAME );
-	configASSERT( pcRAMBuffer );
-	configASSERT( pcFileName );
+	CHECK( pcRAMBuffer );
+	CHECK( pcFileName );
 
 	/* Ensure in the root of the mount being used. */
 	lResult = ff_chdir( pcMountPath );
 	if (-1 == lResult)
 		FF_PRINTF("ff_chdir(%s) failed: %s (%d)\n", pcMountPath,
 					FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
-	configASSERT(lResult >= 0);
+	CHECK(lResult >= 0);
 
 	/* Create xMaxFiles files.  Each created file will be
 	( xFileNumber * fsRAM_BUFFER_SIZE ) bytes in length, and filled
@@ -195,7 +198,7 @@ char *pcRAMBuffer, *pcFileName;
 		if (!pxFile)
 			FF_PRINTF("ff_fopen(%s) failed: %s (%d)\n", pcFileName,
 						FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
-		configASSERT( pxFile );
+		CHECK( pxFile );
 
 		/* Fill the RAM buffer with data that will be written to the file.  This
 		is just a repeating ascii character that indicates the file number. */
@@ -207,7 +210,7 @@ char *pcRAMBuffer, *pcFileName;
 		for( xWriteNumber = 0; xWriteNumber < xFileNumber; xWriteNumber++ )
 		{
 			lItemsWritten = ff_fwrite( pcRAMBuffer, fsRAM_BUFFER_SIZE, 1, pxFile );
-			configASSERT( lItemsWritten == 1 );
+			CHECK( lItemsWritten == 1 );
 		}
 
 		/* Close the file so another file can be created. */
@@ -232,8 +235,8 @@ char *pcRAMBuffer, *pcFileName;
 	file names. */
 	pcRAMBuffer = ( char * ) pvPortMalloc( fsRAM_BUFFER_SIZE );
 	pcFileName = ( char * ) pvPortMalloc( ffconfigMAX_FILENAME );
-	configASSERT( pcRAMBuffer );
-	configASSERT( pcFileName );
+	CHECK( pcRAMBuffer );
+	CHECK( pcFileName );
 
 	/* Read back the files that were created by
 	prvCreateDemoFilesUsing_ff_fwrite(). */
@@ -249,7 +252,7 @@ char *pcRAMBuffer, *pcFileName;
 
 		/* Open the file for reading. */
 		pxFile = ff_fopen( pcFileName, "r" );
-		configASSERT( pxFile );
+		CHECK( pxFile );
 
 		/* Read the file into the RAM buffer, checking the file contents are as
 		expected.  The size of the file depends on the file number. */
@@ -259,14 +262,14 @@ char *pcRAMBuffer, *pcFileName;
 			memset( pcRAMBuffer, 0x00, fsRAM_BUFFER_SIZE );
 
 			xItemsRead = ff_fread( pcRAMBuffer, fsRAM_BUFFER_SIZE, 1, pxFile );
-			configASSERT( xItemsRead == 1 );
+			CHECK( xItemsRead == 1 );
 
 			/* Check the RAM buffer is filled with the expected data.  Each
 			file contains a different repeating ascii character that indicates
 			the number of the file. */
 			for( xChar = 0; xChar < fsRAM_BUFFER_SIZE; xChar++ )
 			{
-				configASSERT( pcRAMBuffer[ xChar ] == ( '0' + ( char ) xFileNumber ) );
+				CHECK( pcRAMBuffer[ xChar ] == ( '0' + ( char ) xFileNumber ) );
 			}
 		}
 
@@ -293,8 +296,8 @@ char *pcRAMBuffer, *pcFileName;
 	file names. */
 	pcRAMBuffer = ( char * ) pvPortMalloc( fsRAM_BUFFER_SIZE );
 	pcFileName = ( char * ) pvPortMalloc( ffconfigMAX_FILENAME );
-	configASSERT( pcRAMBuffer );
-	configASSERT( pcFileName );
+	CHECK( pcRAMBuffer );
+	CHECK( pcFileName );
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
@@ -302,13 +305,13 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Create a sub directory. */
 	iReturn = ff_mkdir( pcDirectory1 );
-	configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
+	CHECK( iReturn == pdFREERTOS_ERRNO_NONE );
 
 	/* Move into the created sub-directory. */
 	iReturn = ff_chdir( pcDirectory1 );
     if (iReturn != pdFREERTOS_ERRNO_NONE) {
 	    FF_PRINTF("ff_chdir error: %s (%d)\n", FreeRTOS_strerror(stdioGET_ERRNO()), stdioGET_ERRNO());                
-	    configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
+	    CHECK( iReturn == pdFREERTOS_ERRNO_NONE );
     }
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
@@ -316,12 +319,12 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Create a subdirectory in the new directory. */
 	iReturn = ff_mkdir( pcDirectory2 );
-	configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
+	CHECK( iReturn == pdFREERTOS_ERRNO_NONE );
 
 	/* Move into the directory just created - now two directories down from
 	the root. */
 	iReturn = ff_chdir( pcDirectory2 );
-	configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
+	CHECK( iReturn == pdFREERTOS_ERRNO_NONE );
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
@@ -329,7 +332,7 @@ char *pcRAMBuffer, *pcFileName;
 	snprintf( pcFileName, ffconfigMAX_FILENAME, "%s%s", pcMountPath, pcFullPath );
     if (0 != strcmp( pcRAMBuffer, pcFileName )) {
         FF_PRINTF( "pcRAMBuffer:%s,pcFileName:%s\n", pcRAMBuffer, pcFileName);
-	    configASSERT( strcmp( pcRAMBuffer, pcFileName ) == 0 );
+	    CHECK( strcmp( pcRAMBuffer, pcFileName ) == 0 );
     }
 
 	/* Generate the file name. */
@@ -340,14 +343,14 @@ char *pcRAMBuffer, *pcFileName;
 	FF_PRINTF( "Writing file %s in %s\n", pcFileName, pcRAMBuffer );
 
 	pxFile = ff_fopen( pcFileName, "w" );
-	configASSERT( pxFile );
+	CHECK( pxFile );
 
 	/* Create a file 1 byte at a time.  The file is filled with incrementing
 	ascii characters starting from '0'. */
 	for( iByte = 0; iByte < fsPUTC_FILE_SIZE; iByte++ )
 	{
 		iReturned = ff_fputc( ( ( int ) '0' + iByte ), pxFile );
-		configASSERT( iReturned ==  ( ( int ) '0' + iByte ) );
+		CHECK( iReturned ==  ( ( int ) '0' + iByte ) );
 	}
 
 	/* Finished so close the file. */
@@ -355,12 +358,12 @@ char *pcRAMBuffer, *pcFileName;
 
 	/* Move back to the root directory. */
 	iReturned = ff_chdir( "../.." );
-	configASSERT( iReturn == pdFREERTOS_ERRNO_NONE );
+	CHECK( iReturn == pdFREERTOS_ERRNO_NONE );
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
 	FF_PRINTF( "%s: Back in root directory %s\n", __func__, pcRAMBuffer );
-	configASSERT( strcmp( pcRAMBuffer, pcMountPath ) == 0 );
+	CHECK( strcmp( pcRAMBuffer, pcMountPath ) == 0 );
 
 	vPortFree( pcRAMBuffer );
 	vPortFree( pcFileName );
@@ -378,18 +381,18 @@ char *pcRAMBuffer, *pcFileName;
 	file names. */
 	pcRAMBuffer = ( char * ) pvPortMalloc( fsRAM_BUFFER_SIZE );
 	pcFileName = ( char * ) pvPortMalloc( ffconfigMAX_FILENAME );
-	configASSERT( pcRAMBuffer );
-	configASSERT( pcFileName );
+	CHECK( pcRAMBuffer );
+	CHECK( pcFileName );
 
 	/* Move into the directory in which the file was created. */
 	snprintf( pcFileName, ffconfigMAX_FILENAME, "%s%s", pcMountPath, pcFullPath );
 	iReturned = ff_chdir( pcFileName );
-	configASSERT( iReturned == pdFREERTOS_ERRNO_NONE );
+	CHECK( iReturned == pdFREERTOS_ERRNO_NONE );
 
 	/* Obtain and print out the working directory. */
 	ff_getcwd( pcRAMBuffer, fsRAM_BUFFER_SIZE );
 	FF_PRINTF( "Back in directory %s\n", pcRAMBuffer );
-	configASSERT( strcmp( pcRAMBuffer, pcFileName ) == 0 );
+	CHECK( strcmp( pcRAMBuffer, pcFileName ) == 0 );
 
 	/* pcFileName is about to be overwritten - take a copy. */
 	strcpy( pcRAMBuffer, pcFileName );
@@ -411,12 +414,12 @@ char *pcRAMBuffer, *pcFileName;
 		if (iReturned !=  ( ( int ) '0' + iByte )) {
 			TRACE_PRINTF("iReturned=%d, ( ( int ) '0' + iByte ))=%d\n", iReturned, ( ( int ) '0' + iByte ));
 		}
-		configASSERT( iReturned ==  ( ( int ) '0' + iByte ) );
+		CHECK( iReturned ==  ( ( int ) '0' + iByte ) );
 	}
 
 	/* Should not be able to read another bytes. */
 	iReturned = ff_fgetc( pxFile );
-	configASSERT( iReturned ==  FF_EOF );
+	CHECK( iReturned ==  FF_EOF );
 
 	/* Finished so close the file. */
 	ff_fclose( pxFile );

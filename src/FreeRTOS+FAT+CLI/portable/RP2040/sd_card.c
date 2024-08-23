@@ -39,7 +39,14 @@ static bool driver_initialized;
 // An SD card can only do one thing at a time.
 void sd_lock(sd_card_t *sd_card_p) {
     myASSERT(sd_card_p->state.mutex);
-    xSemaphoreTake(sd_card_p->state.mutex, portMAX_DELAY);
+    BaseType_t rc = xSemaphoreTake(sd_card_p->state.mutex, pdMS_TO_TICKS(8000));
+    if (pdFALSE == rc) {
+        DBG_PRINTF("Timed out. Lock is held by %s.\n",
+                   xSemaphoreGetMutexHolder(sd_card_p->state.mutex)
+                       ? pcTaskGetName(xSemaphoreGetMutexHolder(sd_card_p->state.mutex))
+                       : "none");
+        configASSERT(false);
+    }
     myASSERT(0 == sd_card_p->state.owner);
     sd_card_p->state.owner = xTaskGetCurrentTaskHandle();
 }

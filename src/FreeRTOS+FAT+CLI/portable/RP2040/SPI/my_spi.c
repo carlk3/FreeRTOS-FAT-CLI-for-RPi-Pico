@@ -43,29 +43,30 @@ specific language governing permissions and limitations under the License.
  * @param spi_p Pointer to the SPI object.
  */
 void spi_irq_handler(spi_t *spi_p) {
-    configASSERT(spi_p->owner);
-    configASSERT(!dma_channel_is_busy(spi_p->rx_dma));
+    if (spi_p->owner) {
 
-    /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
-     it will get set to pdTRUE inside the interrupt safe API function if a
-     context switch is required. */
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
+         it will get set to pdTRUE inside the interrupt safe API function if a
+         context switch is required. */
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    /* Send a notification directly to the task to which interrupt processing is
-     being deferred. */
-    vTaskNotifyGiveIndexedFromISR(
-        spi_p->owner,            // The handle of the task to which the
-                                 // notification is being sent.
-        NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
-                                 // notification values to which the notification is to be sent.
-        &xHigherPriorityTaskWoken);
+        /* Send a notification directly to the task to which interrupt processing is
+         being deferred. */
+        vTaskNotifyGiveIndexedFromISR(
+            spi_p->owner,            // The handle of the task to which the
+                                     // notification is being sent.
+            NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
+                                     // notification values to which the notification is to be sent.
+            &xHigherPriorityTaskWoken);
 
-    /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
-    If xHigherPriorityTaskWoken was set to pdTRUE inside
-     vTaskNotifyGiveIndexedFromISR() then calling portYIELD_FROM_ISR() will
-     request a context switch. If xHigherPriorityTaskWoken is still
-     pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
+        If xHigherPriorityTaskWoken was set to pdTRUE inside
+         vTaskNotifyGiveIndexedFromISR() then calling portYIELD_FROM_ISR() will
+         request a context switch. If xHigherPriorityTaskWoken is still
+         pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+    }
 }
 
 static bool chk_spi(spi_t *spi_p) {
@@ -186,6 +187,12 @@ bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms) {
         // state to become pending, but the specified block time expired
         // before that happened.
         DBG_PRINTF("Notification wait timed out\n");
+        if (dma_channel_is_busy(spi_p->rx_dma))
+            DBG_PRINTF("RX DMA is busy\n");
+        if (dma_channel_is_busy(spi_p->tx_dma))
+            DBG_PRINTF("TX DMA is busy\n");
+        if (spi_is_busy(spi_p->hw_inst))
+            DBG_PRINTF("SPI is busy\n");
         DBG_PRINTF("DMA CTRL_TRIG: 0b%s\n",
                     uint_binary_str(dma_hw->ch[spi_p->rx_dma].ctrl_trig));
         DBG_PRINTF("SPI SSPCR0: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr0));
@@ -250,7 +257,14 @@ bool spi_transfer(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
 
 void spi_lock(spi_t *spi_p) {
     configASSERT(spi_p);
-    xSemaphoreTake(spi_p->mutex, portMAX_DELAY);
+    BaseType_t rc = xSemaphoreTake(spi_p->mutex, 4000);
+    if (pdFALSE == rc) {
+        DBG_PRINTF("Timed out. Lock is held by %s.\n",
+                   xSemaphoreGetMutexHolder(spi_p->mutex)
+                       ? pcTaskGetName(xSemaphoreGetMutexHolder(spi_p->mutex))
+                       : "none");
+        configASSERT(false);
+    }
     configASSERT(0 == spi_p->owner);
     spi_p->owner = xTaskGetCurrentTaskHandle();
 }

@@ -77,8 +77,12 @@ void unlock_printf();
 
 void my_assert_func(const char *file, int line, const char *func, const char *pred)
     __attribute__((noreturn));
-#define myASSERT(__e) \
+#ifdef NDEBUG           /* required by ANSI standard */
+#  define myASSERT(__e) ((void)0)
+#else
+#  define myASSERT(__e) \
     { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
+#endif    
 
 int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 

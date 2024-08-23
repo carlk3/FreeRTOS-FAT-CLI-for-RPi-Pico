@@ -41,16 +41,14 @@ provided to eliminate power-up synchronization problems.
 */
 void sd_spi_send_initializing_sequence(sd_card_t * sd_card_p);
 
-static inline uint8_t sd_spi_write(sd_card_t *sd_card_p, const uint8_t value) {
-    // TRACE_PRINTF("%s\n", __FUNCTION__);
+static inline void sd_spi_write(sd_card_t *sd_card_p, const uint8_t value) {
+    int num = spi_write_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, 1);    
+    configASSERT(1 == num);
+}
+static inline uint8_t sd_spi_write_read(sd_card_t *sd_card_p, const uint8_t value) {
     uint8_t received = SPI_FILL_CHAR;
-#if 1
     int num = spi_write_read_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, &received, 1);    
-    assert(1 == num);
-#else
-    bool success = spi_transfer(sd_card_p->spi_if_p->spi, &value, &received, 1);
-    assert(success);
-#endif
+    configASSERT(1 == num);
     return received;
 }
 
