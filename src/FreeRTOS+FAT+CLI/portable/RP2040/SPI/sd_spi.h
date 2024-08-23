@@ -16,6 +16,7 @@ specific language governing permissions and limitations under the License.
 
 #include <stdint.h>
 //
+#include "delays.h"
 #include "my_spi.h"
 #include "sd_card.h"
 
@@ -42,12 +43,24 @@ provided to eliminate power-up synchronization problems.
 void sd_spi_send_initializing_sequence(sd_card_t * sd_card_p);
 
 static inline void sd_spi_write(sd_card_t *sd_card_p, const uint8_t value) {
-    int num = spi_write_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, 1);    
+    uint32_t start = millis();
+    do {
+        tight_loop_contents();
+    } while (!spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst) &&
+             millis() - start < pdMS_TO_TICKS(1000));
+    configASSERT(spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst));
+    int num = spi_write_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, 1);
     configASSERT(1 == num);
 }
 static inline uint8_t sd_spi_write_read(sd_card_t *sd_card_p, const uint8_t value) {
     uint8_t received = SPI_FILL_CHAR;
-    int num = spi_write_read_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, &received, 1);    
+    uint32_t start = millis();
+    do {
+        tight_loop_contents();
+    } while (!spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst) &&
+             millis() - start < pdMS_TO_TICKS(1000));
+    configASSERT(spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst));
+    int num = spi_write_read_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, &received, 1);
     configASSERT(1 == num);
     return received;
 }

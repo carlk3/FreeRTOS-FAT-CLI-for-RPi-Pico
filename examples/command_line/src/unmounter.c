@@ -13,6 +13,10 @@
 //
 #include "unmounter.h"
 
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 static void vDeferredHandlingFunction(void *pvParameter1, uint32_t gpio) {
     for (size_t i = 0; i < sd_get_num(); ++i) {
         sd_card_t *sd_card_p = sd_get_by_num(i);
