@@ -16,6 +16,8 @@ specific language governing permissions and limitations under the License.
 
 #include <stdint.h>
 //
+#include "pico/stdlib.h"
+//
 #include "delays.h"
 #include "my_spi.h"
 #include "sd_card.h"
@@ -87,8 +89,13 @@ static inline void sd_spi_deselect(sd_card_t *sd_card_p) {
 }
 /* Some SD cards want to be deselected between every bus transaction */
 static inline void sd_spi_deselect_pulse(sd_card_t *sd_card_p) {
+    configASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
     sd_spi_deselect(sd_card_p);
     // tCSH Pulse duration, CS high 200 ns
+    absolute_time_t start = get_absolute_time();
+    while (absolute_time_diff_us(start, get_absolute_time()) < 1) {
+        tight_loop_contents();
+    }
     sd_spi_select(sd_card_p);
 }
 

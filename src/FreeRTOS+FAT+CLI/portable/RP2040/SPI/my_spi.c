@@ -255,26 +255,6 @@ bool spi_transfer(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
     return spi_transfer_wait_complete(spi_p, 2000);
 }
 
-void spi_lock(spi_t *spi_p) {
-    configASSERT(spi_p);
-    BaseType_t rc = xSemaphoreTake(spi_p->mutex, 4000);
-    if (pdFALSE == rc) {
-        DBG_PRINTF("Timed out. Lock is held by %s.\n",
-                   xSemaphoreGetMutexHolder(spi_p->mutex)
-                       ? pcTaskGetName(xSemaphoreGetMutexHolder(spi_p->mutex))
-                       : "none");
-        configASSERT(false);
-    }
-    configASSERT(0 == spi_p->owner);
-    spi_p->owner = xTaskGetCurrentTaskHandle();
-}
-void spi_unlock(spi_t *spi_p) {
-    configASSERT(spi_p);
-    configASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
-    spi_p->owner = 0;
-    xSemaphoreGive(spi_p->mutex);
-}
-
 bool my_spi_init(spi_t *spi_p) {
     auto_init_mutex(my_spi_init_mutex);
     mutex_enter_blocking(&my_spi_init_mutex);

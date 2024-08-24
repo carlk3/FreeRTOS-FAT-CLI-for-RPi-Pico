@@ -383,8 +383,8 @@ static void sd_acquire(sd_card_t *sd_card_p) {
     sd_spi_acquire(sd_card_p);
 }
 static void sd_release(sd_card_t *sd_card_p) {
-    sd_unlock(sd_card_p);
     sd_spi_release(sd_card_p);
+    sd_unlock(sd_card_p);
 }
 
 #if TRACE
