@@ -42,7 +42,8 @@ add_executable(${PROGRAM_NAME}
 target_compile_options(${PROGRAM_NAME} PUBLIC 
   -Wall 
   -Wextra 
-  -Wno-unused-parameter 
+  -Wshadow 
+#  -Wno-unused-parameter 
   -Wstack-usage=2048 
   -fanalyzer 
 )

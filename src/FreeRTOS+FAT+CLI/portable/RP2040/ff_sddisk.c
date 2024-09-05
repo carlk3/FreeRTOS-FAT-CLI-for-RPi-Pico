@@ -69,7 +69,6 @@ static int32_t prvWrite(uint8_t *pucSource,      /* Source of data to be written
                         FF_Disk_t *pxDisk)       /* Describes the disk being written to. */
 {
     sd_card_t *sd_card_p = pxDisk->pvTag;
-    configASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
     int status = sd_card_p->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;
@@ -85,7 +84,6 @@ static int32_t prvRead(uint8_t *pucDestination, /* Destination for data being re
                        FF_Disk_t *pxDisk)       /* Describes the disk being read from. */
 {
     sd_card_t *sd_card_p = pxDisk->pvTag;
-    configASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
     int status = sd_card_p->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;

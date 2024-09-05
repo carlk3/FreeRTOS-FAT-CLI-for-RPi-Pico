@@ -100,8 +100,8 @@ static WORD sz_sect;
 static DWORD sz_eblk, sz_drv;
 
 // uint64_t (*get_num_sectors)(sd_card_t *sd_card_p)
-static uint64_t sd_sectors(sd_card_t *pdrv) {
-    return pdrv->get_num_sectors(pdrv);
+static uint64_t sd_sectors(sd_card_t *pdrv_) {
+    return pdrv->get_num_sectors(pdrv_);
 }
 static DRESULT disk_write(sd_card_t *p_sd, const BYTE *buff, LBA_t sector, UINT count) {
     int rc = p_sd->write_blocks(p_sd, buff, sector, count);

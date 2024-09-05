@@ -66,7 +66,7 @@ static inline char crc7(const uint8_t* data, int length) {
  * @param length The length of the data block in bytes.
  * @return The calculated checksum.
  */
-unsigned short crc16(uint8_t * data, int length);
+uint16_t crc16(uint8_t const *data, int const length);
 
 #endif
 

@@ -111,7 +111,7 @@ debug_message_printf(const char *func, int line,
     if (portCHECK_IF_IN_ISR()) {
         printf("%s:%d: ", func, line);
     } else {
-        printf("%s:%s:%d: ", pcTaskGetName(NULL), func, line);
+        printf("%lu:%s:%s:%d: ", xTaskGetTickCount(), pcTaskGetName(NULL), func, line);
     }
     va_list args;
     va_start(args, fmt);
