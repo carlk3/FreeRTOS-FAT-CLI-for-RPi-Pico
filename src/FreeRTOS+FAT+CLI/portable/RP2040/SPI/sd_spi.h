@@ -24,6 +24,7 @@ specific language governing permissions and limitations under the License.
 #include "delays.h"
 #include "my_spi.h"
 #include "sd_card.h"
+#include "sd_timeouts.h"
 
 #ifdef NDEBUG
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -53,7 +54,7 @@ static inline uint8_t sd_spi_read(sd_card_t *sd_card_p) {
     uint8_t received = SPI_FILL_CHAR;
     uint32_t start = millis();
     while (!spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst) &&
-           millis() - start < pdMS_TO_TICKS(1000))
+           millis() - start < pdMS_TO_TICKS(sd_timeouts.sd_spi_read))
         tight_loop_contents();
     configASSERT(spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst));
     int num = spi_read_blocking(sd_card_p->spi_if_p->spi->hw_inst, SPI_FILL_CHAR, &received, 1);
@@ -66,7 +67,7 @@ static inline void sd_spi_write(sd_card_t *sd_card_p, const uint8_t value) {
                  xSemaphoreGetMutexHolder(sd_card_p->spi_if_p->spi->mutex));
     uint32_t start = millis();
     while (!spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst) &&
-           millis() - start < pdMS_TO_TICKS(1000))
+           millis() - start < pdMS_TO_TICKS(sd_timeouts.sd_spi_write))
         tight_loop_contents();
     configASSERT(spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst));
     int num = spi_write_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, 1);
@@ -78,7 +79,7 @@ static inline uint8_t sd_spi_write_read(sd_card_t *sd_card_p, const uint8_t valu
     uint8_t received = SPI_FILL_CHAR;
     uint32_t start = millis();
     while (!spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst) &&
-           millis() - start < pdMS_TO_TICKS(1000))
+           millis() - start < pdMS_TO_TICKS(sd_timeouts.sd_spi_write_read))
         tight_loop_contents();
     configASSERT(spi_is_writable(sd_card_p->spi_if_p->spi->hw_inst));
     int num = spi_write_read_blocking(sd_card_p->spi_if_p->spi->hw_inst, &value, &received, 1);

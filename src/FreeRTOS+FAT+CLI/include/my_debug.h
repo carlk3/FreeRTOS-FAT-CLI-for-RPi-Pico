@@ -60,7 +60,7 @@ int error_message_printf_plain(const char *fmt, ...) __attribute__ ((format (__p
 int debug_message_printf(const char *func, int line, const char *fmt, ...)
     __attribute__((format(__printf__, 3, 4)));
 #ifndef DBG_PRINTF
-#  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF && !defined(NDEBUG)
+#  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF // && !defined(NDEBUG)
 #    define DBG_PRINTF(fmt, ...) debug_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
 #  else
 #    define DBG_PRINTF(fmt, ...) (void)0

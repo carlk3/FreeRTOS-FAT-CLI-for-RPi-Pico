@@ -27,6 +27,7 @@ specific language governing permissions and limitations under the License.
 #include "my_debug.h"
 #include "sd_card_constants.h"
 #include "sd_regs.h"
+#include "sd_timeouts.h"
 #include "util.h"
 //
 #include "sd_card.h"
@@ -39,7 +40,7 @@ static bool driver_initialized;
 // An SD card can only do one thing at a time.
 void sd_lock(sd_card_t *sd_card_p) {
     myASSERT(sd_card_p);
-    BaseType_t rc = xSemaphoreTake(sd_card_p->state.mutex, pdMS_TO_TICKS(16000));
+    BaseType_t rc = xSemaphoreTake(sd_card_p->state.mutex, pdMS_TO_TICKS(sd_timeouts.sd_lock));
     if (pdFALSE == rc) {
         DBG_PRINTF("Timed out. Lock is held by %s.\n",
                    xSemaphoreGetMutexHolder(sd_card_p->state.mutex)

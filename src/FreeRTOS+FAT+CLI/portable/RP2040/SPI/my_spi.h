@@ -14,6 +14,11 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
+//
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -26,10 +31,8 @@ specific language governing permissions and limitations under the License.
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "hardware/spi.h"
-/* FreeRTOS includes. */
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include "task.h"
+//
+#include "sd_timeouts.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -79,7 +82,7 @@ bool my_spi_init(spi_t *spi_p);
 
 static inline void spi_lock(spi_t *spi_p) {
     configASSERT(spi_p);
-    BaseType_t rc = xSemaphoreTake(spi_p->mutex, pdMS_TO_TICKS(8000));
+    BaseType_t rc = xSemaphoreTake(spi_p->mutex, pdMS_TO_TICKS(sd_timeouts.spi_lock));
     if (pdFALSE == rc) {
         DBG_PRINTF("Timed out. Lock is held by %s.\n",
                    xSemaphoreGetMutexHolder(spi_p->mutex)

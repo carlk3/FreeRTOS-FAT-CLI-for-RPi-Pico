@@ -1,5 +1,5 @@
 FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.9.0
+v2.10.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,8 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.10.0
+* Make timeouts configurable. See [Timeouts](#timeouts).
 ### v2.9.0
 * Add retries in SPI driver `sd_read_blocks`
 ### v2.8.0
@@ -668,36 +670,21 @@ See [FreeRTOS-Plus-FAT Configuration](https://www.freertos.org/FreeRTOS-Plus/Fre
 
 For examples of these files, see `examples/commmand_line/include`.
 
-## Using the Application Programming Interface
-In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but is conventional in FreeRTOS-Plus-FAT:
-
-  `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
-  [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
-  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter `pcName` is the Device Name; `device_name` in 
-  [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
-
-A typical sequence would be:
-* `FF_SDDiskInit`
-* `FF_SDDiskMount`
-* `FF_FS_Add`
-* `ff_fopen`
-* `ff_fwrite`
-* `ff_fread`
-* `ff_fclose`
-* `FF_FS_Remove`
-* `FF_Unmount`
-* `FF_SDDiskDelete`
-
-See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
-
-You may call `sd_init_driver()` to explicitly initialize the block device driver.
-It is called implicitly by `FF_SDDiskInit`,
-but you might want to call it sooner.
-For example, you might want to get the GPIOs configured before setting up a card detect interrupt handler.
-(See [examples/command_line/src/unmounter.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/unmounter.c).)
-You might want to call it to get the SD cards into SPI mode so that they can share an SPI bus with other devices.
-(See [Cosideration on Multi-slave Configuration](http://elm-chan.org/docs/mmc/mmc_e.html#spibus).)
-`sd_init_driver()` must be called from a FreeRTOS task.
+### Timeouts
+Indefinite timeouts are normally bad practice, because they make it difficult to recover from an error.
+Therefore, we have timeouts all over the place.
+To make these configurable, they are collected in `sd_timeouts_t sd_timeouts` in `sd_timeouts.c`.
+The definition has the `weak` attribute, so it can be overridden by user code.
+For example, in `hw_config.c` you could have:
+```C
+sd_timeouts_t sd_timeouts = {
+    .sd_command = 2000, // Timeout in ms for response
+    .sd_command_retries = 3, // Times SPI cmd is retried when there is no response
+//...
+    .sd_sdio_begin = 1000, // Timeout in ms for response
+    .sd_sdio_stopTransmission = 200, // Timeout in ms for response
+};
+```
 
 ### Messages
 Sometimes problems arise when attempting to use SD cards. At the 
@@ -730,6 +717,38 @@ If `USE_PRINTF` is defined and not zero, the weak implementations will write to 
 FreeRTOS-Plus-FAT uses a macro called `FF_PRINTF`, which is defined in the 
 [FreeRTOS-Plus-FAT Configuration file](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Embedded_File_System_Configuration.html).
 See [Other Application-Specific Customization](#other-application-specific-customization).
+
+## Using the Application Programming Interface
+In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but is conventional in FreeRTOS-Plus-FAT:
+
+  `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
+  [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
+  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter `pcName` is the Device Name; `device_name` in 
+  [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
+
+A typical sequence would be:
+* `FF_SDDiskInit`
+* `FF_SDDiskMount`
+* `FF_FS_Add`
+* `ff_fopen`
+* `ff_fwrite`
+* `ff_fread`
+* `ff_fclose`
+* `FF_FS_Remove`
+* `FF_Unmount`
+* `FF_SDDiskDelete`
+
+See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
+
+You may call `sd_init_driver()` to explicitly initialize the block device driver.
+It is called implicitly by `FF_SDDiskInit`,
+but you might want to call it sooner.
+For example, you might want to get the GPIOs configured before setting up a card detect interrupt handler.
+(See [examples/command_line/src/unmounter.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/unmounter.c).)
+You might want to call it to get the SD cards into SPI mode so that they can share an SPI bus with other devices.
+(See [Cosideration on Multi-slave Configuration](http://elm-chan.org/docs/mmc/mmc_e.html#spibus).)
+`sd_init_driver()` must be called from a FreeRTOS task.
+
 ## Next Steps
 * There is a simple example of using the API in the 
 [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio)
