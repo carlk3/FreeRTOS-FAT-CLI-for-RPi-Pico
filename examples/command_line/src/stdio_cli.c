@@ -29,6 +29,10 @@ specific language governing permissions and limitations under the License.
 //
 #include "stdio_cli.h"
 
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 /**
  * \brief Callback function for stdio interrupts.
  *

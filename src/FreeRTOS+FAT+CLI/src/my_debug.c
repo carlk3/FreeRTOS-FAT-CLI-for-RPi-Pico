@@ -13,9 +13,11 @@ specific language governing permissions and limitations under the License.
 */
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 //
 #include "pico/multicore.h"  // get_core_num()
 #include "pico/stdlib.h"
@@ -39,29 +41,8 @@ time_t GLOBAL_uptime_seconds() { return FreeRTOS_time(NULL) - start_time; }
 
 //static SemaphoreHandle_t xSemaphore;
 //static BaseType_t printf_locked;
-void lock_printf() {
-    //static StaticSemaphore_t xMutexBuffer;
-    //static bool once;
-    //// bool __atomic_test_and_set (void *ptr, int memorder)
-    //// This built-in function performs an atomic test-and-set operation on the byte at *ptr.
-    //// The byte is set to some implementation defined nonzero “set” value
-    //// and the return value is true if and only if the previous contents were “set”.
-    //while (!once)
-    //    if (!__atomic_test_and_set(&once, __ATOMIC_SEQ_CST))
-    //        xSemaphore = xSemaphoreCreateMutexStatic(&xMutexBuffer);
-    //if (xPortIsInsideInterrupt())
-    //    printf_locked = xSemaphoreTakeFromISR(xSemaphore, NULL);
-    //else
-    //    printf_locked = xSemaphoreTake(xSemaphore, pdMS_TO_TICKS(5000));
-}
-void unlock_printf() {
-    //if (pdTRUE == printf_locked) {
-    //    if (xPortIsInsideInterrupt())
-    //        xSemaphoreGiveFromISR(xSemaphore, NULL);
-    //    else
-    //        xSemaphoreGive(xSemaphore);
-    //}
-}
+void lock_printf() {}
+void unlock_printf() {}
 
 /* Function Attribute ((weak))
 The weak attribute causes a declaration of an external symbol to be emitted as a weak symbol
@@ -95,7 +76,7 @@ error_message_printf(const char *func, int line,
     unlock_printf();
     va_end(args);
     // stdio_flush();
-    fflush(stdout);
+    stdio_flush();
     return cw;
 }
 int __attribute__((weak)) error_message_printf_plain(const char *fmt, ...) {
@@ -106,7 +87,7 @@ int __attribute__((weak)) error_message_printf_plain(const char *fmt, ...) {
     unlock_printf();
     va_end(args);
     // stdio_flush();
-    fflush(stdout);
+    stdio_flush();
     return cw;
 }
 int __attribute__((weak)) info_message_printf(const char *fmt, ...) {
@@ -127,13 +108,16 @@ debug_message_printf(const char *func, int line,
     (void) line;
 #endif
     lock_printf();
-    printf("%s:%d: ", func, line);
+    if (portCHECK_IF_IN_ISR()) {
+        printf("%s:%d: ", func, line);
+    } else {
+        printf("%lu:%s:%s:%d: ", xTaskGetTickCount(), pcTaskGetName(NULL), func, line);
+    }
     va_list args;
     va_start(args, fmt);
     int cw = vprintf(fmt, args);
     va_end(args);
-    // stdio_flush();
-    fflush(stdout);
+    stdio_flush();
     unlock_printf();
     return cw;
 }
@@ -200,7 +184,7 @@ int task_printf(const char *pcFormat, ...) {
     } else {
         lock_printf();
         printf("core%u: %s: %s", get_core_num(), pcTaskGetName(NULL), pcBuffer);
-        fflush(stdout);
+        stdio_flush();
         unlock_printf();
     }
     return cw;
@@ -224,7 +208,7 @@ void my_assert_func(const char *file, int line, const char *func, const char *pr
     error_message_printf_plain(
         "%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
         pcTaskGetName(NULL), pred, file, line, func);
-    fflush(stdout);
+    stdio_flush();
     vTaskSuspendAll();
     __disable_irq(); /* Disable global interrupts. */
     capture_assert(file, line, func, pred);
@@ -258,7 +242,7 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
     lock_printf();
     IMSG_PRINTF("\n%s: %s(%s, 0x%p, %u)\n", pcTaskGetName(NULL), __FUNCTION__, s, pbytes,
                 nbytes);
-    fflush(stdout);
+    stdio_flush();
     size_t col = 0;
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
         IMSG_PRINTF("%02hhx ", pbytes[byte_ix]);
@@ -266,7 +250,7 @@ void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {
             IMSG_PRINTF("\n");
             col = 0;
         }
-        fflush(stdout);
+        stdio_flush();
     }
     unlock_printf();
 }
@@ -275,7 +259,7 @@ void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
     lock_printf();
     IMSG_PRINTF("\n%s: %s(%s, 0x%p, %u)\n", pcTaskGetName(NULL), __FUNCTION__, s, pwords,
                 nwords);
-    fflush(stdout);
+    stdio_flush();
     size_t col = 0;
     for (size_t word_ix = 0; word_ix < nwords; ++word_ix) {
         IMSG_PRINTF("%08lx ", pwords[word_ix]);
@@ -283,7 +267,7 @@ void hexdump_32(const char *s, const uint32_t *pwords, size_t nwords) {
             IMSG_PRINTF("\n");
             col = 0;
         }
-        fflush(stdout);
+        stdio_flush();
     }
     unlock_printf();
 }

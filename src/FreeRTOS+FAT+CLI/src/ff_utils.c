@@ -31,6 +31,10 @@ specific language governing permissions and limitations under the License.
 //
 #include "ff_utils.h"
 
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 #define TRACE_PRINTF(fmt, args...)
 // #define TRACE_PRINTF printf
 

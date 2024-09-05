@@ -335,7 +335,7 @@ connected. */
 // #define FF_PRINTF(fmt, args...)    vLoggingPrintf(fmt, ## args)
 // #define FF_PRINTF   task_printf
 // #define FF_PRINTF   printf
-#define FF_PRINTF error_message_printf_plain
+#define FF_PRINTF IMSG_PRINTF
 
 /* Visual studio does not have an implementation of strcasecmp().
 _RB_ Cannot use FF_NOSTRCASECMP setting as the internal implementation of
@@ -351,4 +351,3 @@ conform with the coding standard, so use this function with care! */
 // #define ffconfigDEBUG                       1
 
 #endif /* _FF_CONFIG_H_ */
-

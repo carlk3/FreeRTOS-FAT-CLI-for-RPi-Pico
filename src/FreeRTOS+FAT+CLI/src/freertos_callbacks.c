@@ -9,9 +9,10 @@
 
 void __attribute__((weak))
 vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+    (void) xTask;
     /* The stack space has been exceeded for a task, considering allocating more. */
     printf("\nOut of stack space!\n");
-    printf(pcTaskGetName(NULL));
+    printf(pcTaskName);
     printf("\n");
     exit(1);
 }

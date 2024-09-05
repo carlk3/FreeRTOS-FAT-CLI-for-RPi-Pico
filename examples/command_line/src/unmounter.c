@@ -13,7 +13,11 @@
 //
 #include "unmounter.h"
 
-static void vDeferredHandlingFunction(void *pvParameter1, uint32_t gpio) {
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
+static void vDeferredHandlingFunction(void *, uint32_t gpio) {
     for (size_t i = 0; i < sd_get_num(); ++i) {
         sd_card_t *sd_card_p = sd_get_by_num(i);
         if (sd_card_p->card_detect_gpio == gpio) {
@@ -27,7 +31,7 @@ static void vDeferredHandlingFunction(void *pvParameter1, uint32_t gpio) {
     }
 }
 
-static void card_detect_callback(uint gpio, uint32_t events) {
+static void card_detect_callback(uint gpio, uint32_t) {
     /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
      it will get set to pdTRUE inside the interrupt safe API function if a
      context switch is required. */

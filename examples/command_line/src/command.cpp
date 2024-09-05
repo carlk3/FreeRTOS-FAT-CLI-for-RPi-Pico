@@ -5,9 +5,13 @@
 #include <string.h>
 #include <time.h>
 //
+#include "hardware/structs/clocks.h"
 #include "hardware/clocks.h"
 #include "hardware/rtc.h"
+#include "pico/platform.h"
+#include "pico/stdio.h"
 #include "pico/stdlib.h"
+#include "pico/types.h"
 #include "RP2040.h"
 //
 #include "FreeRTOS.h"
@@ -311,16 +315,28 @@ static void run_rm(const size_t argc, const char *argv[]) {
     if (argc < 1) {
         missing_argument_msg();
         return;
-    } 
+    }
     if (argc > 2) {
         extra_argument_msg(argv[2]);
         return;
     }
     if (2 == argc) {
         if (0 == strcmp("-r", argv[0])) {
-            int rc = ff_deltree(argv[1]);
-            if (-1 == rc)
-                EMSG_PRINTF("ff_deltree(\"%s\") failed.\n", argv[1]);
+            if (0 == strcmp("*", argv[1])) {
+                FF_FindData_t xFindStruct;
+                if (ff_findfirst("", &xFindStruct) == 0) {
+                    do {
+                        if (0 == strcmp(".", xFindStruct.pcFileName)) continue;
+                        if (0 == strcmp("..", xFindStruct.pcFileName)) continue;
+                        int rc = ff_deltree(xFindStruct.pcFileName);
+                        if (-1 == rc)
+                            EMSG_PRINTF("ff_deltree(\"%s\") failed.\n", xFindStruct.pcFileName);
+                    } while (ff_findnext(&xFindStruct) == 0);
+                }
+            } else {
+                int rc = ff_deltree(argv[1]);
+                if (-1 == rc) EMSG_PRINTF("ff_deltree(\"%s\") failed.\n", argv[1]);
+            }
         } else if (0 == strcmp("-d", argv[0])) {
             int rc = ff_rmdir(argv[1]);
             if (-1 == rc)
@@ -385,7 +401,7 @@ void runMultiTaskStdioWithCWDTest(const size_t argc, const char *argv[]) {
     if (!sd_card_p) return;
 
     vCreateAndVerifyExampleFiles(sd_card_p->mount_point);
-    vMultiTaskStdioWithCWDTest(sd_card_p->mount_point, 744);
+    vMultiTaskStdioWithCWDTest(sd_card_p->mount_point, 1024);
 }
 static void run_start_logger(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 0)) return;
@@ -661,7 +677,7 @@ static void run_help(const size_t argc, const char *argv[]) {
     }
 }
 
-static void process_cmd(size_t cmd_sz, char *cmd) {
+static void process_cmd(char *cmd) {
     assert(cmd);
     assert(cmd[0]);
     char *cmdn = strtok_r(cmd, " ", &saveptr);
@@ -734,7 +750,7 @@ void process_stdio(int cRxedChar) {
         }
 
         /* Process the input string received prior to the newline. */
-        process_cmd(sizeof cmd, cmd);
+        process_cmd(cmd);
 
         /* Reset everything for next cmd */
         ix = 0;

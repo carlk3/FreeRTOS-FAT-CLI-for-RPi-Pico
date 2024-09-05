@@ -20,6 +20,7 @@ specific language governing permissions and limitations under the License.
 //
 // Pico includes
 #include "pico/stdlib.h"
+#include "pico/types.h"
 //
 #include "hardware/dma.h"
 #include "hardware/gpio.h"
@@ -69,13 +70,32 @@ typedef struct spi_t {
     bool initialized;  
 } spi_t;
   
-void __not_in_flash_func(spi_transfer_start)(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length);
-bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t timeout_ms);
-bool __not_in_flash_func(spi_transfer)(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length);  
-void __not_in_flash_func(spi_irq_handler)(spi_t *spi_p);
-void spi_lock(spi_t *spi_p);
-void spi_unlock(spi_t *spi_p);
+void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length);
+uint32_t calculate_transfer_time_ms(spi_t *spi_p, uint32_t bytes);
+bool spi_transfer_wait_complete(spi_t *spi_p, uint32_t timeout_ms);
+bool spi_transfer(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length);
+void spi_irq_handler(spi_t *spi_p);
 bool my_spi_init(spi_t *spi_p);
+
+static inline void spi_lock(spi_t *spi_p) {
+    configASSERT(spi_p);
+    BaseType_t rc = xSemaphoreTake(spi_p->mutex, pdMS_TO_TICKS(8000));
+    if (pdFALSE == rc) {
+        DBG_PRINTF("Timed out. Lock is held by %s.\n",
+                   xSemaphoreGetMutexHolder(spi_p->mutex)
+                       ? pcTaskGetName(xSemaphoreGetMutexHolder(spi_p->mutex))
+                       : "none");
+        configASSERT(false);
+    }
+    configASSERT(0 == spi_p->owner);
+    spi_p->owner = xTaskGetCurrentTaskHandle();
+}
+static inline void spi_unlock(spi_t *spi_p) {
+    configASSERT(spi_p);
+    configASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
+    spi_p->owner = 0;
+    xSemaphoreGive(spi_p->mutex);
+}
 
 /* 
 This uses the Pico LED to show SD card activity.

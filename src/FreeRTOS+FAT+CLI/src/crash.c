@@ -28,6 +28,10 @@ specific language governing permissions and limitations under the License.
 //
 #include "crash.h"
 
+#if defined(NDEBUG) || !USE_DBG_PRINTF
+#  pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 static volatile crash_info_t crash_info_ram __attribute__((section(".uninitialized_data")));
 
 static crash_info_t volatile *crash_info_ram_p = &crash_info_ram;

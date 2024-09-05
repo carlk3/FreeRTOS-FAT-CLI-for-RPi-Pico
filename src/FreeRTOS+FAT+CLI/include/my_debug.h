@@ -77,8 +77,12 @@ void unlock_printf();
 
 void my_assert_func(const char *file, int line, const char *func, const char *pred)
     __attribute__((noreturn));
-#define myASSERT(__e) \
+#ifdef NDEBUG           /* required by ANSI standard */
+#  define myASSERT(__e) ((void)0)
+#else
+#  define myASSERT(__e) \
     { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
+#endif    
 
 int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 
@@ -119,10 +123,8 @@ int ff_stdio_fail(const char *const func, char const *const str,
 #define FF_FAIL(str, filename) ff_stdio_fail(__FUNCTION__, str, filename)
 
 static inline void dump_bytes(size_t num, uint8_t bytes[]) {
-#if !USE_DBG_PRINTF
     (void)num;
     (void)bytes;
-#else
     DBG_PRINTF("     ");
     for (size_t j = 0; j < 16; ++j) {
         DBG_PRINTF("%02hhx", j);
@@ -144,7 +146,6 @@ static inline void dump_bytes(size_t num, uint8_t bytes[]) {
         }
     }
     DBG_PRINTF("\n");
-    #endif
 }
 
 void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes);

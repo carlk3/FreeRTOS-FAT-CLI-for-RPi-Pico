@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(PROGRAM_NAME command_line)
+set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
+set(FREERTOS_KERNEL_PATH $ENV{FREERTOS_KERNEL_PATH})
 
 # Pull in Pico SDK (must be before project)
-include(pico_sdk_import.cmake)
+include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 
 # Pull in FreeRTOS
-include(FreeRTOS_Kernel_import.cmake)
+include(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
 
-project(command_line C CXX ASM)
+project(${PROGRAM_NAME} C CXX ASM)
 
 # add_compile_options(-Os) # Optimize for size (place before pico_sdk_init)
 
@@ -19,7 +20,7 @@ pico_sdk_init()
 add_subdirectory(../../src/FreeRTOS+FAT+CLI build)
 
 # Add executable. Default name is the project name, version 0.1
-add_executable(command_line 
+add_executable(${PROGRAM_NAME} 
     config/hw_config.c
     src/command.cpp
     src/data_log_demo.c
@@ -36,12 +37,13 @@ add_executable(command_line
     ../../src/FreeRTOS+FAT+CLI/src/crash.c
 )
 
-#target_compile_options(simple_example PRIVATE -save-temps)
-# target_compile_options(command_line PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
-target_compile_options(command_line PUBLIC 
+#target_compile_options(${PROGRAM_NAME} PRIVATE -save-temps)
+# target_compile_options(${PROGRAM_NAME} PUBLIC -Wall -Wextra -Wno-unused-function -Wno-unused-parameter)
+target_compile_options(${PROGRAM_NAME} PUBLIC 
   -Wall 
   -Wextra 
-  -Wno-unused-parameter 
+  -Wshadow 
+#  -Wno-unused-parameter 
   -Wstack-usage=2048 
   -fanalyzer 
 )
@@ -70,25 +72,25 @@ add_compile_definitions(
   PICO_MAX_SHARED_IRQ_HANDLERS=6
 )
 
-set_property(TARGET command_line APPEND_STRING PROPERTY LINK_FLAGS 
+set_property(TARGET ${PROGRAM_NAME} APPEND_STRING PROPERTY LINK_FLAGS 
   "-Wl,--print-memory-usage"
 )
 
-pico_set_program_name(command_line "command_line")
-pico_set_program_version(command_line "2.4.0")
+pico_set_program_name(${PROGRAM_NAME} "${PROGRAM_NAME}")
+pico_set_program_version(${PROGRAM_NAME} "2.4.0")
 
 # See 4.1. Serial input and output on Raspberry Pi Pico in Getting started with Raspberry Pi Pico (https://datasheets.raspberrypi.org/pico/getting-started-with-pico.pdf)
 # and 2.7.1. Standard Input/Output (stdio) Support in Raspberry Pi Pico C/C++ SDK (https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf):
-# pico_enable_stdio_uart(command_line 1)
-pico_enable_stdio_usb(command_line 1)
+# pico_enable_stdio_uart(${PROGRAM_NAME} 1)
+pico_enable_stdio_usb(${PROGRAM_NAME} 1)
 
-target_include_directories(command_line PUBLIC 
+target_include_directories(${PROGRAM_NAME} PUBLIC 
         include/ 
 )
-target_link_libraries(command_line
+target_link_libraries(${PROGRAM_NAME}
     FreeRTOS+FAT+CLI
     hardware_clocks
     hardware_adc
 )
 
-pico_add_extra_outputs(command_line)
+pico_add_extra_outputs(${PROGRAM_NAME})

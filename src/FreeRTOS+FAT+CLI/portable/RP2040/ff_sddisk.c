@@ -68,8 +68,8 @@ static int32_t prvWrite(uint8_t *pucSource,      /* Source of data to be written
                         uint32_t ulSectorCount,  /* The number of sectors to write. */
                         FF_Disk_t *pxDisk)       /* Describes the disk being written to. */
 {
-    int status = ((sd_card_t *)(pxDisk->pvTag))
-                     ->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
+    sd_card_t *sd_card_p = pxDisk->pvTag;
+    int status = sd_card_p->write_blocks(pxDisk->pvTag, pucSource, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;
     } else {
@@ -83,9 +83,8 @@ static int32_t prvRead(uint8_t *pucDestination, /* Destination for data being re
                        uint32_t ulSectorCount,  /* Number of sectors to read. */
                        FF_Disk_t *pxDisk)       /* Describes the disk being read from. */
 {
-    int status =
-        ((sd_card_t *)(pxDisk->pvTag))
-            ->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
+    sd_card_t *sd_card_p = pxDisk->pvTag;
+    int status = sd_card_p->read_blocks(pxDisk->pvTag, pucDestination, ulSectorNumber, ulSectorCount);
     if (SD_BLOCK_DEVICE_ERROR_NONE == status) {
         return FF_ERR_NONE;
     } else {
