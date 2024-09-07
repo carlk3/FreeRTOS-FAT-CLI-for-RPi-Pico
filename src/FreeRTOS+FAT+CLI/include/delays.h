@@ -1,4 +1,9 @@
-
+/*
+ * delays.h
+ *
+ *  Created on: Apr 25, 2022
+ *      Author: carlk
+ */
 /* Using millis() or micros() for timeouts
 
 For example, 
@@ -51,6 +56,10 @@ call to millis() returns 0xFFFFFFFF:
 #include "FreeRTOS.h"
 #include "task.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline uint32_t millis() {
     __COMPILER_BARRIER();
     return xTaskGetTickCount() * (1000 / configTICK_RATE_HZ);
@@ -66,3 +75,8 @@ static inline uint64_t micros() {
     return to_us_since_boot(get_absolute_time());
     __COMPILER_BARRIER();
 }
+
+#ifdef __cplusplus
+}
+#endif
+/* [] END OF FILE */

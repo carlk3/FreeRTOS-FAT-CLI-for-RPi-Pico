@@ -39,6 +39,7 @@ static spi_t spi  = {  // One for each RP2040 SPI component used
     .no_miso_gpio_pull_up = false,
     .DMA_IRQ_num = DMA_IRQ_0,
     .use_exclusive_DMA_IRQ_handler = true,
+    .spi_mode = 3,
     //.baud_rate = 125 * 1000 * 1000 / 10  // 12500000 Hz
     //.baud_rate = 125 * 1000 * 1000 / 8  // 15625000 Hz
     //.baud_rate = 125 * 1000 * 1000 / 6  // 20833333 Hz

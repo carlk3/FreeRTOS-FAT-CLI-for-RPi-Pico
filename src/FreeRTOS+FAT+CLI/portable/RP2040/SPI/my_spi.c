@@ -13,17 +13,19 @@ specific language governing permissions and limitations under the License.
 */
 
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 //
+#include "hardware/clocks.h"
+#include "hardware/structs/clocks.h"
+#include "hardware/spi.h"
 #include "pico.h"
+#include "pico/mutex.h"
 #include "pico/platform.h"
 #include "pico/stdlib.h"
-#include "hardware/spi.h"
-#include "pico/mutex.h"
 //
-#include "dma_interrupts.h"
 #include "delays.h"
+#include "dma_interrupts.h"
 #include "hw_config.h"
 #include "my_debug.h"
 #include "task_config.h"
@@ -31,8 +33,8 @@ specific language governing permissions and limitations under the License.
 //
 #include "my_spi.h"
 
-#ifdef NDEBUG
-#  pragma GCC diagnostic ignored "-Wunused-variable"
+#ifndef USE_DBG_PRINTF
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
 /**
@@ -46,7 +48,6 @@ specific language governing permissions and limitations under the License.
  */
 void __not_in_flash_func(spi_irq_handler)(spi_t *spi_p) {
     if (spi_p->owner) {
-
         /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
          it will get set to pdTRUE inside the interrupt safe API function if a
          context switch is required. */
@@ -57,8 +58,9 @@ void __not_in_flash_func(spi_irq_handler)(spi_t *spi_p) {
         vTaskNotifyGiveIndexedFromISR(
             spi_p->owner,            // The handle of the task to which the
                                      // notification is being sent.
-            NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's array of
-                                     // notification values to which the notification is to be sent.
+            NOTIFICATION_IX_SD_SPI,  // uxIndexToNotify: The index within the target task's
+                                     // array of notification values to which the notification
+                                     // is to be sent.
             &xHigherPriorityTaskWoken);
 
         /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR().
@@ -67,11 +69,10 @@ void __not_in_flash_func(spi_irq_handler)(spi_t *spi_p) {
          request a context switch. If xHigherPriorityTaskWoken is still
          pdFALSE then calling portYIELD_FROM_ISR() will have no effect. */
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
     }
 }
 
- static bool chk_spi(spi_t *spi_p) {
+static bool chk_spi(spi_t *spi_p) {
     spi_inst_t *hw_spi = spi_p->hw_inst;
     bool ok = true;
     if (spi_get_const_hw(hw_spi)->sr & SPI_SSPSR_BSY_BITS) {
@@ -142,11 +143,12 @@ static bool chk_dmas(spi_t *spi_p) {
  * @param rx Pointer to the receive buffer. If NULL, data will be ignored.
  * @param length Length of the transfer.
  */
-void __not_in_flash_func(spi_transfer_start)(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
-    configASSERT(spi_p);
-    configASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
-    configASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
-    configASSERT(tx || rx);
+void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx,
+                                             size_t length) {
+    myASSERT(spi_p);
+    myASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
+    myASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
+    myASSERT(tx || rx);
 
     // tx write increment is already false
     if (tx) {
@@ -178,17 +180,17 @@ void __not_in_flash_func(spi_transfer_start)(spi_t *spi_p, const uint8_t *tx, ui
                                                             // size transfer_data_size)
                           false);                           // start
 
-    configASSERT(chk_dmas(spi_p));
-    configASSERT(chk_spi(spi_p));
+    myASSERT(chk_dmas(spi_p));
+    myASSERT(chk_spi(spi_p));
     switch (spi_p->DMA_IRQ_num) {
         case DMA_IRQ_0:
-            configASSERT(!dma_channel_get_irq0_status(spi_p->rx_dma));
+            myASSERT(!dma_channel_get_irq0_status(spi_p->rx_dma));
             break;
         case DMA_IRQ_1:
-            configASSERT(!dma_channel_get_irq1_status(spi_p->rx_dma));
+            myASSERT(!dma_channel_get_irq1_status(spi_p->rx_dma));
             break;
         default:
-            configASSERT(false);
+            myASSERT(false);
     }
 
     // Ensure this task's NOTIFICATION_IX_SD_SPIth notification state is not already pending
@@ -220,8 +222,8 @@ uint32_t calculate_transfer_time_ms(spi_t *spi_p, uint32_t bytes) {
     // Convert the time to milliseconds
     float transfer_time_ms = transfer_time_sec * 1000;
 
-    transfer_time_ms *= 1.5f; // Add 50% for overhead 
-    transfer_time_ms += 4.0f; // For fixed overhead
+    transfer_time_ms *= 1.5f;  // Add 50% for overhead
+    transfer_time_ms += 4.0f;  // For fixed overhead
 
     return (uint32_t)transfer_time_ms;
 }
@@ -237,13 +239,17 @@ uint32_t calculate_transfer_time_ms(spi_t *spi_p, uint32_t bytes) {
  * @return true if the transfer is complete, false if the timeout is reached.
  */
 bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t timeout_ms) {
-    configASSERT(spi_p);
-    configASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
+    myASSERT(spi_p);
+    myASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
     bool timed_out = false;
     bool spi_ok;
-    // Wait for notification from ISR.
-    uint32_t rc =
-        ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
+    uint32_t rc;
+    if (dma_channel_is_busy(spi_p->rx_dma)) {
+        // Wait for notification from ISR.
+        rc = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
+    } else {
+        rc = true;
+    }
     if (!rc) {
         // This indicates that xTaskNotifyWait() returned without the
         // calling task receiving a task notification. The calling task will
@@ -263,9 +269,6 @@ bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t time
         DBG_PRINTF("SPI_SSPSR: 0b%s\n", uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->sr));
         DBG_PRINTF("SPI_SSPDMACR: 0b%s\n",
                    uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->dmacr));
-
-        //DBG_PRINTF("\tResetting DBG_CTDREQ counter\n");
-        //dma_debug_hw->ch[spi_p->rx_dma].dbg_ctdreq = dma_hw->ch[spi_p->rx_dma].transfer_count;
         timed_out = true;
     } else {
         // Record the start time in milliseconds
@@ -317,13 +320,20 @@ bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t time
  * @return true if the transfer is completed successfully within the timeout.
  * @return false if the transfer times out or encounters an error.
  */
-bool __not_in_flash_func(spi_transfer)(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
+bool __not_in_flash_func(spi_transfer)(spi_t *spi_p, const uint8_t *tx, uint8_t *rx,
+                                       size_t length) {
     spi_transfer_start(spi_p, tx, rx, length);
     // Related to timeouts in spi_lock and sd_lock
     uint32_t timeout = calculate_transfer_time_ms(spi_p, length);
-    return spi_transfer_wait_complete(spi_p, pdMS_TO_TICKS(timeout));
+    return spi_transfer_wait_complete(spi_p, timeout);
 }
 
+/**
+ * @brief Initialize the SPI peripheral and DMA channels.
+ *
+ * @param spi_p Pointer to the SPI object.
+ * @return true if the initialization is successful, false otherwise.
+ */
 bool my_spi_init(spi_t *spi_p) {
     auto_init_mutex(my_spi_init_mutex);
     mutex_enter_blocking(&my_spi_init_mutex);
@@ -333,18 +343,32 @@ bool my_spi_init(spi_t *spi_p) {
         spi_lock(spi_p);
 
         // Defaults:
-        if (!spi_p->hw_inst)
-            spi_p->hw_inst = spi0;
-        if (!spi_p->baud_rate)
-            spi_p->baud_rate = 10 * 1000 * 1000;
-        if (!spi_p->DMA_IRQ_num)
-            spi_p->DMA_IRQ_num = DMA_IRQ_0;
+        if (!spi_p->hw_inst) spi_p->hw_inst = spi0;
+        if (!spi_p->baud_rate) spi_p->baud_rate = clock_get_hz(clk_sys) / 12;
+        if (!spi_p->DMA_IRQ_num) spi_p->DMA_IRQ_num = DMA_IRQ_0;
 
         /* Configure component */
         // Enable SPI at 100 kHz and connect to GPIOs
         spi_init(spi_p->hw_inst, 100 * 1000);
-        spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
+        myASSERT(spi_p->spi_mode < 4);
+        switch (spi_p->spi_mode) {
+            case 0:
+        spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+                break;
+            case 1:
+                spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_1, SPI_MSB_FIRST);
+                break;
+            case 2:
+                spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_1, SPI_CPHA_0, SPI_MSB_FIRST);
+                break;
+            case 3:
+                spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+                break;
+            default:
+                spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+                break;
+        }
         gpio_set_function(spi_p->miso_gpio, GPIO_FUNC_SPI);
         gpio_set_function(spi_p->mosi_gpio, GPIO_FUNC_SPI);
         gpio_set_function(spi_p->sck_gpio, GPIO_FUNC_SPI);
@@ -354,22 +378,25 @@ bool my_spi_init(spi_t *spi_p) {
         // enum gpio_slew_rate { GPIO_SLEW_RATE_SLOW = 0, GPIO_SLEW_RATE_FAST = 1 }
         // void gpio_set_slew_rate (uint gpio,enum gpio_slew_rate slew)
         // Default appears to be GPIO_SLEW_RATE_SLOW.
-        gpio_set_slew_rate (spi_p->sck_gpio, GPIO_SLEW_RATE_FAST);
+        gpio_set_slew_rate(spi_p->sck_gpio, GPIO_SLEW_RATE_FAST);
 
-        // Drive strength levels for GPIO outputs.
-        // enum gpio_drive_strength { GPIO_DRIVE_STRENGTH_2MA = 0, GPIO_DRIVE_STRENGTH_4MA = 1, GPIO_DRIVE_STRENGTH_8MA = 2,
-        // GPIO_DRIVE_STRENGTH_12MA = 3 }
-        // enum gpio_drive_strength gpio_get_drive_strength (uint gpio)
+        /* Drive strength levels for GPIO outputs:
+            enum gpio_drive_strength {
+            GPIO_DRIVE_STRENGTH_2MA = 0,
+            GPIO_DRIVE_STRENGTH_4MA = 1,
+            GPIO_DRIVE_STRENGTH_8MA = 2,
+            GPIO_DRIVE_STRENGTH_12MA = 3 }
+         enum gpio_drive_strength gpio_get_drive_strength (uint gpio)
+        */
         if (spi_p->set_drive_strength) {
             gpio_set_drive_strength(spi_p->mosi_gpio, spi_p->mosi_gpio_drive_strength);
             gpio_set_drive_strength(spi_p->sck_gpio, spi_p->sck_gpio_drive_strength);
         }
 
         // SD cards' DO MUST be pulled up. However, it might be done externally.
-        if (!spi_p->no_miso_gpio_pull_up)
-            gpio_pull_up(spi_p->miso_gpio);
+        if (!spi_p->no_miso_gpio_pull_up) gpio_pull_up(spi_p->miso_gpio);
 
-        //gpio_set_input_hysteresis_enabled(spi_p->miso_gpio, false);
+        // gpio_set_input_hysteresis_enabled(spi_p->miso_gpio, false);
 
         // Grab some unused dma channels
         spi_p->tx_dma = dma_claim_unused_channel(true);
@@ -414,7 +441,7 @@ bool my_spi_init(spi_t *spi_p) {
                 dma_channel_set_irq1_enabled(spi_p->tx_dma, false);
                 break;
             default:
-                configASSERT(false);
+                myASSERT(false);
         }
         dma_irq_add_handler(spi_p->DMA_IRQ_num, spi_p->use_exclusive_DMA_IRQ_handler);
 

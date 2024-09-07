@@ -22,12 +22,6 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
-#ifdef ANALYZER
-#  define TRIG() gpio_put(15, 1)  // DEBUG
-#else 
-#  define TRIG()
-#endif
-
 /* USE_PRINTF
 If this is defined and not zero, 
 these message output functions will use the Pico SDK's stdout.
@@ -80,9 +74,8 @@ void my_assert_func(const char *file, int line, const char *func, const char *pr
 #ifdef NDEBUG           /* required by ANSI standard */
 #  define myASSERT(__e) ((void)0)
 #else
-#  define myASSERT(__e) \
-    { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
-#endif    
+#  define myASSERT(__e) ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
+#endif
 
 int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 

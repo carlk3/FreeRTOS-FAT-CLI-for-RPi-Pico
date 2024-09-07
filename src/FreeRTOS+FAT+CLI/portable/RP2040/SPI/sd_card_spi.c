@@ -345,6 +345,7 @@ static uint8_t sd_cmd_spi(sd_card_t *sd_card_p, cmdSupported cmd, uint32_t arg) 
 
     return response;
 }
+#pragma GCC diagnostic pop
 
 /**
  * @brief Wait for the SD card to be ready for the next command.
@@ -756,7 +757,7 @@ static bool sd_wait_token(sd_card_t *sd_card_p, uint8_t token) {
     return false;
 }
 
-static bool chk_crc16(sd_card_t *, uint8_t *buffer, size_t length, uint16_t crc) {
+static bool chk_crc16(uint8_t *buffer, size_t length, uint16_t crc) {
     if (crc_on) {
         uint16_t crc_result;
         // Compute and verify checksum
@@ -788,7 +789,7 @@ static block_dev_err_t read_bytes(sd_card_t *sd_card_p, uint8_t *buffer, uint32_
     crc = (sd_spi_read(sd_card_p) << 8);
     crc |= sd_spi_read(sd_card_p);
 
-    if (!chk_crc16(sd_card_p, buffer, length, crc)) {
+    if (!chk_crc16(buffer, length, crc)) {
         DBG_PRINTF("%s: Invalid CRC received: 0x%" PRIx16 "\n", __func__, crc);
         return SD_BLOCK_DEVICE_ERROR_CRC;
     }
@@ -820,7 +821,7 @@ static block_dev_err_t read_bytes(sd_card_t *sd_card_p, uint8_t *buffer, uint32_
 static block_dev_err_t in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer,
                                          const uint32_t data_address,
                                          const uint32_t num_rd_blks) {
-    configASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
+    myASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
     if (sd_card_p->state.m_Status & (STA_NOINIT | STA_NODISK))
         return SD_BLOCK_DEVICE_ERROR_PARAMETER;
     if (!num_rd_blks) return SD_BLOCK_DEVICE_ERROR_PARAMETER;
@@ -864,7 +865,7 @@ static block_dev_err_t in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer,
         // Check the CRC16 checksum for the previous data block
         if (prev_buffer_addr) {
             // Check previous block's CRC:
-            if (!chk_crc16(sd_card_p, prev_buffer_addr, sd_block_size, prev_block_crc)) {
+            if (!chk_crc16(prev_buffer_addr, sd_block_size, prev_block_crc)) {
                 DBG_PRINTF("%s: Invalid CRC received: 0x%" PRIx16 "\n", __func__,
                            prev_block_crc);
                 return SD_BLOCK_DEVICE_ERROR_CRC;
@@ -889,7 +890,7 @@ static block_dev_err_t in_sd_read_blocks(sd_card_t *sd_card_p, uint8_t *buffer,
         if (SD_BLOCK_DEVICE_ERROR_NONE != status) return status;
     }
     // Check final block's CRC:
-    if (!chk_crc16(sd_card_p, prev_buffer_addr, sd_block_size, prev_block_crc)) {
+    if (!chk_crc16(prev_buffer_addr, sd_block_size, prev_block_crc)) {
         DBG_PRINTF("%s: Invalid CRC received: 0x%" PRIx16 "\n", __func__, prev_block_crc);
         return SD_BLOCK_DEVICE_ERROR_CRC;
     }
@@ -1112,7 +1113,7 @@ static block_dev_err_t in_sd_write_blocks(sd_card_t *sd_card_p,
                                           uint32_t * const data_address_p,
                                           uint32_t * const num_wrt_blks_p)
 {
-    configASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
+    myASSERT(xTaskGetCurrentTaskHandle() == sd_card_p->state.owner);
     block_dev_err_t status = SD_BLOCK_DEVICE_ERROR_NONE;
 
     /* Continue a multiblock write */
