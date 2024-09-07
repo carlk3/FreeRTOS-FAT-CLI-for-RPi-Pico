@@ -204,7 +204,7 @@ int ff_stdio_fail(const char *const func, char const *const str, char const *con
     return error;
 }
 
-void my_assert_func(const char *file, int line, const char *func, const char *pred) {
+void __attribute__((weak)) my_assert_func(const char *file, int line, const char *func, const char *pred) {
     error_message_printf_plain(
         "%s: assertion \"%s\" failed: file \"%s\", line %d, function: %s\n",
         pcTaskGetName(NULL), pred, file, line, func);
@@ -221,7 +221,6 @@ void assert_case_not_func(const char *file, int line, const char *func, int v) {
 }
 
 void assert_case_is(const char *file, int line, const char *func, int v, int expected) {
-    TRIG();  // DEBUG
     char pred[128];
     snprintf(pred, sizeof pred, "%d is %d", v, expected);
     my_assert_func(file, line, func, pred);
@@ -232,10 +231,10 @@ void dump8buf(char *buf, size_t buf_sz, uint8_t *pbytes, size_t nbytes) {
     for (size_t byte_ix = 0; byte_ix < nbytes; ++byte_ix) {
         for (size_t col = 0; col < 32 && byte_ix < nbytes; ++col, ++byte_ix) {
             n += snprintf(buf + n, buf_sz - n, "%02hhx ", pbytes[byte_ix]);
-            configASSERT(0 < n && n < (int)buf_sz);
+            myASSERT(0 < n && n < (int)buf_sz);
         }
         n += snprintf(buf + n, buf_sz - n, "\n");
-        configASSERT(0 < n && n < (int)buf_sz);
+        myASSERT(0 < n && n < (int)buf_sz);
     }
 }
 void hexdump_8(const char *s, const uint8_t *pbytes, size_t nbytes) {

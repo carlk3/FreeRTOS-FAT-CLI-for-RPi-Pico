@@ -20,6 +20,7 @@ specific language governing permissions and limitations under the License.
 #include "hardware/rtc.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
+#include "pico/types.h"
 //
 #include "util.h"  // calculate_checksum
 //
@@ -67,7 +68,7 @@ time_t FreeRTOS_time(time_t *pxTime) {
 
 static TimerHandle_t TimeUpdateTimer;
 
-static void TimeUpdateTimerCallback(TimerHandle_t xTimer) {
+static void TimeUpdateTimerCallback(TimerHandle_t) {
     update_epochtime();
 }
 

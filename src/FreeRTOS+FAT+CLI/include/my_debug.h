@@ -22,12 +22,6 @@ specific language governing permissions and limitations under the License.
 extern "C" {
 #endif
 
-#ifdef ANALYZER
-#  define TRIG() gpio_put(15, 1)  // DEBUG
-#else 
-#  define TRIG()
-#endif
-
 /* USE_PRINTF
 If this is defined and not zero, 
 these message output functions will use the Pico SDK's stdout.
@@ -60,7 +54,7 @@ int error_message_printf_plain(const char *fmt, ...) __attribute__ ((format (__p
 int debug_message_printf(const char *func, int line, const char *fmt, ...)
     __attribute__((format(__printf__, 3, 4)));
 #ifndef DBG_PRINTF
-#  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF && !defined(NDEBUG)
+#  if defined(USE_DBG_PRINTF) && USE_DBG_PRINTF // && !defined(NDEBUG)
 #    define DBG_PRINTF(fmt, ...) debug_message_printf(__func__, __LINE__, fmt, ##__VA_ARGS__)
 #  else
 #    define DBG_PRINTF(fmt, ...) (void)0
@@ -80,9 +74,8 @@ void my_assert_func(const char *file, int line, const char *func, const char *pr
 #ifdef NDEBUG           /* required by ANSI standard */
 #  define myASSERT(__e) ((void)0)
 #else
-#  define myASSERT(__e) \
-    { ((__e) ? (void)0 : my_assert_func(__func__, __LINE__, __func__, #__e)); }
-#endif    
+#  define myASSERT(__e) ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
+#endif
 
 int task_printf(const char *pcFormat, ...) __attribute__((format(__printf__, 1, 2)));
 

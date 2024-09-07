@@ -1,5 +1,5 @@
-FreeRTOS-FAT-CLI-for-RPi-Pico  
-v2.9.0
+# FreeRTOS-FAT-CLI-for-RPi-Pico  
+# v2.11.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,13 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.11.0
+* Add `spi_mode` to the hardware configuration.
+For SPI attached cards, SPI Mode 3 can significantly improve performance.
+See [SPI Controller Configuration](#spi-controller-configuration).
+* Additional performance improvements in SPI driver.
+### v2.10.0
+* Make timeouts configurable. See [Timeouts](#timeouts).
 ### v2.9.0
 * Add retries in SPI driver `sd_read_blocks`
 ### v2.8.0
@@ -169,7 +176,7 @@ Writing and reading a file of 200 MiB of psuedorandom data on the same
 [Silicon Power 3D NAND U1 32GB microSD card](https://www.amazon.com/gp/product/B07RSXSYJC/) inserted into a 
 [Pico Stackable, Plug & Play SD Card Expansion Module](https://forums.raspberrypi.com/viewtopic.php?t=356864)
 at the default Pico system clock frequency (`clk_sys`) of 125 MHz, `MinSizeRel` build, using the command
-[big_file_test bf 200 7](#appendix-b-operation-of-command_line-example)
+[big_file_test bf 200 ](#appendix-b-operation-of-command_line-example)*x*.
 once on SPI and one on SDIO.
 
 * SDIO, baud rate 31,250,000 Hz:
@@ -180,13 +187,13 @@ once on SPI and one on SDIO.
     * Elapsed seconds 16.0
     * Transfer rate 12.5 MiB/s (13.1 MB/s), or 12784 KiB/s (13091 kB/s) (104729 kbit/s)
 
-* SPI, baud rate 20,833,333 Hz:
-  * Writing
-    * Elapsed seconds 117
-    * Transfer rate 1.70 MiB/s (1.79 MB/s), or 1746 KiB/s (1788 kB/s) (14302 kbit/s)
-  * Reading
-    * Elapsed seconds 117
-    * Transfer rate 1.71 MiB/s (1.79 MB/s), or 1746 KiB/s (1788 kB/s) (14303 kbit/s)
+* SPI, baud rate, baud rate 31,250,000 Hz:
+  * Writing...
+    * Elapsed seconds 86.5
+    * Transfer rate 2.31 MiB/s (2.42 MB/s), or 2366 KiB/s (2423 kB/s) (19386 kbit/s)
+  * Reading...
+    * Elapsed seconds 90.4
+    * Transfer rate 2.21 MiB/s (2.32 MB/s), or 2265 KiB/s (2320 kB/s) (18557 kbit/s)
 
 Results from a
 [port](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/tests/bench.c)
@@ -209,20 +216,20 @@ of
   13306.8,4940,4907,4918
   ...
   ```
-* SPI, baud rate 20,833,333 Hz:
+* SPI, baud rate 31,250,000 Hz:
   ```
   ...
   write speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  1744.7,74130,36312,37557
-  1757.6,74078,36285,37283
+  2463.8,41867,26204,26594
+  2491.9,26558,26175,26296
   ...
   read speed and latency
   speed,max,min,avg
   KB/Sec,usec,usec,usec
-  1791.8,36620,36533,36568
-  1791.8,36637,36523,36568
+  2359.5,27882,27664,27766
+  2361.7,27847,27675,27758
   ...
   ```
 ### Data Striping
@@ -576,21 +583,33 @@ If false, the GPIO's drive strength will be implicitly set to 4 mA.
 An instance of `spi_t` describes the configuration of one RP2040 SPI controller.
 ```C
 typedef struct spi_t {
-    spi_inst_t *hw_inst;  // SPI HW
+    spi_inst_t *hw_inst;    // SPI HW
     uint miso_gpio;  // SPI MISO GPIO number (not pin number)
     uint mosi_gpio;
     uint sck_gpio;
     uint baud_rate;
+
+    /* The different modes of the Motorola SPI protocol are:
+    - Mode 0: When CPOL and CPHA are both 0, data sampled at the leading rising edge of the
+    clock pulse and shifted out on the falling edge. This is the most common mode for SPI bus
+    communication.
+    - Mode 1: When CPOL is 0 and CPHA is 1, data sampled at the trailing falling edge and
+    shifted out on the rising edge.
+    - Mode 2: When CPOL is 1 and CPHA is 0, data sampled at the leading falling edge
+    and shifted out on the rising edge.
+    - Mode 3: When CPOL is 1 and CPHA is 1, data sampled at the trailing rising edge and
+    shifted out on the falling edge. */
+    uint spi_mode;
+
     uint DMA_IRQ_num; // DMA_IRQ_0 or DMA_IRQ_1
     bool use_exclusive_DMA_IRQ_handler;
     bool no_miso_gpio_pull_up;
 
-    /* Drive strength levels for GPIO outputs.
+    /* Drive strength levels for GPIO outputs:
         GPIO_DRIVE_STRENGTH_2MA, 
         GPIO_DRIVE_STRENGTH_4MA, 
         GPIO_DRIVE_STRENGTH_8MA,
-        GPIO_DRIVE_STRENGTH_12MA
-    */
+        GPIO_DRIVE_STRENGTH_12MA */
     bool set_drive_strength;
     enum gpio_drive_strength mosi_gpio_drive_strength;
     enum gpio_drive_strength sck_gpio_drive_strength;
@@ -603,7 +622,7 @@ typedef struct spi_t {
 * `miso_gpio` SPI Master In, Slave Out (MISO) (also called "CIPO" or "Peripheral's SDO") GPIO number. This is connected to the SD card's Data Out (DO).
 * `mosi_gpio` SPI Master Out, Slave In (MOSI) (also called "COPI", or "Peripheral's SDI") GPIO number. This is connected to the SD card's Data In (DI).
 * `sck_gpio` SPI Serial Clock GPIO number. This is connected to the SD card's Serial Clock (SCK).
-* `baud_rate` Frequency of the SPI Serial Clock, in Hertz. The default is 10 MHz.
+* `baud_rate` Frequency of the SPI Serial Clock, in Hertz. The default is `clk_sys` / 12.
   This is ultimately passed to the SDK's [spi_set_baudrate](https://www.raspberrypi.com/documentation/pico-sdk/hardware.html#ga37f4c04ce4165ac8c129226336a0b66c). This applies a hardware prescale and a post-divide to the *Peripheral clock* (`clk_peri`) (see section **4.4.2.3.** *Clock prescaler* in [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)). 
   The *Peripheral clock* typically,
   but not necessarily, runs from `clk_sys`.
@@ -616,11 +635,16 @@ typedef struct spi_t {
   ```C
       .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
   ```
-  If you ask for 14000000, you'll actually get 12500000 Hz.
+  If you ask for 14,000,000 Hz, you'll actually get 12,500,000 Hz.
   The actual baud rate will be printed out if `USE_DBG_PRINTF` (see [Messages from the SD card driver](#messages-from-the-sd-card-driver)) is defined at compile time.
   The higher the baud rate, the faster the data transfer.
-  However, the hardware might limit the usable baud rate.
+  At the maximum `clk_peri` frequency on RP2040 of 133MHz, the maximum peak bit rate in master mode is 62.5Mbps.
+  However, the hardware (including the SD card) might limit the usable baud rate.
   See [Pull Up Resistors and other electrical considerations](#pull-up-resistors-and-other-electrical-considerations).
+* `spi_mode` 0, 1, 2, or 3. 0 is the most common mode for SPI bus slave communication.
+This controls the Motorola SPI frame format CPOL, clock polarity; and CPHA, clock phase.
+SPI mode 0 (CPOL=0, CPHA=0) is the proper setting to control MMC/SDC, but mode 3 (CPOL=1, CPHA=1) also works as well in most cases[^6].
+Mode 3 can be around 15% faster than mode 0, probably due to quirks of the ARM PrimeCell Synchronous Serial Port in the RP2040.
 * `DMA_IRQ_num` Which IRQ to use for DMA. Defaults to DMA_IRQ_0. Set this to avoid conflicts with any exclusive DMA IRQ handlers that might be elsewhere in the system.
 * `use_exclusive_DMA_IRQ_handler` If true, the IRQ handler is added with the SDK's `irq_set_exclusive_handler`. The default is to add the handler with `irq_add_shared_handler`, so it's not exclusive. 
 * `no_miso_gpio_pull_up` According to the standard, an SD card's DO MUST be pulled up (at least for the old MMC cards). 
@@ -668,36 +692,21 @@ See [FreeRTOS-Plus-FAT Configuration](https://www.freertos.org/FreeRTOS-Plus/Fre
 
 For examples of these files, see `examples/commmand_line/include`.
 
-## Using the Application Programming Interface
-In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but is conventional in FreeRTOS-Plus-FAT:
-
-  `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
-  [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
-  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter `pcName` is the Device Name; `device_name` in 
-  [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
-
-A typical sequence would be:
-* `FF_SDDiskInit`
-* `FF_SDDiskMount`
-* `FF_FS_Add`
-* `ff_fopen`
-* `ff_fwrite`
-* `ff_fread`
-* `ff_fclose`
-* `FF_FS_Remove`
-* `FF_Unmount`
-* `FF_SDDiskDelete`
-
-See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
-
-You may call `sd_init_driver()` to explicitly initialize the block device driver.
-It is called implicitly by `FF_SDDiskInit`,
-but you might want to call it sooner.
-For example, you might want to get the GPIOs configured before setting up a card detect interrupt handler.
-(See [examples/command_line/src/unmounter.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/unmounter.c).)
-You might want to call it to get the SD cards into SPI mode so that they can share an SPI bus with other devices.
-(See [Cosideration on Multi-slave Configuration](http://elm-chan.org/docs/mmc/mmc_e.html#spibus).)
-`sd_init_driver()` must be called from a FreeRTOS task.
+### Timeouts
+Indefinite timeouts are normally bad practice, because they make it difficult to recover from an error.
+Therefore, we have timeouts all over the place.
+To make these configurable, they are collected in `sd_timeouts_t sd_timeouts` in `sd_timeouts.c`.
+The definition has the `weak` attribute, so it can be overridden by user code.
+For example, in `hw_config.c` you could have:
+```C
+sd_timeouts_t sd_timeouts = {
+    .sd_command = 2000, // Timeout in ms for response
+    .sd_command_retries = 3, // Times SPI cmd is retried when there is no response
+//...
+    .sd_sdio_begin = 1000, // Timeout in ms for response
+    .sd_sdio_stopTransmission = 200, // Timeout in ms for response
+};
+```
 
 ### Messages
 Sometimes problems arise when attempting to use SD cards. At the 
@@ -730,6 +739,38 @@ If `USE_PRINTF` is defined and not zero, the weak implementations will write to 
 FreeRTOS-Plus-FAT uses a macro called `FF_PRINTF`, which is defined in the 
 [FreeRTOS-Plus-FAT Configuration file](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Embedded_File_System_Configuration.html).
 See [Other Application-Specific Customization](#other-application-specific-customization).
+
+## Using the Application Programming Interface
+In general, you use the [FreeRTOS-Plus-FAT APIs](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html) in your application. One function that is not documented as part of the standard API but is conventional in FreeRTOS-Plus-FAT:
+
+  `FF_Disk_t *FF_SDDiskInit( const char *pcName )` Initializes the "disk" (SD card) and returns a pointer to an 
+  [FF_Disk_t](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/File_System_Media_Driver/FF_Disk_t.html)
+  structure. This can then be passed to other functions in the [FreeRTOS-Plus-FAT Native API](https://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_FAT/Standard_File_System_API.html#native) such as `FF_Mount` and `FF_FS_Add`. The parameter `pcName` is the Device Name; `device_name` in 
+  [struct sd_card_t](#an-instance-of-sd_card_t-describes-the-configuration-of-one-sd-card-socket).
+
+A typical sequence would be:
+* `FF_SDDiskInit`
+* `FF_SDDiskMount`
+* `FF_FS_Add`
+* `ff_fopen`
+* `ff_fwrite`
+* `ff_fread`
+* `ff_fclose`
+* `FF_FS_Remove`
+* `FF_Unmount`
+* `FF_SDDiskDelete`
+
+See [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio) for an example.
+
+You may call `sd_init_driver()` to explicitly initialize the block device driver.
+It is called implicitly by `FF_SDDiskInit`,
+but you might want to call it sooner.
+For example, you might want to get the GPIOs configured before setting up a card detect interrupt handler.
+(See [examples/command_line/src/unmounter.c](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/examples/command_line/src/unmounter.c).)
+You might want to call it to get the SD cards into SPI mode so that they can share an SPI bus with other devices.
+(See [Cosideration on Multi-slave Configuration](http://elm-chan.org/docs/mmc/mmc_e.html#spibus).)
+`sd_init_driver()` must be called from a FreeRTOS task.
+
 ## Next Steps
 * There is a simple example of using the API in the 
 [FreeRTOS-FAT-CLI-for-RPi-Pico/examples/simple_sdio/](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/tree/master/examples/simple_sdio)
@@ -969,10 +1010,13 @@ or
 
 ## Appendix D: Performance Tuning Tips
 Obviously, if possible, use 4-bit SDIO instead of 1-bit SPI.
-(See [Choosing the Interface Type(s)](#choosing-the-interface-types)).
+(See [Choosing the Interface Type(s)](#choosing-the-interface-types).)
 
 Obviously, set the baud rate as high as you can. (See
 [Customizing for the Hardware Configuration](#customizing-for-the-hardware-configuration)).
+
+If you are using SPI, try SPI mode 3 (CPOL=1, CPHA=1) instead of 0 (CPOL=0, CPHA=0). (See
+[SPI Controller Configuration](#spi-controller-configuration).) This could buy a 15% speed boost.
 
 TL;DR: In general, it is much faster to transfer a given number of bytes in one large write (or read) 
 than to transfer the same number of bytes in multiple smaller writes (or reads). 
@@ -1091,7 +1135,11 @@ You can swap the commenting to enable tracing of what's happening in that file.
 * Better yet, go to somwhere like [JLCPCB](https://jlcpcb.com/) and get a printed circuit board!
 
 
-[^3]: In my experience, the Card Detect switch on these doesn't work worth a damn. This might not be such a big deal, because according to [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/) the Chip Select (CS) line can be used for Card Detection: "At power up this line has a 50KOhm pull up enabled in the card... For Card detection, the host detects that the line is pulled high." 
+[^3]: In my experience, the Card Detect switch on these doesn't work worth a damn. This might not be such a big deal, because according to [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/) the Chip Select (CS) line can be used for Card Detection: "At power up this line has a 50KOhm pull up enabled in the card... For Card detection, the host detects that the line is pulled high."
 However, the Adafruit card has it's own 47 kΩ pull up on CS - Card Detect / Data Line [Bit 3], rendering it useless for Card Detection.
+
 [^4]: [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/)
+
 [^5]: Rationale: Instances of `sd_spi_if_t` or `sd_sdio_if_t` are separate objects instead of being embedded in `sd_card_t` objects because `sd_sdio_if_t` carries a lot of state information with it (including things like data buffers). The union of the two types has the size of the largest type, which would result in a lot of wasted space in instances of `sd_spi_if_t`. I had another solution using `malloc`, but some people are frightened of `malloc` in embedded systems.
+
+[^6]: *SPI Mode* in [How to Use MMC/SDC](http://elm-chan.org/docs/mmc/mmc_e.html#spimode)

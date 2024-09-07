@@ -14,6 +14,11 @@ specific language governing permissions and limitations under the License.
 
 #pragma once
 
+/* FreeRTOS includes. */
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
+//
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -26,10 +31,9 @@ specific language governing permissions and limitations under the License.
 #include "hardware/gpio.h"
 #include "hardware/irq.h"
 #include "hardware/spi.h"
-/* FreeRTOS includes. */
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include "task.h"
+//
+#include "my_debug.h"
+#include "sd_timeouts.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,16 +48,28 @@ typedef struct spi_t {
     uint mosi_gpio;
     uint sck_gpio;
     uint baud_rate;
+
+    /* The different modes of the Motorola SPI protocol are:
+    - Mode 0: When CPOL and CPHA are both 0, data sampled at the leading rising edge of the
+    clock pulse and shifted out on the falling edge. This is the most common mode for SPI bus
+    communication.
+    - Mode 1: When CPOL is 0 and CPHA is 1, data sampled at the trailing falling edge and
+    shifted out on the rising edge.
+    - Mode 2: When CPOL is 1 and CPHA is 0, data sampled at the leading falling edge
+    and shifted out on the rising edge.
+    - Mode 3: When CPOL is 1 and CPHA is 1, data sampled at the trailing rising edge and
+    shifted out on the falling edge. */
+    uint spi_mode;
+
     uint DMA_IRQ_num; // DMA_IRQ_0 or DMA_IRQ_1
     bool use_exclusive_DMA_IRQ_handler;
     bool no_miso_gpio_pull_up;
 
-    /* Drive strength levels for GPIO outputs.
+    /* Drive strength levels for GPIO outputs:
         GPIO_DRIVE_STRENGTH_2MA, 
         GPIO_DRIVE_STRENGTH_4MA, 
         GPIO_DRIVE_STRENGTH_8MA,
-        GPIO_DRIVE_STRENGTH_12MA
-    */
+        GPIO_DRIVE_STRENGTH_12MA */
     bool set_drive_strength;
     enum gpio_drive_strength mosi_gpio_drive_strength;
     enum gpio_drive_strength sck_gpio_drive_strength;
@@ -61,8 +77,6 @@ typedef struct spi_t {
     /* The following fields are not part of the configuration. They are dynamically assigned. */
     uint tx_dma;
     uint rx_dma;
-
-    /* The following fields are not part of the configuration. They are dynamically assigned. */
     dma_channel_config tx_dma_cfg;
     dma_channel_config rx_dma_cfg;
     SemaphoreHandle_t mutex;    
@@ -79,7 +93,7 @@ bool my_spi_init(spi_t *spi_p);
 
 static inline void spi_lock(spi_t *spi_p) {
     configASSERT(spi_p);
-    BaseType_t rc = xSemaphoreTake(spi_p->mutex, pdMS_TO_TICKS(8000));
+    BaseType_t rc = xSemaphoreTake(spi_p->mutex, pdMS_TO_TICKS(sd_timeouts.spi_lock));
     if (pdFALSE == rc) {
         DBG_PRINTF("Timed out. Lock is held by %s.\n",
                    xSemaphoreGetMutexHolder(spi_p->mutex)

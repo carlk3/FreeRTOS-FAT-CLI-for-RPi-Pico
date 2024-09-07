@@ -29,6 +29,7 @@ target_sources(FreeRTOS+FAT+CLI INTERFACE
         src/FreeRTOS_strerror.c
         src/FreeRTOS_time.c
         src/my_debug.c
+        src/sd_timeouts.c
         src/util.c
 )
 target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
