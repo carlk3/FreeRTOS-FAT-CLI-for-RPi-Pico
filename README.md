@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico  
-# v2.11.0
+# v2.12.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,8 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.12.0
+Add support for running without Chip Select (CS) (formerly Slave Select [SS]).
 ### v2.11.0
 * Add `spi_mode` to the hardware configuration.
 For SPI attached cards, SPI Mode 3 can significantly improve performance.
@@ -136,7 +138,9 @@ or you can use something like
   * For each SPI controller used, two DMA channels are claimed with `dma_claim_unused_channel`.
   * A configurable DMA IRQ is hooked with `irq_add_shared_handler` or `irq_set_exclusive_handler` (configurable) and enabled.
   * For each SPI controller used, one GPIO is needed for each of RX, TX, and SCK. Note: each SPI controller can only use a limited set of GPIOs for these functions.
-  * For each SD card attached to an SPI controller, a GPIO is needed for slave (or "chip") select (SS or "CS"), and, optionally, another for Card Detect (CD or "DET").
+  * For each SD card attached to an SPI controller:
+      * (Optional, if there's only one SD card) A GPIO for slave (or "chip") select (SS or "CS"). (See [Running without Chip Select (CS) (formerly Slave Select [SS])](#running-without-chip-select-cs-formerly-slave-select-ss).)
+      * (Optional) A GPIO for Card Detect (CD or "DET"). (See [Notes about Card Detect](#notes-about-card-detect).)
 * SDIO attached cards:
   * A PIO block
   * Two DMA channels claimed with `dma_claim_unused_channel`
@@ -359,9 +363,27 @@ or polling.
 * Some workarounds for absence of Card Detect:
   * If you don't care much about performance or battery life, you could mount the card before each access and unmount it after. This might be a good strategy for a slow data logging application, for example.
   * Some other form of polling: if the card is periodically accessed at rate faster than the user can swap cards, then the temporary absence of a card will be noticed, so a swap will be detected. For example, if a data logging application writes a log record to the card once per second, it is unlikely that the user could swap cards between accesses.
-<!-- 
-![image](https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico/blob/master/images/IMG_1478.JPG "Prototype")
--->
+
+## Running without Chip Select (CS) (formerly Slave Select [SS])
+If you have only one SD card, and you are short on GPIOs, you may be able to run without CS/SS.
+I know of no guarantee that this will work for all SD cards.
+The [Physical Layer Simplified Specification](https://www.sdcard.org/downloads/pls/) says
+> Every command or data block is
+> built of 8-bit bytes and is byte aligned with the CS signal...
+> The card starts to count SPI bus clock cycle at the assertion of the CS signal...
+> The host
+> starts every bus transaction by asserting the CS signal low.
+
+It doesn't say what happens if the CS signal is always asserted.
+However, it worked for me with:
+* [Silicon Power 3D NAND U1 32GB microSD card](https://www.amazon.com/gp/product/B07RSXSYJC/)
+* [SanDisk 16GB Ultra microSDHC UHS-I Memory Card ](https://www.amazon.com/gp/product/B089DPCJS1/ref=ppx_yo_dt_b_search_asin_title?th=1)
+* [PNY 16GB Elite Class 10 U1 microSDHC Flash Memory Card](https://www.amazon.com/gp/product/B08QDN7CVN/ref=ppx_yo_dt_b_search_asin_title)
+
+You will need to pull down the CS/SS line on the SD card with hardware. (I.e., connect CS to GND. CS is active low.)
+
+In the hardware configuration definition, set `ss_gpio` to -1.
+See [An instance of `sd_spi_if_t` describes the configuration of one SPI to SD card interface.](#an-instance-of-sd_spi_if_t-describes-the-configuration-of-one-spi-to-sd-card-interface).
 
 ## Firmware
 ### Dependencies
@@ -568,7 +590,10 @@ typedef struct sd_spi_if_t {
 } sd_spi_if_t;
 ```
 * `spi` Points to the instance of `spi_t` that is to be used as the SPI to drive this interface
-* `ss_gpio` Slave Select (SS) (or "Chip Select [CS]") GPIO for the SD card socket associated with this interface
+* `ss_gpio` Slave Select (SS) (or "Chip Select [CS]") GPIO for the SD card socket associated with this interface.
+Set this to -1 to disable it.
+(See [Running without Chip Select (CS) (formerly Slave Select [SS])](#running-without-chip-select-cs-formerly-slave-select-ss).)
+*Note:* 0 is a valid GPIO number, so you must explicitly set it to -1 to disable it.
 * `set_drive_strength` Enable explicit specification of output drive strength of `ss_gpio_drive_strength`. 
 If false, the GPIO's drive strength will be implicitly set to 4 mA.
 * `ss_gpio_drive_strength` Drive strength for the SS (or CS).
@@ -583,7 +608,7 @@ If false, the GPIO's drive strength will be implicitly set to 4 mA.
 An instance of `spi_t` describes the configuration of one RP2040 SPI controller.
 ```C
 typedef struct spi_t {
-    spi_inst_t *hw_inst;    // SPI HW
+    spi_inst_t *hw_inst;  // SPI HW
     uint miso_gpio;  // SPI MISO GPIO number (not pin number)
     uint mosi_gpio;
     uint sck_gpio;
