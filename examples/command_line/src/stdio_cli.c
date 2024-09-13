@@ -19,7 +19,6 @@ specific language governing permissions and limitations under the License.
 #include "task.h"
 // Pico
 #include "crash.h"
-#include "hardware/rtc.h"
 #include "pico/util/datetime.h"
 //
 #include "command.h"
@@ -107,16 +106,6 @@ static void stdioTask(void *arg) {
 
     // Get notified when there are input characters available
     stdio_set_chars_available_callback(callback, xTaskGetCurrentTaskHandle());
-
-    // Check if the RTC is running
-    if (!rtc_running()) printf("RTC is not running.\n");
-
-    // Get the current time from the RTC
-    datetime_t t = {0, 0, 0, 0, 0, 0, 0};
-    rtc_get_datetime(&t);
-    char datetime_buf[256] = {0};
-    datetime_to_str(datetime_buf, sizeof(datetime_buf), &t);
-    printf("%s\n", datetime_buf);
 
     // Display the prompt
     printf("FreeRTOS+CLI> ");

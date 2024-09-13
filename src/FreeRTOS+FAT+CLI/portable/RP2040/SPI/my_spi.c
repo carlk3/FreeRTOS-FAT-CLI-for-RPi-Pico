@@ -17,8 +17,8 @@ specific language governing permissions and limitations under the License.
 #include <stdio.h>
 //
 #include "hardware/clocks.h"
-#include "hardware/structs/clocks.h"
 #include "hardware/spi.h"
+#include "hardware/structs/clocks.h"
 #include "pico.h"
 #include "pico/mutex.h"
 #include "pico/platform.h"
@@ -143,8 +143,7 @@ static bool chk_dmas(spi_t *spi_p) {
  * @param rx Pointer to the receive buffer. If NULL, data will be ignored.
  * @param length Length of the transfer.
  */
-void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx,
-                                             size_t length) {
+void spi_transfer_start(spi_t *spi_p, const uint8_t *tx, uint8_t *rx, size_t length) {
     myASSERT(spi_p);
     myASSERT(xTaskGetCurrentTaskHandle() == spi_p->owner);
     myASSERT(xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(spi_p->mutex));
@@ -246,7 +245,8 @@ bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t time
     uint32_t rc;
     if (dma_channel_is_busy(spi_p->rx_dma)) {
         // Wait for notification from ISR.
-        rc = ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
+        rc =
+            ulTaskNotifyTakeIndexed(NOTIFICATION_IX_SD_SPI, pdFALSE, pdMS_TO_TICKS(timeout_ms));
     } else {
         rc = true;
     }
@@ -257,18 +257,6 @@ bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t time
         // state to become pending, but the specified block time expired
         // before that happened.
         DBG_PRINTF("Notification wait timed out\n");
-        chk_dmas(spi_p);
-        spi_ok = chk_spi(spi_p);
-        DBG_PRINTF("DMA_INTR: 0b%s\n", uint_binary_str(dma_hw->intr));
-        DBG_PRINTF("TX DMA CTRL_TRIG: 0b%s\n",
-                   uint_binary_str(dma_hw->ch[spi_p->tx_dma].ctrl_trig));
-        DBG_PRINTF("RX DMA CTRL_TRIG: 0b%s\n",
-                   uint_binary_str(dma_hw->ch[spi_p->rx_dma].ctrl_trig));
-        DBG_PRINTF("SPI SSPCR0: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr0));
-        DBG_PRINTF("SPI SSPCR1: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr1));
-        DBG_PRINTF("SPI_SSPSR: 0b%s\n", uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->sr));
-        DBG_PRINTF("SPI_SSPDMACR: 0b%s\n",
-                   uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->dmacr));
         timed_out = true;
     } else {
         // Record the start time in milliseconds
@@ -302,7 +290,19 @@ bool __not_in_flash_func(spi_transfer_wait_complete)(spi_t *spi_p, uint32_t time
         }
         spi_ok = chk_spi(spi_p);
     }
-    if (timed_out) {
+    if (timed_out || !spi_ok) {
+        chk_dmas(spi_p);
+        DBG_PRINTF("DMA_INTR: 0b%s\n", uint_binary_str(dma_hw->intr));
+        DBG_PRINTF("TX DMA CTRL_TRIG: 0b%s\n",
+                   uint_binary_str(dma_hw->ch[spi_p->tx_dma].ctrl_trig));
+        DBG_PRINTF("RX DMA CTRL_TRIG: 0b%s\n",
+                   uint_binary_str(dma_hw->ch[spi_p->rx_dma].ctrl_trig));
+        DBG_PRINTF("SPI SSPCR0: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr0));
+        DBG_PRINTF("SPI SSPCR1: 0b%s\n", uint_binary_str(spi_get_hw(spi_p->hw_inst)->cr1));
+        DBG_PRINTF("SPI_SSPSR: 0b%s\n", uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->sr));
+        DBG_PRINTF("SPI_SSPDMACR: 0b%s\n",
+                   uint_binary_str(spi_get_const_hw(spi_p->hw_inst)->dmacr));
+
         dma_channel_abort(spi_p->rx_dma);
         dma_channel_abort(spi_p->tx_dma);
     }
@@ -354,7 +354,7 @@ bool my_spi_init(spi_t *spi_p) {
         myASSERT(spi_p->spi_mode < 4);
         switch (spi_p->spi_mode) {
             case 0:
-        spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+                spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
                 break;
             case 1:
                 spi_set_format(spi_p->hw_inst, 8, SPI_CPOL_0, SPI_CPHA_1, SPI_MSB_FIRST);

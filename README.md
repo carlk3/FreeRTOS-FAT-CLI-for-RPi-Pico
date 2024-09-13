@@ -16,6 +16,8 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.13.0
+Building with PICO_BOARD pico2.
 ### v2.12.0
 Add support for running without Chip Select (CS) (formerly Slave Select [SS]).
 ### v2.11.0

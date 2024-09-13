@@ -40,6 +40,13 @@ specific language governing permissions and limitations under the License.
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
+#if PICO_RP2040
+#  include "RP2040.h"
+#endif
+#if PICO_RP2350
+#  include "RP2350.h"
+#endif
+//
 #include "my_debug.h"
 
 #ifdef __cplusplus
@@ -139,6 +146,11 @@ extern "C" {
 /* RP2040 specific */
 #define configSUPPORT_PICO_SYNC_INTEROP         1
 #define configSUPPORT_PICO_TIME_INTEROP         1
+
+#define configENABLE_FPU                        1
+#define configENABLE_TRUSTZONE                  0
+#define configENABLE_MPU                        0
+//#define configSYSTEM_CALL_STACK_SIZE            0x800
 
 /* Define to trap errors during development. */
 //#define configASSERT( x )  assert( x )

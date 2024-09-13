@@ -40,9 +40,10 @@ target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
         hardware_clocks
         hardware_dma
         hardware_pio
-        hardware_rtc
+        #hardware_rtc
         hardware_spi
         hardware_timer
+        pico_aon_timer
         pico_multicore
         pico_stdlib
         pico_sync
