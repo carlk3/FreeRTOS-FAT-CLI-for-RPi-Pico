@@ -147,10 +147,11 @@ extern "C" {
 #define configSUPPORT_PICO_SYNC_INTEROP         1
 #define configSUPPORT_PICO_TIME_INTEROP         1
 
-#define configENABLE_FPU                        1
-#define configENABLE_TRUSTZONE                  0
+// See https://github.com/raspberrypi/FreeRTOS-Kernel/blob/main/portable/ThirdParty/GCC/RP2350_ARM_NTZ/README.md
 #define configENABLE_MPU                        0
-//#define configSYSTEM_CALL_STACK_SIZE            0x800
+#define configENABLE_TRUSTZONE                  0
+#define configRUN_FREERTOS_SECURE_ONLY          1
+#define configENABLE_FPU                        1
 
 /* Define to trap errors during development. */
 //#define configASSERT( x )  assert( x )

@@ -1,11 +1,26 @@
+# == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.0.0)
+set(toolchainVersion 13_2_Rel1)
+set(picotoolVersion 2.0.0)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
 cmake_minimum_required(VERSION 3.13)
 
+set(PICO_BOARD pico CACHE STRING "Board type")
+
 set(FREERTOS_KERNEL_PATH $ENV{FREERTOS_KERNEL_PATH})
-set(PICO_SDK_PATH $ENV{PICO_SDK_PATH})
 set(PROGRAM_NAME command_line)
 
 # Pull in Pico SDK (must be before project)
-include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+include(pico_sdk_import.cmake)
 
 # Pull in FreeRTOS
 if ("${PICO_PLATFORM}" STREQUAL "rp2040")
@@ -43,18 +58,16 @@ add_executable(${PROGRAM_NAME}
     ../../src/FreeRTOS+FAT+CLI/src/crash.c
 )
 
-#target_compile_options(${PROGRAM_NAME} PRIVATE -save-temps)
 target_compile_options(${PROGRAM_NAME} PUBLIC 
   -Wall 
   -Wextra 
   -Wshadow 
-#  -Wno-unused-parameter 
   -Wstack-usage=2048 
   -fanalyzer 
 )
 
 add_compile_definitions(
-    #  PARAM_ASSERTIONS_ENABLE_ALL=1
+    #PARAM_ASSERTIONS_ENABLE_ALL=1
     PICO_MALLOC_PANIC=1
     PICO_USE_STACK_GUARDS=1
     PICO_MAX_SHARED_IRQ_HANDLERS=6
