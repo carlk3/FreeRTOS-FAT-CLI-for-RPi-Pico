@@ -62,20 +62,24 @@ extern "C" {
  * These definitions should be adjusted for your particular hardware and
  * application requirements.
  *----------------------------------------------------------*/
+
+/* Scheduler Related */
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_TICKLESS_IDLE                 0
 #define configUSE_IDLE_HOOK                     0
 #define configUSE_TICK_HOOK                     0
-#define configCPU_CLOCK_HZ                      125000000/* Looking at runtime.c in the RPI 2040 SDK, the sys clock frequency is 125MHz */
-#define configSYSTICK_CLOCK_HZ                  1000000  /* This is always 1MHz on ARM I think.... */
+#define configCPU_CLOCK_HZ                      SystemCoreClock
 #define configTICK_RATE_HZ                      ( ( TickType_t ) 1000 )
-#define configMAX_PRIORITIES                    5
-#define configMINIMAL_STACK_SIZE                128      /* you might want to increase this, especially if you do any floating point printf  *YIKES* */
+#define portTICK_RATE_MS                        ( ( TickType_t ) 1000 / configTICK_RATE_HZ )
+#define configMAX_PRIORITIES                    32
+#define configMINIMAL_STACK_SIZE                ( configSTACK_DEPTH_TYPE ) 128
 #define configMAX_TASK_NAME_LEN                 16
-// #define configUSE_16_BIT_TICKS                  0
+//#define configUSE_16_BIT_TICKS                  0
 #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
 #define configIDLE_SHOULD_YIELD                 1
+
+/* Synchronization Related */
 #define configUSE_TASK_NOTIFICATIONS            1
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES   4
 #define configUSE_MUTEXES                       1
@@ -118,7 +122,7 @@ extern "C" {
 #define configUSE_TIMERS                        1
 #define configTIMER_TASK_PRIORITY               ( configMAX_PRIORITIES - 1 )
 #define configTIMER_QUEUE_LENGTH                10
-#define configTIMER_TASK_STACK_DEPTH            300
+#define configTIMER_TASK_STACK_DEPTH            512
 
 /* Interrupt nesting behaviour configuration. */
 /*  The Cortex-M0+ implements the two most significant bits of an 8-bit priority field, 
@@ -140,6 +144,7 @@ extern "C" {
 #define configRUN_MULTIPLE_PRIORITIES           1
 
 /* SMP Related config. */
+#define configUSE_CORE_AFFINITY                 1
 #define configUSE_PASSIVE_IDLE_HOOK             0
 #define portSUPPORT_SMP                         1
 
@@ -180,6 +185,7 @@ to exclude the API function. */
 #define INCLUDE_xTaskAbortDelay                 0
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskResumeFromISR              1
+#define INCLUDE_xQueueGetMutexHolder            1
 #define INCLUDE_xSemaphoreGetMutexHolder        1
 
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 

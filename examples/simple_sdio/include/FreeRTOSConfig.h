@@ -40,32 +40,47 @@ specific language governing permissions and limitations under the License.
 #ifndef FREERTOS_CONFIG_H
 #define FREERTOS_CONFIG_H
 
-#include "RP2040.h"
+#if PICO_RP2040
+#  include "RP2040.h"
+#endif
+#if PICO_RP2350
+#  include "RP2350.h"
+#endif
+//
 #include "my_debug.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef portINLINE
 #  define portINLINE __inline
 #endif
+
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
  * These definitions should be adjusted for your particular hardware and
  * application requirements.
  *----------------------------------------------------------*/
+
+/* Scheduler Related */
 #define configUSE_PREEMPTION                    1
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 #define configUSE_TICKLESS_IDLE                 0
 #define configUSE_IDLE_HOOK                     0
 #define configUSE_TICK_HOOK                     0
-#define configCPU_CLOCK_HZ                      125000000/* Looking at runtime.c in the RPI 2040 SDK, the sys clock frequency is 125MHz */
-#define configSYSTICK_CLOCK_HZ                  1000000  /* This is always 1MHz on ARM I think.... */
+#define configCPU_CLOCK_HZ                      SystemCoreClock
 #define configTICK_RATE_HZ                      ( ( TickType_t ) 1000 )
-#define configMAX_PRIORITIES                    5
+#define portTICK_RATE_MS                        ( ( TickType_t ) 1000 / configTICK_RATE_HZ )
+#define configMAX_PRIORITIES                    32
 #define configMINIMAL_STACK_SIZE                128      /* you might want to increase this, especially if you do any floating point printf  *YIKES* */
 #define configMAX_TASK_NAME_LEN                 16
-// #define configUSE_16_BIT_TICKS                  0
+//#define configUSE_16_BIT_TICKS                  0
 #define configTICK_TYPE_WIDTH_IN_BITS           TICK_TYPE_WIDTH_32_BITS
 #define configIDLE_SHOULD_YIELD                 1
+
+/* Synchronization Related */
 #define configUSE_TASK_NOTIFICATIONS            1
 #define configTASK_NOTIFICATION_ARRAY_ENTRIES   4
 #define configUSE_MUTEXES                       1
@@ -75,7 +90,7 @@ specific language governing permissions and limitations under the License.
 #define configUSE_ALTERNATIVE_API               0 /* Deprecated! */
 #define configQUEUE_REGISTRY_SIZE               10
 #define configUSE_QUEUE_SETS                    1
-#define configUSE_TIME_SLICING                  1 
+#define configUSE_TIME_SLICING                  0
 #define configUSE_NEWLIB_REENTRANT              1   // Necessary if any floating point printfs are used!
 #define configENABLE_BACKWARD_COMPATIBILITY     0
 #define configNUM_THREAD_LOCAL_STORAGE_POINTERS 5
@@ -116,7 +131,6 @@ specific language governing permissions and limitations under the License.
     and the numerically-lowest level (level 0) is the highest priority.
 */
 #define configKERNEL_INTERRUPT_PRIORITY         (3 << (8 - __NVIC_PRIO_BITS))
-
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    (2 << (8 - __NVIC_PRIO_BITS))
 /* configMAX_API_CALL_INTERRUPT_PRIORITY is a new name for configMAX_SYSCALL_INTERRUPT_PRIORITY
  that is used by newer ports only. The two are equivalent. */
@@ -127,9 +141,10 @@ specific language governing permissions and limitations under the License.
 #define configNUMBER_OF_CORES                   2
 #define configNUM_CORES                         configNUMBER_OF_CORES
 #define configTICK_CORE                         0
-#define configRUN_MULTIPLE_PRIORITIES           0
+#define configRUN_MULTIPLE_PRIORITIES           1
 
 /* SMP Related config. */
+#define configUSE_CORE_AFFINITY                 1
 #define configUSE_PASSIVE_IDLE_HOOK             0
 #define portSUPPORT_SMP                         1
 
@@ -137,9 +152,19 @@ specific language governing permissions and limitations under the License.
 #define configSUPPORT_PICO_SYNC_INTEROP         1
 #define configSUPPORT_PICO_TIME_INTEROP         1
 
+// See https://github.com/raspberrypi/FreeRTOS-Kernel/blob/main/portable/ThirdParty/GCC/RP2350_ARM_NTZ/README.md
+#define configENABLE_MPU                        0
+#define configENABLE_TRUSTZONE                  0
+#define configRUN_FREERTOS_SECURE_ONLY          1
+#define configENABLE_FPU                        1
+
 /* Define to trap errors during development. */
 //#define configASSERT( x )  assert( x )
-#define configASSERT(__e) ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
+#ifdef NDEBUG           /* required by ANSI standard */
+#  define configASSERT(__e) ((void)0)
+#else
+#  define configASSERT(__e) ((__e) ? (void)0 : my_assert_func(__FILE__, __LINE__, __func__, #__e))
+#endif
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
@@ -160,12 +185,18 @@ to exclude the API function. */
 #define INCLUDE_xTaskAbortDelay                 0
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskResumeFromISR              1
+#define INCLUDE_xQueueGetMutexHolder            1
 #define INCLUDE_xSemaphoreGetMutexHolder        1
 
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() 
-extern uint64_t time_us_64(void); // "hardware/timer.h"
+uint64_t time_us_64(void);
+
 #define portGET_RUN_TIME_COUNTER_VALUE() (time_us_64()/100)
 
 /* A header file that defines trace macro can be included here. */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FREERTOS_CONFIG_H */

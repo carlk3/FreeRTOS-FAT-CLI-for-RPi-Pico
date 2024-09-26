@@ -91,9 +91,9 @@ int main() {
     spi_t *spi_p = new spi_t();
     configASSERT(spi_p);
     spi_p->hw_inst = spi1;  // RP2040 SPI component
+    spi_p->miso_gpio = 8;
     spi_p->sck_gpio = 10;   // GPIO number (not Pico pin number)
-    spi_p->mosi_gpio = 8;
-    spi_p->miso_gpio = 11;
+    spi_p->mosi_gpio = 11;
     spis.push_back(spi_p);
 
     /* SPI Interfaces */

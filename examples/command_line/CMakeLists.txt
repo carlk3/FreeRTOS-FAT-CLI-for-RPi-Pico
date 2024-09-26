@@ -31,9 +31,7 @@ elseif("${PICO_PLATFORM}" STREQUAL "rp2350-riscv")
     include(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2350_RISC-V/FreeRTOS_Kernel_import.cmake)
 endif()
 
-project(${PROGRAM_NAME} C CXX ASM)
-
-# add_compile_options(-Os) # Optimize for size (place before pico_sdk_init)
+project(${PROGRAM_NAME})
 
 # Initialise the Pico SDK
 pico_sdk_init()
@@ -65,12 +63,14 @@ target_compile_options(${PROGRAM_NAME} PUBLIC
   -Wstack-usage=2048 
   -fanalyzer 
 )
-
-add_compile_definitions(
+target_compile_definitions(${PROGRAM_NAME} PUBLIC
+    # pico-sdk
     #PARAM_ASSERTIONS_ENABLE_ALL=1
-    PICO_MALLOC_PANIC=1
     PICO_USE_STACK_GUARDS=1
+    PICO_MALLOC_PANIC=1
     PICO_MAX_SHARED_IRQ_HANDLERS=6
+)
+target_compile_definitions(${PROGRAM_NAME} PRIVATE
     # This program is useless without standard input and output.
     USE_PRINTF
     #USE_DBG_PRINTF
