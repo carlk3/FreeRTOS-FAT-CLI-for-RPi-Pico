@@ -15,8 +15,6 @@ specific language governing permissions and limitations under the License.
 
 #include <time.h>
 
-#include "pico/util/datetime.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -24,7 +22,7 @@ extern "C" {
 extern time_t epochtime;
 
 void FreeRTOS_time_init();
-bool setrtc(datetime_t *t);
+void setrtc(struct timespec *ts_p);
 
 #ifdef __cplusplus
 }

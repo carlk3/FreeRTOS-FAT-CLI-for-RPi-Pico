@@ -63,7 +63,7 @@ static void buffered() {
     size, 512 bytes. */
     static char vbuf[1024] __attribute__((aligned));
     int err = setvbuf(file_p, vbuf, _IOFBF, sizeof vbuf);
-    configASSERT(!err);
+    if (err) stop();
 
     for (size_t i = 0; i < ITERATIONS; ++i) {
         uint64_t now = micros();
@@ -87,7 +87,7 @@ static void SimpleTask(void *arg) {
     printf("\n%s: Hello, world!\n", pcTaskGetName(NULL));
 
     FF_Disk_t *pxDisk = FF_SDDiskInit(DEVICE);
-    configASSERT(pxDisk);
+    if (!pxDisk) stop();
     FF_Error_t xError = FF_SDDiskMount(pxDisk);
     if (FF_isERR(xError) != pdFALSE) {
         printf("FF_SDDiskMount: %s\n",

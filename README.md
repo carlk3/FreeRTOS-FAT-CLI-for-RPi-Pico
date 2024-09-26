@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico  
-# v2.12.0
+# v2.13.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -16,6 +16,8 @@ and/or a 4-bit Secure Digital Input Output (SDIO) driver derived from
 It is wrapped up in a complete runnable project, with a little command line interface, some self tests, and an example data logging application.
 
 ## What's new
+### v2.13.0
+Ported to SDK 2 and Pico 2.
 ### v2.12.0
 Add support for running without Chip Select (CS) (formerly Slave Select [SS]).
 ### v2.11.0

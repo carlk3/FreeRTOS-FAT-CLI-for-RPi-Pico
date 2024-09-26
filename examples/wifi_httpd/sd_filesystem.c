@@ -48,7 +48,7 @@ int fs_read_custom(struct fs_file *file, char *buffer, int count) {
     if (file->index < file->len) {
         // Read "count" bytes from SD, fill in buffer, and return the amount of bytes read
         size_t br = ff_fread(buffer, 1, count, file->pextension);
-        if (br < count) {
+        if (br < (size_t)count) {
             FF_PRINTF("ff_fread(,,%d,) returned %zu bytes: %s (%d)\n",
                       count, br, strerror(stdioGET_ERRNO()), stdioGET_ERRNO());
         }

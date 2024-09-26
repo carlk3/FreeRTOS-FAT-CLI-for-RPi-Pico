@@ -20,8 +20,13 @@ specific language governing permissions and limitations under the License.
 #include <time.h>
 //
 #include "pico/multicore.h"  // get_core_num()
+#if PICO_RP2040
+#  include "RP2040.h"
+#endif
+#if PICO_RP2350
+#  include "RP2350.h"
+#endif
 #include "pico/stdlib.h"
-#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "ff_stdio.h"
@@ -75,7 +80,6 @@ error_message_printf(const char *func, int line,
     int cw = vprintf(fmt, args);
     unlock_printf();
     va_end(args);
-    // stdio_flush();
     stdio_flush();
     return cw;
 }
@@ -86,7 +90,6 @@ int __attribute__((weak)) error_message_printf_plain(const char *fmt, ...) {
     int cw = vprintf(fmt, args);
     unlock_printf();
     va_end(args);
-    // stdio_flush();
     stdio_flush();
     return cw;
 }

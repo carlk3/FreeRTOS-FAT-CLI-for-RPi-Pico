@@ -17,9 +17,7 @@ specific language governing permissions and limitations under the License.
 This file should be tailored to match the hardware design.
 
 See 
-  https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
-
-*/
+https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico#customizing-for-the-hardware-configuration */
 
 /* Hardware configuration for Expansion Module Type A
 See https://oshwlab.com/carlk3/rpi-pico-sd-card-expansion-module-1
@@ -42,22 +40,17 @@ static sd_sdio_if_t sdio_if = {
     */
     .CMD_gpio = 3,
     .D0_gpio = 4,
-    .CLK_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .CMD_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .D0_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .D1_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .D2_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
-    .D3_gpio_drive_strength = GPIO_DRIVE_STRENGTH_12MA,
     .SDIO_PIO = pio1,
     .DMA_IRQ_num = DMA_IRQ_1,
-    .baud_rate = 125 * 1000 * 1000 / 4  // 31250000 Hz
+    .baud_rate = 125 * 1000 * 1000 / 5
 };
 
 // Hardware Configuration of the SD Card socket "object"
 static sd_card_t sd_card = {    
-    /* "pcName" is the FatFs "logical drive" identifier.
-    (See http://elm-chan.org/fsw/ff/doc/filename.html#vol) */
+    // "device_name" is arbitrary:
     .device_name = "sd0",
+    // "mount_point" must be a directory off the file system's root directory and must be an
+    // absolute path:
     .mount_point = "/sd0",
     .type = SD_IF_SDIO,
     .sdio_if_p = &sdio_if,
@@ -69,13 +62,25 @@ static sd_card_t sd_card = {
 
 /* ********************************************************************** */
 
-size_t sd_get_num() { return 1; }
+/**
+ * @brief Returns the number of sd_card_t objects that are available.
+ * @return The number of sd_card_t objects.
+ */
+size_t sd_get_num(void) {
+    return 1;
+}
 
+/**
+ * @brief Return the sd_card_t object at the given index (0-based).
+ * @param num The index of the sd_card_t object.
+ * @return Pointer to the sd_card_t object at the given index if it exists, NULL otherwise.
+ */
 sd_card_t *sd_get_by_num(size_t num) {
-    if (0 == num)
+    if (0 == num) {
         return &sd_card;
-    else
+    } else {
         return NULL;
+    }
 }
 
 /* [] END OF FILE */

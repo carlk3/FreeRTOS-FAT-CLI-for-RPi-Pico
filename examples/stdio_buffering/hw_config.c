@@ -14,24 +14,17 @@ specific language governing permissions and limitations under the License.
 */
 
 /*
-
 This file should be tailored to match the hardware design.
 
 See
-https://github.com/carlk3/FreeRTOS-FAT-CLI-for-RPi-Pico
+  https://github.com/carlk3/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico/tree/main#customizing-for-the-hardware-configuration
 
-There should be one element of the spi[] array for each RP2040 hardware SPI used.
-
-There should be one element of the spi_ifs[] array for each SPI interface object.
-* Each element of spi_ifs[] must point to an spi_t instance with member "spi".
-
-There should be one element of the sdio_ifs[] array for each SDIO interface object.
-
-There should be one element of the sd_cards[] array for each SD card slot.
-* Each element of sd_cards[] must point to its interface with spi_if_p or sdio_if_p.
 */
 
-//
+/* Hardware configuration for Expansion Module Type A
+See https://oshwlab.com/carlk3/rpi-pico-sd-card-expansion-module-1
+*/
+
 #include "hw_config.h"
 
 /* SDIO Interface */
@@ -47,25 +40,41 @@ static sd_sdio_if_t sdio_if = {
         D2_gpio = D0_gpio + 2;
         D3_gpio = D0_gpio + 3;
     */
-    .CMD_gpio = 17,
-    .D0_gpio = 18,
-    .baud_rate = 15 * 1000 * 1000  // 15 MHz
+    .CMD_gpio = 3,
+    .D0_gpio = 4,
+    .baud_rate = 125 * 1000 * 1000 / 5
 };
 
-/* Configuration of the SD Card socket object */
+// Hardware Configuration of the SD Card socket "object"
 static sd_card_t sd_card = {
     // "device_name" is arbitrary:
     .device_name = "sd0",
-    // "mount_point" must be a directory off the file system's root directory and must be an absolute path:
+    // "mount_point" must be a directory off the file system's root directory and must be an
+    // absolute path:
     .mount_point = "/sd0",
     .type = SD_IF_SDIO,
-    .sdio_if_p = &sdio_if  // Pointer to the SPI interface driving this card
+    .sdio_if_p = &sdio_if,
+    // SD Card detect:
+    .use_card_detect = true,
+    .card_detect_gpio = 9,
+    .card_detected_true = 0  // What the GPIO read returns when a card is present.
 };
 
 /* ********************************************************************** */
 
-size_t sd_get_num() { return 1; }
+/**
+ * @brief Returns the number of sd_card_t objects that are available.
+ * @return The number of sd_card_t objects.
+ */
+size_t sd_get_num(void) {
+    return 1;
+}
 
+/**
+ * @brief Return the sd_card_t object at the given index (0-based).
+ * @param num The index of the sd_card_t object.
+ * @return Pointer to the sd_card_t object at the given index if it exists, NULL otherwise.
+ */
 sd_card_t *sd_get_by_num(size_t num) {
     if (0 == num) {
         return &sd_card;

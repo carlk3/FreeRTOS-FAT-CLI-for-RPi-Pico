@@ -7,12 +7,10 @@
 //
 #include "hardware/structs/clocks.h"
 #include "hardware/clocks.h"
-#include "hardware/rtc.h"
 #include "pico/platform.h"
 #include "pico/stdio.h"
 #include "pico/stdlib.h"
 #include "pico/types.h"
-#include "RP2040.h"
 //
 #include "FreeRTOS.h"
 #include "FreeRTOS_strerror.h"
@@ -55,6 +53,25 @@ static bool expect_argc(const size_t argc, const char *argv[], const size_t expe
     }
     return true;
 }
+static void run_date(const size_t argc, const char *argv[]) {
+    if (!expect_argc(argc, argv, 0)) return;
+
+    char buf[128] = {0};
+    time_t epoch_secs = FreeRTOS_time(NULL);
+    if (epoch_secs < 1) {
+        printf("RTC not running\n");
+        return;
+    }
+    struct tm *ptm = localtime(&epoch_secs);
+    configASSERT(ptm);
+    size_t n = strftime(buf, sizeof(buf), "%c", ptm);
+    configASSERT(n);
+    printf("%s\n", buf);
+    strftime(buf, sizeof(buf), "%j",
+             ptm);  // The day of the year as a decimal number (range
+                    // 001 to 366).
+    printf("Day of year: %s\n", buf);
+}
 
 static void run_setrtc(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 6)) return;
@@ -66,32 +83,36 @@ static void run_setrtc(const size_t argc, const char *argv[]) {
     int8_t min = atoi(argv[4]);
     int8_t sec = atoi(argv[5]);
 
-    datetime_t t = {.year = year,
-                    .month = month,
-                    .day = date,
-                    .dotw = 0,  // 0 is Sunday, so 5 is Friday
-                    .hour = hour,
-                    .min = min,
-                    .sec = sec};
-    // rtc_set_datetime(&t);
-    bool ok = setrtc(&t);
-    if (!ok) {
-        printf("The passed in datetime was invalid\n");
-    }
-}
-static void run_date(const size_t argc, const char *argv[]) {
-    if (!expect_argc(argc, argv, 0)) return;
 
-    char buf[128] = {0};
-    time_t epoch_secs = FreeRTOS_time(NULL);
-    struct tm *ptm = localtime(&epoch_secs);
-    size_t n = strftime(buf, sizeof(buf), "%c", ptm);
-    assert(n);
-    printf("%s\n", buf);
-    strftime(buf, sizeof(buf), "%j",
-             ptm);  // The day of the year as a decimal number (range
-                    // 001 to 366).
-    printf("Day of year: %s\n", buf);
+    struct tm t = {
+        // tm_sec	int	seconds after the minute	0-61*
+        .tm_sec = sec,
+        // tm_min	int	minutes after the hour	0-59
+        .tm_min = min,
+        // tm_hour	int	hours since midnight	0-23
+        .tm_hour = hour,
+        // tm_mday	int	day of the month	1-31
+        .tm_mday = date,
+        // tm_mon	int	months since January	0-11
+        .tm_mon = month - 1,
+        // tm_year	int	years since 1900
+        .tm_year = year - 1900,
+        // tm_wday	int	days since Sunday	0-6
+        .tm_wday = 0,
+        // tm_yday	int	days since January 1	0-365
+        .tm_yday = 0,
+        // tm_isdst	int	Daylight Saving Time flag
+        .tm_isdst = 0
+    };
+    /* The values of the members tm_wday and tm_yday of timeptr are ignored, and the values of
+       the other members are interpreted even if out of their valid ranges */
+    time_t epoch_secs = mktime(&t);
+    if (-1 == epoch_secs) {
+        printf("The passed in datetime was invalid\n");
+        return;
+    }
+    struct timespec ts = {.tv_sec = epoch_secs, .tv_nsec = 0};
+    setrtc(&ts);
 }
 static void run_info(const size_t argc, const char *argv[]) {
     if (!expect_argc(argc, argv, 1)) return;
@@ -476,7 +497,9 @@ static void run_measure_freqs(const size_t argc, const char *argv[]) {
     uint f_clk_peri = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_PERI);
     uint f_clk_usb = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_USB);
     uint f_clk_adc = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_ADC);
+#if HAS_RP2040_RTC
     uint f_clk_rtc = frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_RTC);
+#endif    
 
     printf("pll_sys  = %dkHz\n", f_pll_sys);
     printf("pll_usb  = %dkHz\n", f_pll_usb);
@@ -485,7 +508,9 @@ static void run_measure_freqs(const size_t argc, const char *argv[]) {
     printf("clk_peri = %dkHz\treported  = %lukHz\n", f_clk_peri, clock_get_hz(clk_peri) / KHZ);
     printf("clk_usb  = %dkHz\treported  = %lukHz\n", f_clk_usb, clock_get_hz(clk_usb) / KHZ);
     printf("clk_adc  = %dkHz\treported  = %lukHz\n", f_clk_adc, clock_get_hz(clk_adc) / KHZ);
+#if HAS_RP2040_RTC
     printf("clk_rtc  = %dkHz\treported  = %lukHz\n", f_clk_rtc, clock_get_hz(clk_rtc) / KHZ);
+#endif    
 
     // Can't measure clk_ref / xosc as it is the ref
 }
@@ -517,7 +542,7 @@ static void run_set_sys_clock_khz(const size_t argc, const char *argv[]) {
                               CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS,
                               clock_get_hz(clk_sys),
                               clock_get_hz(clk_sys));
-    assert(ok);
+    configASSERT(ok);
 
     setup_default_uart();
 }
@@ -678,8 +703,8 @@ static void run_help(const size_t argc, const char *argv[]) {
 }
 
 static void process_cmd(char *cmd) {
-    assert(cmd);
-    assert(cmd[0]);
+    configASSERT(cmd);
+    configASSERT(cmd[0]);
     char *cmdn = strtok_r(cmd, " ", &saveptr);
     if (cmdn) {
 
@@ -730,7 +755,7 @@ void process_stdio(int cRxedChar) {
             SYSTEM_RESET();
             break;
         case 27:  // Esc
-            __BKPT();
+            __breakpoint();
     }
     if (!isprint(cRxedChar) && !isspace(cRxedChar) && '\r' != cRxedChar &&
         '\b' != cRxedChar && cRxedChar != 127) {

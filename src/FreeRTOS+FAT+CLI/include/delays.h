@@ -51,8 +51,12 @@ call to millis() returns 0xFFFFFFFF:
 #include <stdint.h>
 //
 #include "pico/stdlib.h"
-#include "RP2040.h"
-//
+#if PICO_RP2040
+#  include "RP2040.h"
+#endif
+#if PICO_RP2350
+#  include "RP2350.h"
+#endif
 #include "FreeRTOS.h"
 #include "task.h"
 
