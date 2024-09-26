@@ -1,5 +1,5 @@
 # FreeRTOS-FAT-CLI-for-RPi-Pico  
-# v2.12.0
+# v2.13.0
 =============================
 ## C/C++ Library for SD Cards on the Pico
 
@@ -17,7 +17,7 @@ It is wrapped up in a complete runnable project, with a little command line inte
 
 ## What's new
 ### v2.13.0
-Building with PICO_BOARD pico2.
+Ported to SDK 2 and Pico 2.
 ### v2.12.0
 Add support for running without Chip Select (CS) (formerly Slave Select [SS]).
 ### v2.11.0
