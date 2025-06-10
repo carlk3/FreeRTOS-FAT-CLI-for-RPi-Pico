@@ -1,36 +1,36 @@
 add_library(FreeRTOS+FAT+CLI INTERFACE)
 target_sources(FreeRTOS+FAT+CLI INTERFACE
-        ../Lab-Project-FreeRTOS-FAT/ff_crc.c
-        ../Lab-Project-FreeRTOS-FAT/ff_dir.c
-        ../Lab-Project-FreeRTOS-FAT/ff_error.c
-        ../Lab-Project-FreeRTOS-FAT/ff_fat.c
-        ../Lab-Project-FreeRTOS-FAT/ff_file.c
-        ../Lab-Project-FreeRTOS-FAT/ff_format.c
-        ../Lab-Project-FreeRTOS-FAT/ff_ioman.c
-        ../Lab-Project-FreeRTOS-FAT/ff_locking.c
-        ../Lab-Project-FreeRTOS-FAT/ff_memory.c
-        ../Lab-Project-FreeRTOS-FAT/ff_stdio.c
-        ../Lab-Project-FreeRTOS-FAT/ff_string.c
-        ../Lab-Project-FreeRTOS-FAT/ff_sys.c
-        ../Lab-Project-FreeRTOS-FAT/ff_time.c 
-        portable/RP2040/dma_interrupts.c
-        portable/RP2040/ff_sddisk.c
-        portable/RP2040/sd_card.c
-        portable/RP2040/SPI/sd_card_spi.c
-        portable/RP2040/SPI/sd_spi.c
-        portable/RP2040/SPI/my_spi.c
-        portable/RP2040/SDIO/sd_card_sdio.c
-        portable/RP2040/SDIO/rp2040_sdio.c
-        src/crash.c
-        src/crc.c
-        src/ff_utils.c
-        src/file_stream.c
-        src/freertos_callbacks.c
-        src/FreeRTOS_strerror.c
-        src/FreeRTOS_time.c
-        src/my_debug.c
-        src/sd_timeouts.c
-        src/util.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_crc.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_dir.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_error.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_fat.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_file.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_format.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_ioman.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_locking.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_memory.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_stdio.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_string.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_sys.c
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/ff_time.c 
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/dma_interrupts.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/ff_sddisk.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/sd_card.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/SPI/sd_card_spi.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/SPI/sd_spi.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/SPI/my_spi.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/SDIO/sd_card_sdio.c
+        ${CMAKE_CURRENT_LIST_DIR}/portable/RP2040/SDIO/rp2040_sdio.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/crash.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/crc.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/ff_utils.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/file_stream.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/freertos_callbacks.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/FreeRTOS_strerror.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/FreeRTOS_time.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/my_debug.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/sd_timeouts.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/util.c
 )
 target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
         cmsis_core
@@ -50,6 +50,6 @@ target_link_libraries(FreeRTOS+FAT+CLI INTERFACE
 )
 target_include_directories(FreeRTOS+FAT+CLI INTERFACE 
         include/ 
-        ../Lab-Project-FreeRTOS-FAT/include/
+        ${CMAKE_CURRENT_LIST_DIR}/../Lab-Project-FreeRTOS-FAT/include/
         portable/RP2040/
 )
